@@ -1,0 +1,27 @@
+[
+  {
+    "career_group": "10년 이상",
+    "count": "92687",
+    "percentage": "72.23"
+  },
+  {
+    "career_group": "5-10년",
+    "count": "18593",
+    "percentage": "14.49"
+  },
+  {
+    "career_group": "1-3년",
+    "count": "8784",
+    "percentage": "6.84"
+  },
+  {
+    "career_group": "3-5년",
+    "count": "6985",
+    "percentage": "5.44"
+  },
+  {
+    "career_group": "1년 미만",
+    "count": "1280",
+    "percentage": "1.00"
+  }
+]

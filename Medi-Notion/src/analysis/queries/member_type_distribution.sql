@@ -1,0 +1,17 @@
+-- 회원 유형별 기본 분포 분석
+-- DOMAIN_SCHEMA.md의 USERS 테이블만 사용 (30줄 제한 준수)
+
+SELECT 
+  u.U_KIND as MEMBER_TYPE,
+  COUNT(*) as TOTAL_COUNT,
+  ROUND(COUNT(*) * 100.0 / (
+    SELECT COUNT(*) 
+    FROM USERS 
+    WHERE U_ALIVE = 'Y'
+  ), 2) as PERCENTAGE
+FROM USERS u
+WHERE u.U_ALIVE = 'Y'
+GROUP BY u.U_KIND
+HAVING COUNT(*) >= 100
+ORDER BY TOTAL_COUNT DESC
+LIMIT 10;

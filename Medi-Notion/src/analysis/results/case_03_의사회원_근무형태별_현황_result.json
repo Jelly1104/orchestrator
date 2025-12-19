@@ -1,0 +1,47 @@
+[
+  {
+    "U_WORK_TYPE_1": "WTP007",
+    "CODE_NAME": "봉직",
+    "doctor_count": "41940"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP006",
+    "CODE_NAME": "개원의",
+    "doctor_count": "37299"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP004",
+    "CODE_NAME": "레지던트",
+    "doctor_count": "12177"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP005",
+    "CODE_NAME": "교직",
+    "doctor_count": "10146"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP001",
+    "CODE_NAME": "기타",
+    "doctor_count": "9865"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP003",
+    "CODE_NAME": "인턴",
+    "doctor_count": "6789"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP009",
+    "CODE_NAME": "전임의",
+    "doctor_count": "5652"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP008",
+    "CODE_NAME": "공보의",
+    "doctor_count": "2371"
+  },
+  {
+    "U_WORK_TYPE_1": "WTP010",
+    "CODE_NAME": "군의관",
+    "doctor_count": "2080"
+  }
+]

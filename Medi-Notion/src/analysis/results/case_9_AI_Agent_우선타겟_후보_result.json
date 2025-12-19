@@ -1,0 +1,92 @@
+[
+  {
+    "specialty": "내과",
+    "work_type": "개원의",
+    "target_count": "5939",
+    "market_share": "4.63"
+  },
+  {
+    "specialty": "가정의학과",
+    "work_type": "개원의",
+    "target_count": "3565",
+    "market_share": "2.78"
+  },
+  {
+    "specialty": "정형외과",
+    "work_type": "개원의",
+    "target_count": "3312",
+    "market_share": "2.58"
+  },
+  {
+    "specialty": "일반의",
+    "work_type": "개원의",
+    "target_count": "2864",
+    "market_share": "2.23"
+  },
+  {
+    "specialty": "소아청소년과",
+    "work_type": "개원의",
+    "target_count": "2716",
+    "market_share": "2.12"
+  },
+  {
+    "specialty": "산부인과",
+    "work_type": "개원의",
+    "target_count": "2526",
+    "market_share": "1.97"
+  },
+  {
+    "specialty": "이비인후과",
+    "work_type": "개원의",
+    "target_count": "2334",
+    "market_share": "1.82"
+  },
+  {
+    "specialty": "외과",
+    "work_type": "개원의",
+    "target_count": "2314",
+    "market_share": "1.80"
+  },
+  {
+    "specialty": "마취통증의학과",
+    "work_type": "개원의",
+    "target_count": "1669",
+    "market_share": "1.30"
+  },
+  {
+    "specialty": "피부과",
+    "work_type": "개원의",
+    "target_count": "1485",
+    "market_share": "1.16"
+  },
+  {
+    "specialty": "정신건강의학과",
+    "work_type": "개원의",
+    "target_count": "1477",
+    "market_share": "1.15"
+  },
+  {
+    "specialty": "성형외과",
+    "work_type": "개원의",
+    "target_count": "1348",
+    "market_share": "1.05"
+  },
+  {
+    "specialty": "안과",
+    "work_type": "개원의",
+    "target_count": "1314",
+    "market_share": "1.02"
+  },
+  {
+    "specialty": "비뇨의학과",
+    "work_type": "개원의",
+    "target_count": "1310",
+    "market_share": "1.02"
+  },
+  {
+    "specialty": "신경외과",
+    "work_type": "개원의",
+    "target_count": "948",
+    "market_share": "0.74"
+  }
+]

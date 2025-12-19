@@ -1,0 +1,488 @@
+[
+  {
+    "major_specialty": "정신건강의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "1100",
+    "avg_days_inactive": "4.4373"
+  },
+  {
+    "major_specialty": "정신건강의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "431",
+    "avg_days_inactive": "54.4478"
+  },
+  {
+    "major_specialty": "정신건강의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "367",
+    "avg_days_inactive": "21.5940"
+  },
+  {
+    "major_specialty": "피부과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "234",
+    "avg_days_inactive": "57.8291"
+  },
+  {
+    "major_specialty": "피부과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "651",
+    "avg_days_inactive": "3.8249"
+  },
+  {
+    "major_specialty": "피부과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "194",
+    "avg_days_inactive": "20.9175"
+  },
+  {
+    "major_specialty": "흉부외과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "75",
+    "avg_days_inactive": "21.6133"
+  },
+  {
+    "major_specialty": "흉부외과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "188",
+    "avg_days_inactive": "4.3883"
+  },
+  {
+    "major_specialty": "흉부외과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "99",
+    "avg_days_inactive": "54.5859"
+  },
+  {
+    "major_specialty": "핵의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "35",
+    "avg_days_inactive": "4.2000"
+  },
+  {
+    "major_specialty": "핵의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "19",
+    "avg_days_inactive": "21.2632"
+  },
+  {
+    "major_specialty": "핵의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "13",
+    "avg_days_inactive": "55.3846"
+  },
+  {
+    "major_specialty": "병리과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "117",
+    "avg_days_inactive": "4.5726"
+  },
+  {
+    "major_specialty": "병리과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "40",
+    "avg_days_inactive": "23.1000"
+  },
+  {
+    "major_specialty": "병리과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "41",
+    "avg_days_inactive": "54.5610"
+  },
+  {
+    "major_specialty": "소아청소년과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "574",
+    "avg_days_inactive": "58.6568"
+  },
+  {
+    "major_specialty": "소아청소년과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "1305",
+    "avg_days_inactive": "4.4506"
+  },
+  {
+    "major_specialty": "소아청소년과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "355",
+    "avg_days_inactive": "21.5775"
+  },
+  {
+    "major_specialty": "정형외과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "2488",
+    "avg_days_inactive": "3.9795"
+  },
+  {
+    "major_specialty": "정형외과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "646",
+    "avg_days_inactive": "21.6827"
+  },
+  {
+    "major_specialty": "정형외과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "747",
+    "avg_days_inactive": "53.9290"
+  },
+  {
+    "major_specialty": "외과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "640",
+    "avg_days_inactive": "55.4391"
+  },
+  {
+    "major_specialty": "외과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "521",
+    "avg_days_inactive": "21.6891"
+  },
+  {
+    "major_specialty": "외과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "1551",
+    "avg_days_inactive": "4.1754"
+  },
+  {
+    "major_specialty": "일반의",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "2658",
+    "avg_days_inactive": "21.0527"
+  },
+  {
+    "major_specialty": "일반의",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "6331",
+    "avg_days_inactive": "4.6991"
+  },
+  {
+    "major_specialty": "일반의",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "2333",
+    "avg_days_inactive": "53.8444"
+  },
+  {
+    "major_specialty": "결핵과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "20",
+    "avg_days_inactive": "3.0500"
+  },
+  {
+    "major_specialty": "결핵과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "4",
+    "avg_days_inactive": "23.0000"
+  },
+  {
+    "major_specialty": "결핵과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "2",
+    "avg_days_inactive": "42.0000"
+  },
+  {
+    "major_specialty": "영상의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "404",
+    "avg_days_inactive": "22.2871"
+  },
+  {
+    "major_specialty": "영상의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "1191",
+    "avg_days_inactive": "4.3107"
+  },
+  {
+    "major_specialty": "영상의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "381",
+    "avg_days_inactive": "54.9685"
+  },
+  {
+    "major_specialty": "이비인후과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "903",
+    "avg_days_inactive": "3.9480"
+  },
+  {
+    "major_specialty": "이비인후과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "268",
+    "avg_days_inactive": "22.0933"
+  },
+  {
+    "major_specialty": "이비인후과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "323",
+    "avg_days_inactive": "57.3839"
+  },
+  {
+    "major_specialty": "마취통증의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "2140",
+    "avg_days_inactive": "4.0215"
+  },
+  {
+    "major_specialty": "마취통증의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "645",
+    "avg_days_inactive": "54.4078"
+  },
+  {
+    "major_specialty": "마취통증의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "664",
+    "avg_days_inactive": "21.6431"
+  },
+  {
+    "major_specialty": "비뇨의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "605",
+    "avg_days_inactive": "3.6926"
+  },
+  {
+    "major_specialty": "비뇨의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "153",
+    "avg_days_inactive": "21.4706"
+  },
+  {
+    "major_specialty": "비뇨의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "182",
+    "avg_days_inactive": "56.5604"
+  },
+  {
+    "major_specialty": "재활의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "1286",
+    "avg_days_inactive": "3.7193"
+  },
+  {
+    "major_specialty": "재활의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "306",
+    "avg_days_inactive": "21.4248"
+  },
+  {
+    "major_specialty": "재활의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "307",
+    "avg_days_inactive": "54.8111"
+  },
+  {
+    "major_specialty": "방사선종양학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "56",
+    "avg_days_inactive": "4.2857"
+  },
+  {
+    "major_specialty": "방사선종양학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "40",
+    "avg_days_inactive": "47.8500"
+  },
+  {
+    "major_specialty": "방사선종양학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "15",
+    "avg_days_inactive": "21.8667"
+  },
+  {
+    "major_specialty": "예방의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "74",
+    "avg_days_inactive": "4.5000"
+  },
+  {
+    "major_specialty": "예방의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "27",
+    "avg_days_inactive": "23.0370"
+  },
+  {
+    "major_specialty": "예방의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "20",
+    "avg_days_inactive": "58.7000"
+  },
+  {
+    "major_specialty": "응급의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "630",
+    "avg_days_inactive": "4.8206"
+  },
+  {
+    "major_specialty": "응급의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "296",
+    "avg_days_inactive": "21.8615"
+  },
+  {
+    "major_specialty": "응급의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "298",
+    "avg_days_inactive": "55.6074"
+  },
+  {
+    "major_specialty": "내과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "6081",
+    "avg_days_inactive": "3.8678"
+  },
+  {
+    "major_specialty": "내과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "1729",
+    "avg_days_inactive": "21.6217"
+  },
+  {
+    "major_specialty": "내과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "1889",
+    "avg_days_inactive": "54.7231"
+  },
+  {
+    "major_specialty": "가정의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "792",
+    "avg_days_inactive": "21.1414"
+  },
+  {
+    "major_specialty": "가정의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "3289",
+    "avg_days_inactive": "3.8273"
+  },
+  {
+    "major_specialty": "가정의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "897",
+    "avg_days_inactive": "54.4359"
+  },
+  {
+    "major_specialty": "산부인과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "563",
+    "avg_days_inactive": "21.4813"
+  },
+  {
+    "major_specialty": "산부인과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "1491",
+    "avg_days_inactive": "4.5305"
+  },
+  {
+    "major_specialty": "산부인과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "592",
+    "avg_days_inactive": "54.9307"
+  },
+  {
+    "major_specialty": "안과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "483",
+    "avg_days_inactive": "4.0393"
+  },
+  {
+    "major_specialty": "안과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "214",
+    "avg_days_inactive": "54.0467"
+  },
+  {
+    "major_specialty": "안과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "156",
+    "avg_days_inactive": "21.5962"
+  },
+  {
+    "major_specialty": "진단검사의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "275",
+    "avg_days_inactive": "4.3236"
+  },
+  {
+    "major_specialty": "진단검사의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "88",
+    "avg_days_inactive": "21.7159"
+  },
+  {
+    "major_specialty": "진단검사의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "82",
+    "avg_days_inactive": "58.1585"
+  },
+  {
+    "major_specialty": "성형외과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "775",
+    "avg_days_inactive": "3.7445"
+  },
+  {
+    "major_specialty": "성형외과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "294",
+    "avg_days_inactive": "53.7109"
+  },
+  {
+    "major_specialty": "성형외과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "210",
+    "avg_days_inactive": "21.5905"
+  },
+  {
+    "major_specialty": "신경외과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "997",
+    "avg_days_inactive": "3.9318"
+  },
+  {
+    "major_specialty": "신경외과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "304",
+    "avg_days_inactive": "21.5132"
+  },
+  {
+    "major_specialty": "신경외과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "305",
+    "avg_days_inactive": "52.8492"
+  },
+  {
+    "major_specialty": "직업환경의학과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "98",
+    "avg_days_inactive": "21.1020"
+  },
+  {
+    "major_specialty": "직업환경의학과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "338",
+    "avg_days_inactive": "4.4527"
+  },
+  {
+    "major_specialty": "직업환경의학과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "81",
+    "avg_days_inactive": "55.2716"
+  },
+  {
+    "major_specialty": "신경과",
+    "risk_level": "LOW_RISK",
+    "doctor_count": "817",
+    "avg_days_inactive": "4.2681"
+  },
+  {
+    "major_specialty": "신경과",
+    "risk_level": "MEDIUM_RISK",
+    "doctor_count": "254",
+    "avg_days_inactive": "20.9055"
+  },
+  {
+    "major_specialty": "신경과",
+    "risk_level": "HIGH_RISK",
+    "doctor_count": "239",
+    "avg_days_inactive": "52.6025"
+  }
+]

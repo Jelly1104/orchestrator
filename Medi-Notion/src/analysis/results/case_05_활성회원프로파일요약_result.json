@@ -1,0 +1,352 @@
+[
+  {
+    "reg_year": "NULL",
+    "specialty": "일반의",
+    "work_type": "인턴",
+    "member_count": "4404",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "일반의",
+    "work_type": "기타",
+    "member_count": "2783",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "일반의",
+    "work_type": "봉직",
+    "member_count": "1874",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "레지던트",
+    "member_count": "814",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "일반의",
+    "work_type": "공보의",
+    "member_count": "526",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "마취통증의학과",
+    "work_type": "레지던트",
+    "member_count": "450",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "봉직",
+    "member_count": "429",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "정형외과",
+    "work_type": "레지던트",
+    "member_count": "426",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "전임의",
+    "member_count": "356",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "영상의학과",
+    "work_type": "레지던트",
+    "member_count": "295",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "응급의학과",
+    "work_type": "레지던트",
+    "member_count": "263",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "일반의",
+    "work_type": "개원의",
+    "member_count": "249",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "정신건강의학과",
+    "work_type": "레지던트",
+    "member_count": "238",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "재활의학과",
+    "work_type": "레지던트",
+    "member_count": "235",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "산부인과",
+    "work_type": "레지던트",
+    "member_count": "229",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "이비인후과",
+    "work_type": "레지던트",
+    "member_count": "217",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "외과",
+    "work_type": "레지던트",
+    "member_count": "212",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "안과",
+    "work_type": "레지던트",
+    "member_count": "186",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "신경과",
+    "work_type": "레지던트",
+    "member_count": "184",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "신경외과",
+    "work_type": "레지던트",
+    "member_count": "182",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "교직",
+    "member_count": "176",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "가정의학과",
+    "work_type": "레지던트",
+    "member_count": "176",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "기타",
+    "member_count": "168",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "성형외과",
+    "work_type": "레지던트",
+    "member_count": "164",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "마취통증의학과",
+    "work_type": "봉직",
+    "member_count": "161",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "피부과",
+    "work_type": "레지던트",
+    "member_count": "154",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "소아청소년과",
+    "work_type": "레지던트",
+    "member_count": "151",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "가정의학과",
+    "work_type": "봉직",
+    "member_count": "147",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "외과",
+    "work_type": "봉직",
+    "member_count": "146",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "정형외과",
+    "work_type": "봉직",
+    "member_count": "145",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "소아청소년과",
+    "work_type": "봉직",
+    "member_count": "118",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "산부인과",
+    "work_type": "봉직",
+    "member_count": "117",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "정형외과",
+    "work_type": "전임의",
+    "member_count": "112",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "개원의",
+    "member_count": "111",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "영상의학과",
+    "work_type": "봉직",
+    "member_count": "108",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "피부과",
+    "work_type": "봉직",
+    "member_count": "104",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "내과",
+    "work_type": "군의관",
+    "member_count": "103",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "일반의",
+    "work_type": "군의관",
+    "member_count": "101",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "외과",
+    "work_type": "전임의",
+    "member_count": "97",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "소아청소년과",
+    "work_type": "개원의",
+    "member_count": "95",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "비뇨의학과",
+    "work_type": "레지던트",
+    "member_count": "91",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "정신건강의학과",
+    "work_type": "봉직",
+    "member_count": "88",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "응급의학과",
+    "work_type": "봉직",
+    "member_count": "88",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "이비인후과",
+    "work_type": "봉직",
+    "member_count": "82",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "안과",
+    "work_type": "봉직",
+    "member_count": "81",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "성형외과",
+    "work_type": "봉직",
+    "member_count": "75",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "신경외과",
+    "work_type": "봉직",
+    "member_count": "73",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "재활의학과",
+    "work_type": "봉직",
+    "member_count": "68",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "정형외과",
+    "work_type": "개원의",
+    "member_count": "65",
+    "avg_career_days": "NULL"
+  },
+  {
+    "reg_year": "NULL",
+    "specialty": "마취통증의학과",
+    "work_type": "기타",
+    "member_count": "65",
+    "avg_career_days": "NULL"
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "report_type": "HEAVY_SEGMENT_PROFILE",
+    "total_heavy_users": "10000",
+    "doctor_count": "9904",
+    "general_count": "8",
+    "avg_career_years": "16.8",
+    "with_specialty": "9910",
+    "with_work_type": "9910"
+  }
+]

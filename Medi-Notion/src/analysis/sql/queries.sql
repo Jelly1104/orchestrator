@@ -1,0 +1,195 @@
+-- 활성 회원 프로파일 분석 SQL 쿼리 세트
+-- DOMAIN_SCHEMA.md 레거시 컬럼명 준수
+
+-- 1-1. 활성 회원 세그먼트 정의 (HEAVY 세그먼트 16,037명)
+-- 주의: U_KIND은 CHAR(6), U_ALIVE는 CHAR(6) 타입
+SELECT 
+  u.U_ID,
+  u.U_EMAIL,
+  u.U_NAME,
+  u.U_KIND,
+  u.U_ALIVE,
+  u.U_REG_DATE
+FROM USERS u
+WHERE u.U_ID IN (
+  -- HEAVY 세그먼트 U_ID 목록이 여기에 들어감
+  -- 예: 'DOC_12345', 'DOC_67890', ...
+)
+  AND u.U_KIND = 'DOC001'  -- 의사만
+  AND u.U_ALIVE = 'Y'      -- 활성 회원만
+ORDER BY u.U_REG_DATE DESC;
+
+-- 1-2. 프로필 데이터 조인 (USERS → USER_DETAIL → CODE_MASTER)
+-- 인덱스 활용: U_ID (PK), CODE_TYPE+CODE_VALUE (복합 인덱스)
+SELECT 
+  u.U_ID,
+  u.U_NAME,
+  ud.U_MAJOR_CODE_1,
+  cm1.CODE_NAME AS MAJOR_NAME_1,
+  ud.U_MAJOR_CODE_2,
+  cm3.CODE_NAME AS MAJOR_NAME_2,
+  ud.U_WORK_TYPE_1,
+  cm2.CODE_NAME AS WORK_TYPE_NAME,
+  ud.U_CAREER_YEAR,
+  ud.U_HOSPITAL_NAME,
+  ud.U_OFFICE_ZIP
+FROM USERS u
+  INNER JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+  LEFT JOIN CODE_MASTER cm1 ON ud.U_MAJOR_CODE_1 = cm1.CODE_VALUE 
+    AND cm1.CODE_TYPE = 'MAJOR' 
+    AND cm1.USE_FLAG = 'Y'
+  LEFT JOIN CODE_MASTER cm2 ON ud.U_WORK_TYPE_1 = cm2.CODE_VALUE 
+    AND cm2.CODE_TYPE = 'WORK_TYPE' 
+    AND cm2.USE_FLAG = 'Y'
+  LEFT JOIN CODE_MASTER cm3 ON ud.U_MAJOR_CODE_2 = cm3.CODE_VALUE 
+    AND cm3.CODE_TYPE = 'MAJOR' 
+    AND cm3.USE_FLAG = 'Y'
+WHERE u.U_KIND = 'DOC001' 
+  AND u.U_ALIVE = 'Y'
+  AND u.U_ID IN (/* HEAVY 세그먼트 U_ID 목록 */)
+ORDER BY u.U_REG_DATE DESC;
+
+-- 1-3. 전체 의사 회원 기준선 데이터 (128,320명)
+-- 비교 분석용 전체 모집단 데이터
+SELECT 
+  u.U_ID,
+  ud.U_MAJOR_CODE_1,
+  cm1.CODE_NAME AS MAJOR_NAME_1,
+  ud.U_WORK_TYPE_1,
+  cm2.CODE_NAME AS WORK_TYPE_NAME,
+  ud.U_CAREER_YEAR
+FROM USERS u
+  INNER JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+  LEFT JOIN CODE_MASTER cm1 ON ud.U_MAJOR_CODE_1 = cm1.CODE_VALUE 
+    AND cm1.CODE_TYPE = 'MAJOR' 
+    AND cm1.USE_FLAG = 'Y'
+  LEFT JOIN CODE_MASTER cm2 ON ud.U_WORK_TYPE_1 = cm2.CODE_VALUE 
+    AND cm2.CODE_TYPE = 'WORK_TYPE' 
+    AND cm2.USE_FLAG = 'Y'
+WHERE u.U_KIND = 'DOC001' 
+  AND u.U_ALIVE = 'Y'
+ORDER BY u.U_REG_DATE DESC;
+
+-- 1-4. 전문과목별 분포 비교 (활성 vs 전체)
+-- 통계적 유의성 검정용 데이터
+WITH active_major AS (
+  SELECT 
+    ud.U_MAJOR_CODE_1 AS MAJOR_CODE,
+    cm.CODE_NAME AS MAJOR_NAME,
+    COUNT(*) AS ACTIVE_COUNT
+  FROM USERS u
+    INNER JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+    INNER JOIN CODE_MASTER cm ON ud.U_MAJOR_CODE_1 = cm.CODE_VALUE 
+      AND cm.CODE_TYPE = 'MAJOR' 
+      AND cm.USE_FLAG = 'Y'
+  WHERE u.U_KIND = 'DOC001' 
+    AND u.U_ALIVE = 'Y'
+    AND u.U_ID IN (/* HEAVY 세그먼트 U_ID 목록 */)
+  GROUP BY ud.U_MAJOR_CODE_1, cm.CODE_NAME
+  HAVING COUNT(*) >= 3  -- 개인정보 보호: 3명 이상만
+),
+total_major AS (
+  SELECT 
+    ud.U_MAJOR_CODE_1 AS MAJOR_CODE,
+    cm.CODE_NAME AS MAJOR_NAME,
+    COUNT(*) AS TOTAL_COUNT
+  FROM USERS u
+    INNER JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+    INNER JOIN CODE_MASTER cm ON ud.U_MAJOR_CODE_1 = cm.CODE_VALUE 
+      AND cm.CODE_TYPE = 'MAJOR' 
+      AND cm.USE_FLAG = 'Y'
+  WHERE u.U_KIND = 'DOC001' 
+    AND u.U_ALIVE = 'Y'
+  GROUP BY ud.U_MAJOR_CODE_1, cm.CODE_NAME
+)
+SELECT 
+  COALESCE(a.MAJOR_CODE, t.MAJOR_CODE) AS MAJOR_CODE,
+  COALESCE(a.MAJOR_NAME, t.MAJOR_NAME) AS MAJOR_NAME,
+  COALESCE(a.ACTIVE_COUNT, 0) AS ACTIVE_COUNT,
+  t.TOTAL_COUNT,
+  ROUND(COALESCE(a.ACTIVE_COUNT, 0) * 100.0 / 16037, 2) AS ACTIVE_PERCENTAGE,
+  ROUND(t.TOTAL_COUNT * 100.0 / 128320, 2) AS TOTAL_PERCENTAGE,
+  ROUND(
+    COALESCE(a.ACTIVE_COUNT, 0) * 100.0 / 16037 - 
+    t.TOTAL_COUNT * 100.0 / 128320, 
+    2
+  ) AS DIFFERENCE_PP  -- percentage point 차이
+FROM total_major t
+  LEFT JOIN active_major a ON t.MAJOR_CODE = a.MAJOR_CODE
+ORDER BY ABS(DIFFERENCE_PP) DESC;  -- 차이가 큰 순서대로
+
+-- 1-5. 근무형태별 분포 비교 (활성 vs 전체)
+WITH active_worktype AS (
+  SELECT 
+    ud.U_WORK_TYPE_1 AS WORK_TYPE_CODE,
+    cm.CODE_NAME AS WORK_TYPE_NAME,
+    COUNT(*) AS ACTIVE_COUNT
+  FROM USERS u
+    INNER JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+    INNER JOIN CODE_MASTER cm ON ud.U_WORK_TYPE_1 = cm.CODE_VALUE 
+      AND cm.CODE_TYPE = 'WORK_TYPE' 
+      AND cm.USE_FLAG = 'Y'
+  WHERE u.U_KIND = 'DOC001' 
+    AND u.U_ALIVE = 'Y'
+    AND u.U_ID IN (/* HEAVY 세그먼트 U_ID 목록 */)
+  GROUP BY ud.U_WORK_TYPE_1, cm.CODE_NAME
+  HAVING COUNT(*) >= 3
+),
+total_worktype AS (
+  SELECT 
+    ud.U_WORK_TYPE_1 AS WORK_TYPE_CODE,
+    cm.CODE_NAME AS WORK_TYPE_NAME,
+    COUNT(*) AS TOTAL_COUNT
+  FROM USERS u
+    INNER JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+    INNER JOIN CODE_MASTER cm ON ud.U_WORK_TYPE_1 = cm.CODE_VALUE 
+      AND cm.CODE_TYPE = 'WORK_TYPE' 
+      AND cm.USE_FLAG = 'Y'
+  WHERE u.U_KIND = 'DOC001' 
+    AND u.U_ALIVE = 'Y'
+  GROUP BY ud.U_WORK_TYPE_1, cm.CODE_NAME
+)
+SELECT 
+  COALESCE(a.WORK_TYPE_CODE, t.WORK_TYPE_CODE) AS WORK_TYPE_CODE,
+  COALESCE(a.WORK_TYPE_NAME, t.WORK_TYPE_NAME) AS WORK_TYPE_NAME,
+  COALESCE(a.ACTIVE_COUNT, 0) AS ACTIVE_COUNT,
+  t.TOTAL_COUNT,
+  ROUND(COALESCE(a.ACTIVE_COUNT, 0) * 100.0 / 16037, 2) AS ACTIVE_PERCENTAGE,
+  ROUND(t.TOTAL_COUNT * 100.0 / 128320, 2) AS TOTAL_PERCENTAGE,
+  ROUND(
+    COALESCE(a.ACTIVE_COUNT, 0) * 100.0 / 16037 - 
+    t.TOTAL_COUNT * 100.0 / 128320, 
+    2
+  ) AS DIFFERENCE_PP
+FROM total_worktype t
+  LEFT JOIN active_worktype a ON t.WORK_TYPE_CODE = a.WORK_TYPE_CODE
+ORDER BY ABS(DIFFERENCE_PP) DESC;
+
+-- 1-6. 데이터 품질 확인 쿼리
+-- 분석 완료율 및 유효 샘플 수 확인
+SELECT 
+  'Active Segment' AS segment_type,
+  COUNT(*) AS total_records,
+  COUNT(ud.U_MAJOR_CODE_1) AS major_complete,
+  COUNT(ud.U_WORK_TYPE_1) AS worktype_complete,
+  ROUND(COUNT(ud.U_MAJOR_CODE_1) * 100.0 / COUNT(*), 2) AS major_completion_rate,
+  ROUND(COUNT(ud.U_WORK_TYPE_1) * 100.0 / COUNT(*), 2) AS worktype_completion_rate
+FROM USERS u
+  LEFT JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+WHERE u.U_KIND = 'DOC001' 
+  AND u.U_ALIVE = 'Y'
+  AND u.U_ID IN (/* HEAVY 세그먼트 U_ID 목록 */)
+
+UNION ALL
+
+SELECT 
+  'Total Doctors' AS segment_type,
+  COUNT(*) AS total_records,
+  COUNT(ud.U_MAJOR_CODE_1) AS major_complete,
+  COUNT(ud.U_WORK_TYPE_1) AS worktype_complete,
+  ROUND(COUNT(ud.U_MAJOR_CODE_1) * 100.0 / COUNT(*), 2) AS major_completion_rate,
+  ROUND(COUNT(ud.U_WORK_TYPE_1) * 100.0 / COUNT(*), 2) AS worktype_completion_rate
+FROM USERS u
+  LEFT JOIN USER_DETAIL ud ON u.U_ID = ud.U_ID
+WHERE u.U_KIND = 'DOC001' 
+  AND u.U_ALIVE = 'Y';

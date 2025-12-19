@@ -1,0 +1,52 @@
+[
+  {
+    "U_KIND": "UKD001",
+    "active_users": "46432",
+    "total_logins": "535843"
+  },
+  {
+    "U_KIND": "UKD007",
+    "active_users": "681",
+    "total_logins": "4640"
+  },
+  {
+    "U_KIND": "UKD003",
+    "active_users": "572",
+    "total_logins": "2611"
+  },
+  {
+    "U_KIND": "UKD009",
+    "active_users": "116",
+    "total_logins": "598"
+  },
+  {
+    "U_KIND": "UKD002",
+    "active_users": "112",
+    "total_logins": "200"
+  },
+  {
+    "U_KIND": "UKD000",
+    "active_users": "43",
+    "total_logins": "1432"
+  },
+  {
+    "U_KIND": "UKD004",
+    "active_users": "16",
+    "total_logins": "189"
+  },
+  {
+    "U_KIND": "UKD005",
+    "active_users": "2",
+    "total_logins": "2"
+  },
+  {
+    "U_KIND": "UKD013",
+    "active_users": "2",
+    "total_logins": "7"
+  },
+  {
+    "U_KIND": "UKD008",
+    "active_users": "1",
+    "total_logins": "7"
+  }
+]

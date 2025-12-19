@@ -1,0 +1,26 @@
+[
+  {
+    "member_seniority": "시니어회원(8년이상)",
+    "total_members": "100313",
+    "avg_inactive_days": "204.0762",
+    "high_risk_count": "67059"
+  },
+  {
+    "member_seniority": "초급회원(1-3년)",
+    "total_members": "12116",
+    "avg_inactive_days": "126.1792",
+    "high_risk_count": "6735"
+  },
+  {
+    "member_seniority": "중급회원(4-7년)",
+    "total_members": "14664",
+    "avg_inactive_days": "122.3542",
+    "high_risk_count": "7413"
+  },
+  {
+    "member_seniority": "신규회원(1년미만)",
+    "total_members": "1231",
+    "avg_inactive_days": "113.0236",
+    "high_risk_count": "685"
+  }
+]

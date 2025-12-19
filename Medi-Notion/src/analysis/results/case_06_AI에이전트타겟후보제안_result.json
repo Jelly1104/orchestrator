@@ -1,0 +1,65 @@
+[
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "내과",
+    "work_type": "봉직",
+    "target_count": "7025",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "내과",
+    "work_type": "개원의",
+    "target_count": "5939",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "마취통증의학과",
+    "work_type": "봉직",
+    "target_count": "2567",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "산부인과",
+    "work_type": "개원의",
+    "target_count": "2526",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "산부인과",
+    "work_type": "봉직",
+    "target_count": "2448",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "마취통증의학과",
+    "work_type": "개원의",
+    "target_count": "1669",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "비뇨의학과",
+    "work_type": "개원의",
+    "target_count": "1310",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "비뇨의학과",
+    "work_type": "봉직",
+    "target_count": "585",
+    "avg_career_years": "NULL"
+  },
+  {
+    "segment_type": "HIGH_PRIORITY",
+    "specialty": "직업환경의학과",
+    "work_type": "봉직",
+    "target_count": "468",
+    "avg_career_years": "NULL"
+  }
+]

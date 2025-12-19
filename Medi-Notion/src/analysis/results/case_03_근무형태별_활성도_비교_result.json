@@ -1,0 +1,16 @@
+[
+  {
+    "work_type": "개원의",
+    "total_users": "14388",
+    "active_users": "7862",
+    "risk_users": "3582",
+    "avg_inactive_days": "16.8"
+  },
+  {
+    "work_type": "봉직",
+    "total_users": "23925",
+    "active_users": "12206",
+    "risk_users": "7345",
+    "avg_inactive_days": "16.4"
+  }
+]

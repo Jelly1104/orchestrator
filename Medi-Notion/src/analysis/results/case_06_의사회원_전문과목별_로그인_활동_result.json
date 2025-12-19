@@ -1,0 +1,102 @@
+[
+  {
+    "U_MAJOR_CODE_1": "SPC116",
+    "CODE_NAME": "일반의",
+    "active_doctors": "8989"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC103",
+    "CODE_NAME": "내과",
+    "active_doctors": "7810"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC101",
+    "CODE_NAME": "가정의학과",
+    "active_doctors": "4081"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC121",
+    "CODE_NAME": "정형외과",
+    "active_doctors": "3134"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC104",
+    "CODE_NAME": "마취통증의학과",
+    "active_doctors": "2804"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC117",
+    "CODE_NAME": "외과",
+    "active_doctors": "2072"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC106",
+    "CODE_NAME": "산부인과",
+    "active_doctors": "2054"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC109",
+    "CODE_NAME": "소아청소년과",
+    "active_doctors": "1660"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC122",
+    "CODE_NAME": "영상의학과",
+    "active_doctors": "1595"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC119",
+    "CODE_NAME": "재활의학과",
+    "active_doctors": "1592"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC120",
+    "CODE_NAME": "정신건강의학과",
+    "active_doctors": "1467"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC111",
+    "CODE_NAME": "신경외과",
+    "active_doctors": "1301"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC115",
+    "CODE_NAME": "이비인후과",
+    "active_doctors": "1171"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC110",
+    "CODE_NAME": "신경과",
+    "active_doctors": "1071"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC108",
+    "CODE_NAME": "성형외과",
+    "active_doctors": "985"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC114",
+    "CODE_NAME": "응급의학과",
+    "active_doctors": "926"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC124",
+    "CODE_NAME": "피부과",
+    "active_doctors": "845"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC105",
+    "CODE_NAME": "비뇨의학과",
+    "active_doctors": "758"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC113",
+    "CODE_NAME": "안과",
+    "active_doctors": "639"
+  },
+  {
+    "U_MAJOR_CODE_1": "SPC107",
+    "CODE_NAME": "직업환경의학과",
+    "active_doctors": "436"
+  }
+]

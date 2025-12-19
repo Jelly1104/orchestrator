@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# .clinerules 위반 검증
+node scripts/validate-clinerules.js

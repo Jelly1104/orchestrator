@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+*.log
+logs/
+orchestrator/logs/
+
+# Test outputs (임시 결과물)
+test-output/
+
+# Build
+dist/
+build/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Archive (개발 히스토리 - 선택적)
+docs/archive/
+
+# Sensitive
+*.pem
+*.key
+credentials.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Cache
+.cache/
+*.cache
