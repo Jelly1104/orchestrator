@@ -519,7 +519,7 @@ export class Orchestrator {
       console.log(`   - PRD 유형: ${prdType}`);
       console.log(`   - 파이프라인: ${pipeline}`);
 
-      // ========== HITL: PRD_REVIEW 체크포인트 ==========
+      // ========== HITL: PRD_REVIEW 체크포인트 (Graceful Exit 패턴) ==========
       // PRD Gap Check 결과가 불완전할 경우 사람의 검토 필요
       if (prdClassification?.gapCheck?.missing?.length > 0) {
         const prdCheckpoint = this.checkHITLRequired('planning', {
@@ -535,13 +535,16 @@ export class Orchestrator {
             message: 'PRD에 필수 항목이 누락되었습니다. 검토 후 승인하거나 PRD를 보완해주세요.'
           });
 
-          // 승인 대기
+          // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
+          if (isEnabled('HITL_GRACEFUL_EXIT')) {
+            return this._gracefulExitForHITL(taskId, prdCheckpoint);
+          }
+
+          // Fallback: 폴링 방식 (HITL_GRACEFUL_EXIT=false일 때)
           const approval = await this.waitForApproval(taskId);
           if (!approval.approved) {
             throw new Error(`PRD Review 거부됨: ${approval.session?.hitlContext?.rejectionReason || '사유 없음'}`);
           }
-
-          // 승인 후 재개
           this.resumeSession(taskId);
           console.log('✅ PRD Review 승인됨 - 계속 진행');
         }
@@ -598,7 +601,7 @@ export class Orchestrator {
 
       metrics.endPhase('planning', 'success');
 
-      // ========== HITL: DESIGN_APPROVAL 체크포인트 ==========
+      // ========== HITL: DESIGN_APPROVAL 체크포인트 (Graceful Exit 패턴) ==========
       // 설계 문서 생성 완료 후 사람의 승인 필요
       const designCheckpoint = this.checkHITLRequired('design', {
         requiresApproval: true,
@@ -621,13 +624,16 @@ export class Orchestrator {
           docsPath: `docs/${taskId}/`
         });
 
-        // 승인 대기
+        // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
+        if (isEnabled('HITL_GRACEFUL_EXIT')) {
+          return this._gracefulExitForHITL(taskId, designCheckpoint);
+        }
+
+        // Fallback: 폴링 방식 (HITL_GRACEFUL_EXIT=false일 때)
         const designApproval = await this.waitForApproval(taskId);
         if (!designApproval.approved) {
           throw new Error(`설계 승인 거부됨: ${designApproval.session?.hitlContext?.rejectionReason || '사유 없음'}`);
         }
-
-        // 승인 후 재개
         this.resumeSession(taskId);
         console.log('✅ Design Approval 승인됨 - 구현 단계로 진행');
       }
@@ -830,7 +836,7 @@ export class Orchestrator {
             console.log('📝 피드백 요약:');
             console.log(result.feedback.substring(0, 500) + (result.feedback.length > 500 ? '...' : ''));
 
-            // ========== HITL: MANUAL_FIX 체크포인트 (3회 연속 FAIL) ==========
+            // ========== HITL: MANUAL_FIX 체크포인트 (3회 연속 FAIL, Graceful Exit 패턴) ==========
             const manualFixCheckpoint = this.checkHITLRequired('review_fail', {
               retryCount
             });
@@ -845,13 +851,16 @@ export class Orchestrator {
                 message: `${retryCount}회 연속 Review 실패. 직접 수정하거나 방향을 조정해주세요.`
               });
 
-              // 승인 대기 (사용자가 수정 후 재개)
+              // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
+              if (isEnabled('HITL_GRACEFUL_EXIT')) {
+                return this._gracefulExitForHITL(taskId, manualFixCheckpoint);
+              }
+
+              // Fallback: 폴링 방식 (HITL_GRACEFUL_EXIT=false일 때)
               const manualApproval = await this.waitForApproval(taskId);
               if (!manualApproval.approved) {
                 throw new Error(`수동 수정 거부됨: ${manualApproval.session?.hitlContext?.rejectionReason || '작업 중단'}`);
               }
-
-              // 승인 후 재개
               this.resumeSession(taskId);
               console.log('✅ Manual Fix 승인됨 - 재시도 진행');
             }
