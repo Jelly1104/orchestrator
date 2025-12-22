@@ -897,8 +897,35 @@ export class Orchestrator {
         metrics: report
       };
 
-      // 세션 완료 처리
+      // ========== HITL: DEPLOY_APPROVAL 체크포인트 (Graceful Exit 패턴) ==========
+      // 최종 결과가 성공일 때 배포 승인 필요
       if (finalResult.success) {
+        const deployCheckpoint = this.checkHITLRequired('deploy', {});
+
+        if (deployCheckpoint) {
+          sessionStore.updatePhase(taskId, 'deploy_approval');
+          await this.pauseForHITL(taskId, deployCheckpoint, {
+            taskId,
+            pipeline: 'design',
+            filesCount: Object.keys(currentFiles).length,
+            reviewScore: result?.score || 0,
+            message: '모든 작업이 완료되었습니다. 배포를 승인해주세요.'
+          });
+
+          // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
+          if (isEnabled('HITL_GRACEFUL_EXIT')) {
+            return this._gracefulExitForHITL(taskId, deployCheckpoint);
+          }
+
+          // Fallback: 폴링 방식 (HITL_GRACEFUL_EXIT=false일 때)
+          const deployApproval = await this.waitForApproval(taskId);
+          if (!deployApproval.approved) {
+            throw new Error(`배포 승인 거부됨: ${deployApproval.session?.hitlContext?.rejectionReason || '사유 없음'}`);
+          }
+          this.resumeSession(taskId);
+          console.log('✅ Deploy Approval 승인됨 - 배포 완료');
+        }
+
         this.completeSession(taskId, finalResult);
       } else {
         this.failSession(taskId, 'Review failed after max retries');
