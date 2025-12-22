@@ -1109,7 +1109,8 @@ export class Orchestrator {
 
       // AnalysisAgent 실행 (승인된 쿼리로)
       console.log('📊 [Analysis] AnalysisAgent 시작...');
-      const analysisResult = await this.analysisAgent.analyze(parsedPRD);
+      // taskId 전달: 디렉토리 격리 (SYSTEM_MANIFEST v4.0.0)
+      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId);
 
       metrics.endPhase('analysis', analysisResult.success ? 'success' : 'fail');
 
@@ -1193,7 +1194,8 @@ export class Orchestrator {
         parsedPRD.dbConnection = options.dbConfig;
       }
 
-      const analysisResult = await this.analysisAgent.analyze(parsedPRD);
+      // taskId 전달: 디렉토리 격리 (SYSTEM_MANIFEST v4.0.0)
+      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId);
       metrics.endPhase('analysis', analysisResult.success ? 'success' : 'partial');
 
       console.log(`\n✅ Phase A 완료: ${analysisResult.success ? '성공' : '부분 성공'}`);
