@@ -143,12 +143,20 @@ export class AnalysisAgent {
   /**
    * PRD 분석 실행
    * @param {Object} prd - 파싱된 PRD 객체
+   * @param {string} taskId - 작업 식별자 (디렉토리 격리용)
    * @returns {Object} - 분석 결과 및 산출물 경로
    */
-  async analyze(prd) {
+  async analyze(prd, taskId = null) {
     console.log('\n[AnalysisAgent] ========== 분석 시작 ==========');
     console.log(`[AnalysisAgent] PRD 유형: ${prd.type || 'UNKNOWN'}`);
     console.log(`[AnalysisAgent] 파이프라인: ${prd.pipeline || 'analysis'}`);
+    console.log(`[AnalysisAgent] Task ID: ${taskId || 'default'}`);
+
+    // taskId별 디렉토리 격리 (SYSTEM_MANIFEST v4.0.0 준수)
+    if (taskId) {
+      this.outputDir = path.join(this.projectRoot, 'workspace', 'analysis', taskId);
+    }
+    console.log(`[AnalysisAgent] 산출물 경로: ${this.outputDir}`);
 
     const results = {
       success: false,
@@ -157,6 +165,8 @@ export class AnalysisAgent {
       data: [],
       insights: null,
       errors: [],
+      taskId: taskId,
+      outputDir: this.outputDir,
     };
 
     try {
@@ -392,8 +402,8 @@ ${JSON.stringify(LARGE_TABLES, null, 2)}
 5. **존재하지 않는 컬럼 추측 금지** - 위 스키마만 사용
 6. CODE_MASTER 조인 시 반드시 KBN 컬럼으로 분류 지정
 
-## 출력 형식
-반드시 다음 JSON 형식으로 출력하세요:
+## 출력 형식 (필수)
+반드시 다음 JSON 형식으로 출력하세요. **JSON 외의 텍스트 출력은 금지됩니다.**
 
 \`\`\`json
 {
@@ -405,7 +415,21 @@ ${JSON.stringify(LARGE_TABLES, null, 2)}
     }
   ]
 }
-\`\`\``;
+\`\`\`
+
+## 오류 발생 시 출력 형식 (필수)
+분석 요구사항이 불충분하거나 오류가 발생해도 **반드시 JSON 형식**으로 응답하세요:
+
+\`\`\`json
+{
+  "error": true,
+  "errorCode": "INSUFFICIENT_DATA|INVALID_TABLE|MISSING_COLUMN|UNKNOWN",
+  "errorMessage": "구체적인 오류 설명",
+  "queries": []
+}
+\`\`\`
+
+**중요: 한국어 텍스트만 출력하는 것은 금지됩니다. 모든 응답은 JSON 블록으로 감싸야 합니다.**`;
   }
 
   _buildQueryUserPrompt(requirements) {
@@ -435,14 +459,30 @@ ${requirements.constraints.join('\n')}
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[1]);
+
+        // 에러 응답 처리
+        if (parsed.error) {
+          console.error(`[AnalysisAgent] LLM 에러 응답: [${parsed.errorCode}] ${parsed.errorMessage}`);
+          return [];
+        }
+
         return parsed.queries || [];
       }
 
       // JSON 블록 없으면 전체 파싱 시도
       const parsed = JSON.parse(content);
+
+      // 에러 응답 처리
+      if (parsed.error) {
+        console.error(`[AnalysisAgent] LLM 에러 응답: [${parsed.errorCode}] ${parsed.errorMessage}`);
+        return [];
+      }
+
       return parsed.queries || [];
     } catch (error) {
+      // JSON 파싱 실패 시 명확한 에러 메시지
       console.error('[AnalysisAgent] 쿼리 파싱 실패:', error.message);
+      console.error('[AnalysisAgent] LLM 응답 (처음 200자):', content.substring(0, 200));
       return [];
     }
   }
