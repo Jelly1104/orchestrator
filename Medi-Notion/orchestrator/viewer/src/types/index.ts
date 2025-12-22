@@ -5,9 +5,10 @@
 export interface TaskSummary {
   taskId: string;
   timestamp: string;
-  status: 'SUCCESS' | 'FAIL';
+  status: 'SUCCESS' | 'FAIL' | 'PAUSED_HITL' | 'RUNNING';
   totalTokens: number;
   duration: string;
+  checkpoint?: string;
 }
 
 export interface TaskDetail {

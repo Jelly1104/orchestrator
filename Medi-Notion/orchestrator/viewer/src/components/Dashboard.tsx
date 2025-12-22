@@ -50,7 +50,7 @@ export function Dashboard({ stats }: DashboardProps) {
                 className="flex items-center justify-between p-3 bg-dark-bg rounded hover:bg-secondary/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <StatusBadge status={task.status} />
+                  <StatusBadge status={task.status} checkpoint={task.checkpoint} />
                   <div>
                     <p className="font-medium">{formatTaskId(task.taskId)}</p>
                     <p className="text-sm text-gray-500">
@@ -95,21 +95,61 @@ function StatCard({ label, value, icon, highlight, warning }: StatCardProps) {
 }
 
 interface StatusBadgeProps {
-  status: 'SUCCESS' | 'FAIL';
+  status: 'SUCCESS' | 'FAIL' | 'PAUSED_HITL' | 'RUNNING';
+  checkpoint?: string;
 }
 
-function StatusBadge({ status }: StatusBadgeProps) {
-  const isSuccess = status === 'SUCCESS';
+function StatusBadge({ status, checkpoint }: StatusBadgeProps) {
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'SUCCESS':
+        return {
+          bg: 'bg-green-500/20',
+          text: 'text-green-400',
+          label: 'SUCCESS'
+        };
+      case 'FAIL':
+        return {
+          bg: 'bg-red-500/20',
+          text: 'text-red-400',
+          label: 'FAIL'
+        };
+      case 'PAUSED_HITL':
+        return {
+          bg: 'bg-amber-500/20',
+          text: 'text-amber-400',
+          label: 'Waiting for Approval'
+        };
+      case 'RUNNING':
+        return {
+          bg: 'bg-blue-500/20',
+          text: 'text-blue-400',
+          label: 'RUNNING'
+        };
+      default:
+        return {
+          bg: 'bg-gray-500/20',
+          text: 'text-gray-400',
+          label: status
+        };
+    }
+  };
+
+  const config = getStatusConfig();
+
   return (
-    <span
-      className={`px-2 py-1 rounded text-xs font-medium ${
-        isSuccess
-          ? 'bg-green-500/20 text-green-400'
-          : 'bg-red-500/20 text-red-400'
-      }`}
-    >
-      {status}
-    </span>
+    <div className="flex flex-col items-start gap-0.5">
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${config.bg} ${config.text}`}
+      >
+        {config.label}
+      </span>
+      {status === 'PAUSED_HITL' && checkpoint && (
+        <span className="text-[10px] text-amber-400/70 ml-1">
+          @ {checkpoint}
+        </span>
+      )}
+    </div>
   );
 }
 
