@@ -469,15 +469,25 @@ export class Orchestrator {
     // Rate Limiting 체크
     this.checkRateLimit();
 
-    // ========== Phase 0: Resume 로직 (v3.5.0) ==========
-    // 기존 세션이 APPROVED 상태면 중단된 지점부터 재개
+    // ========== Phase 0: Resume 로직 (v3.5.1) ==========
+    // Gemini 조언: PAUSED_HITL 상태이고 approvedAt 값이 존재하면 재개
     if (isEnabled('HITL_RESUME_ENABLED')) {
       const existingSession = sessionStore.get(taskId);
-      if (existingSession && existingSession.status === SessionStatus.APPROVED) {
-        console.log('\n▶️  HITL Resume 감지');
+
+      // 조건: PAUSED_HITL + approvedAt 존재 (승인 완료된 HITL)
+      // 또는 APPROVED 상태 (approve() 메서드로 상태 전환된 경우)
+      const isApprovedHITL = existingSession && (
+        existingSession.status === SessionStatus.APPROVED ||
+        (existingSession.status === SessionStatus.PAUSED_HITL &&
+         existingSession.hitlContext?.approvedAt)
+      );
+
+      if (isApprovedHITL) {
+        console.log('\n🔄 HITL 승인 확인. 작업을 재개합니다.');
         console.log(`   Task ID: ${taskId}`);
         console.log(`   중단 지점: ${existingSession.currentCheckpoint}`);
         console.log(`   Phase: ${existingSession.currentPhase}`);
+        console.log(`   승인 시각: ${existingSession.hitlContext?.approvedAt || 'N/A'}`);
 
         // 세션 재개
         this.resumeSession(taskId);
@@ -537,6 +547,7 @@ export class Orchestrator {
 
           // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
           if (isEnabled('HITL_GRACEFUL_EXIT')) {
+            console.log('\n⏸️ [PRD 검토 필요] Viewer에서 승인해주세요.');
             return this._gracefulExitForHITL(taskId, prdCheckpoint);
           }
 
@@ -602,17 +613,12 @@ export class Orchestrator {
       metrics.endPhase('planning', 'success');
 
       // ========== HITL: DESIGN_APPROVAL 체크포인트 (Graceful Exit 패턴) ==========
-      // 설계 문서 생성 완료 후 사람의 승인 필요
-      const designCheckpoint = this.checkHITLRequired('design', {
-        requiresApproval: true,
-        hasIA: !!planResult.ia,
-        hasSDD: !!planResult.sdd,
-        hasWireframe: !!planResult.wireframe
-      });
+      // Gemini 조언: AUTO_APPROVE가 false면 무조건 멈춤
+      const autoApproveDesign = isEnabled('HITL_AUTO_APPROVE_DESIGN');
 
-      if (designCheckpoint) {
+      if (!autoApproveDesign && isEnabled('HITL_ENABLED')) {
         sessionStore.updatePhase(taskId, 'design_approval');
-        await this.pauseForHITL(taskId, designCheckpoint, {
+        await this.pauseForHITL(taskId, HITLCheckpoint.DESIGN_APPROVAL, {
           files: {
             ia: planResult.ia ? 'IA.md 생성됨' : null,
             wireframe: planResult.wireframe ? 'Wireframe.md 생성됨' : null,
@@ -626,7 +632,8 @@ export class Orchestrator {
 
         // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
         if (isEnabled('HITL_GRACEFUL_EXIT')) {
-          return this._gracefulExitForHITL(taskId, designCheckpoint);
+          console.log('\n⏸️ [설계 승인 대기] Viewer에서 설계를 확인하고 승인해주세요.');
+          return this._gracefulExitForHITL(taskId, HITLCheckpoint.DESIGN_APPROVAL);
         }
 
         // Fallback: 폴링 방식 (HITL_GRACEFUL_EXIT=false일 때)
@@ -636,6 +643,8 @@ export class Orchestrator {
         }
         this.resumeSession(taskId);
         console.log('✅ Design Approval 승인됨 - 구현 단계로 진행');
+      } else if (autoApproveDesign) {
+        console.log('   ⏩ 설계 자동 승인 (HITL_AUTO_APPROVE_DESIGN=true)');
       }
 
       // ========== Design Only 모드: SubAgent로 설계 문서 보완 ==========
@@ -853,6 +862,7 @@ export class Orchestrator {
 
               // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
               if (isEnabled('HITL_GRACEFUL_EXIT')) {
+                console.log('\n⏸️ [수동 수정 요청] AI가 해결하지 못했습니다. 개입이 필요합니다.');
                 return this._gracefulExitForHITL(taskId, manualFixCheckpoint);
               }
 
@@ -1009,6 +1019,7 @@ export class Orchestrator {
 
           // Graceful Exit
           if (isEnabled('HITL_GRACEFUL_EXIT')) {
+            console.log('\n⏸️ [SQL 검증 필요] 위험한 쿼리가 감지되었습니다. Viewer에서 승인해주세요.');
             return this._gracefulExitForHITL(taskId, 'QUERY_REVIEW');
           }
 
