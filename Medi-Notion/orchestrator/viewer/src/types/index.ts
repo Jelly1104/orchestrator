@@ -55,4 +55,30 @@ export interface Stats {
   recentTasks: TaskSummary[];
 }
 
-export type Tab = 'dashboard' | 'logs' | 'docs' | 'files' | 'analysis';
+export interface Session {
+  taskId: string;
+  status: 'RUNNING' | 'PAUSED_HITL' | 'COMPLETED' | 'FAILED';
+  currentPhase?: string;
+  currentCheckpoint?: string;
+  startTime: string;
+  retryCount: number;
+  maxRetries: number;
+  progress?: number;
+  hitlContext?: Record<string, unknown>;
+  history?: Array<{
+    timestamp: string;
+    event: string;
+    details?: Record<string, unknown>;
+  }>;
+}
+
+export interface LogEntry {
+  timestamp: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  taskId?: string;
+  phase?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export type Tab = 'dashboard' | 'logs' | 'docs' | 'files' | 'analysis' | 'sessions';
