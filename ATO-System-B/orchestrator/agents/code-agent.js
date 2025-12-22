@@ -267,17 +267,21 @@ ${context}
 - SQL Injection 방지 (parameterized query)
 - XSS 방지 (출력 이스케이프)
 
-## 출력 형식
-<FILE path="src/features/{feature}/api/routes.ts">
-// 파일 내용
+## 출력 형식 (SYSTEM_MANIFEST v4.0.0 준수)
+<FILE path="backend/src/{feature}/routes.ts">
+// 백엔드 API 라우트
 </FILE>
 
-<FILE path="src/features/{feature}/components/FeatureView.tsx">
-// 파일 내용
+<FILE path="frontend/src/features/{feature}/FeatureView.tsx">
+// 프론트엔드 컴포넌트
 </FILE>
 
-<FILE path="src/features/{feature}/__tests__/routes.test.ts">
-// 테스트 코드
+<FILE path="backend/src/{feature}/__tests__/routes.test.ts">
+// 백엔드 테스트 코드
+</FILE>
+
+<FILE path="frontend/src/features/{feature}/__tests__/FeatureView.test.tsx">
+// 프론트엔드 테스트 코드
 </FILE>
 
 <REPORT>

@@ -351,16 +351,20 @@ ${context}
 2. DOMAIN_SCHEMA.md의 실제 컬럼명 사용
 3. TDD_WORKFLOW.md의 Red-Green-Refactor 준수
 
-## 출력 형식
-<FILE path="src/features/example/types.ts">
-// 파일 내용
+## 출력 형식 (SYSTEM_MANIFEST v4.0.0 준수)
+<FILE path="backend/src/{feature}/types.ts">
+// 백엔드 타입 정의
 </FILE>
 
-<FILE path="src/features/example/index.ts">
-// 파일 내용
+<FILE path="backend/src/{feature}/index.ts">
+// 백엔드 메인 모듈
 </FILE>
 
-<FILE path="tests/features/example/index.test.ts">
+<FILE path="frontend/src/features/{feature}/index.tsx">
+// 프론트엔드 컴포넌트
+</FILE>
+
+<FILE path="backend/src/{feature}/__tests__/index.test.ts">
 // 테스트 코드
 </FILE>
 

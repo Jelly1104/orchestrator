@@ -108,7 +108,8 @@ Leader-Sub agent 자동 협업 시스템
 
 📊 출력:
   - docs/<task-id>/         설계 문서
-  - src/features/           생성된 코드
+  - backend/src/            백엔드 API 코드
+  - frontend/src/           프론트엔드 컴포넌트
   - orchestrator/logs/      실행 로그
 
 📝 예시:
