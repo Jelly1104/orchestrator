@@ -1,9 +1,9 @@
 # AGENT_ARCHITECTURE.md
 
-> **문서 버전**: 2.2.0
+> **문서 버전**: 2.2.1
 > **최종 업데이트**: 2025-12-22
 > **물리적 경로**: `.claude/workflows/AGENT_ARCHITECTURE.md`
-> **변경 이력**: SYSTEM_MANIFEST v4.0.0 경로 정합성 업데이트 (src/* → backend/src/*, frontend/src/*)
+> **변경 이력**: 레거시 src/ 경로 완전 제거 - 디렉토리 구조도 현행화
 > **상위 문서**: `CLAUDE.md` > **대상 Agent**: Orchestrator, Leader, SubAgent, OutputValidator
 
 ---
@@ -610,8 +610,11 @@ Medi-Notion/
 │   ├── SDD.md
 │   └── HANDOFF.md
 │
-└── src/                     # 코드 (Sub-agent 작업 영역)
-    └── features/
+├── backend/src/             # 백엔드 API (Sub-agent 작업 영역)
+│   └── {feature}/
+│
+└── frontend/src/            # 프론트엔드 컴포넌트 (Sub-agent 작업 영역)
+    └── features/{feature}/
 ```
 
 ---
