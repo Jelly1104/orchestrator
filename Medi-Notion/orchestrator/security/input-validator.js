@@ -6,13 +6,52 @@
  * - 정규표현식 기반 필터링
  * - 토큰 길이 제한
  * - 위험 패턴 감지
+ * - Context-Aware 검증 (코드 생성 컨텍스트 지원) v1.1.0
  *
  * @see DOCUMENT_MANAGER_ARCHITECTURE.md 섹션 4.1
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { isEnabled } from '../config/feature-flags.js';
 import { getAuditLogger } from '../utils/audit-logger.js';
+
+// ============================================================
+// 코드 생성 컨텍스트용 허용 패턴 (False Positive 방지)
+// ============================================================
+const CODE_GENERATION_ALLOWLIST = [
+  // 일반적인 프로그래밍 패턴
+  'process.env',           // 환경변수 접근
+  'require(',              // CommonJS import
+  'import ',               // ESM import
+  'export ',               // ESM export
+  'const ',                // 변수 선언
+  'let ',                  // 변수 선언
+  'function ',             // 함수 선언
+  'async ',                // 비동기 함수
+  'await ',                // 비동기 대기
+  'class ',                // 클래스 선언
+
+  // SQL 쿼리 (읽기 전용)
+  'SELECT ',               // 조회
+  'FROM ',                 // 테이블 지정
+  'WHERE ',                // 조건절
+  'JOIN ',                 // 조인
+  'GROUP BY',              // 그룹화
+  'ORDER BY',              // 정렬
+  'LIMIT ',                // 제한
+
+  // React/Frontend 패턴
+  'useState',              // React Hook
+  'useEffect',             // React Hook
+  'onClick',               // 이벤트 핸들러
+  'onChange',              // 이벤트 핸들러
+
+  // API 패턴
+  'fetch(',                // HTTP 요청
+  'axios.',                // HTTP 클라이언트
+  'res.json',              // Express 응답
+  'req.body',              // Express 요청
+];
 
 // Prompt Injection 패턴
 const INJECTION_PATTERNS = [
@@ -56,19 +95,30 @@ const INJECTION_PATTERNS = [
   /\.env\b/gi,
 ];
 
-// 위험 문자열 (정확한 매칭)
-const DANGEROUS_STRINGS = [
+// 위험 문자열 (정확한 매칭) - 항상 차단
+const DANGEROUS_STRINGS_ALWAYS_BLOCK = [
   'ANTHROPIC_API_KEY',
   'OPENAI_API_KEY',
   'GOOGLE_API_KEY',
   'sk-ant-',
   'sk-',
   'AIza',
+  'rm -rf',
+];
+
+// 위험 문자열 (코드 컨텍스트에서는 허용) - Warning만 로깅
+const DANGEROUS_STRINGS_CODE_CONTEXT = [
   'process.env',
   'child_process',
   'fs.writeFileSync',
   'fs.rmSync',
-  'rm -rf',
+  'fs.unlinkSync',
+];
+
+// 레거시 호환용 (기존 코드 지원)
+const DANGEROUS_STRINGS = [
+  ...DANGEROUS_STRINGS_ALWAYS_BLOCK,
+  ...DANGEROUS_STRINGS_CODE_CONTEXT,
 ];
 
 // 토큰 제한
@@ -92,9 +142,15 @@ export class InputValidator {
    * 입력 전체 검증
    * @param {string} input - 검증할 입력
    * @param {string} type - 입력 유형 (DEFAULT, DOCUMENT_CONTENT, etc.)
-   * @returns {Object} - { valid, sanitized, violations }
+   * @param {Object} options - 검증 옵션
+   * @param {boolean} options.isGeneratedCode - LLM이 생성한 코드인지 여부
+   * @param {boolean} options.isAgentOutput - Agent 출력물인지 여부
+   * @param {boolean} options.warnOnly - 차단 대신 경고만 로깅
+   * @returns {Object} - { valid, sanitized, violations, warnings }
    */
-  validate(input, type = 'DEFAULT') {
+  validate(input, type = 'DEFAULT', options = {}) {
+    const { isGeneratedCode = false, isAgentOutput = false, warnOnly = false } = options;
+
     // 스텁 모드
     if (!isEnabled('SECURITY_INPUT_VALIDATION')) {
       this.logger.debug('INPUT_VALIDATION_STUB', `[STUB] Would validate input of type: ${type}`);
@@ -102,6 +158,7 @@ export class InputValidator {
     }
 
     const violations = [];
+    const warnings = [];
 
     // 1. null/undefined 검사
     if (input === null || input === undefined) {
@@ -124,24 +181,65 @@ export class InputValidator {
       });
     }
 
-    // 3. Prompt Injection 패턴 검사
-    const injectionMatches = this._checkInjectionPatterns(inputStr);
+    // 3. Prompt Injection 패턴 검사 (코드 컨텍스트에서는 완화)
+    const injectionMatches = this._checkInjectionPatterns(inputStr, { isGeneratedCode, isAgentOutput });
     if (injectionMatches.length > 0) {
-      violations.push({
-        type: 'PROMPT_INJECTION',
-        message: 'Potential prompt injection detected',
-        patterns: injectionMatches,
-      });
+      if (isGeneratedCode || isAgentOutput || warnOnly) {
+        // 코드 생성 컨텍스트: 경고만 로깅
+        warnings.push({
+          type: 'PROMPT_INJECTION_WARNING',
+          message: 'Potential prompt injection detected in generated code (warning only)',
+          patterns: injectionMatches,
+        });
+        this.logger.warn('INPUT_VALIDATION_WARNING', 'Potential injection in code context', {
+          type,
+          context: isGeneratedCode ? 'generated_code' : 'agent_output',
+          patterns: injectionMatches.map(m => m.pattern),
+        });
+      } else {
+        violations.push({
+          type: 'PROMPT_INJECTION',
+          message: 'Potential prompt injection detected',
+          patterns: injectionMatches,
+        });
+      }
     }
 
-    // 4. 위험 문자열 검사
-    const dangerousMatches = this._checkDangerousStrings(inputStr);
+    // 4. 위험 문자열 검사 (코드 컨텍스트에서는 완화)
+    const dangerousMatches = this._checkDangerousStrings(inputStr, { isGeneratedCode, isAgentOutput });
     if (dangerousMatches.length > 0) {
-      violations.push({
-        type: 'DANGEROUS_STRING',
-        message: 'Dangerous string detected',
-        matches: dangerousMatches,
-      });
+      const { alwaysBlock, codeContextOnly } = dangerousMatches;
+
+      // 항상 차단해야 하는 패턴
+      if (alwaysBlock.length > 0) {
+        violations.push({
+          type: 'DANGEROUS_STRING',
+          message: 'Dangerous string detected (always blocked)',
+          matches: alwaysBlock,
+        });
+      }
+
+      // 코드 컨텍스트에서만 허용되는 패턴
+      if (codeContextOnly.length > 0) {
+        if (isGeneratedCode || isAgentOutput || warnOnly) {
+          warnings.push({
+            type: 'DANGEROUS_STRING_WARNING',
+            message: 'Potentially dangerous string in code context (warning only)',
+            matches: codeContextOnly,
+          });
+          this.logger.warn('INPUT_VALIDATION_WARNING', 'Dangerous string in code context', {
+            type,
+            context: isGeneratedCode ? 'generated_code' : 'agent_output',
+            matches: codeContextOnly,
+          });
+        } else {
+          violations.push({
+            type: 'DANGEROUS_STRING',
+            message: 'Dangerous string detected',
+            matches: codeContextOnly,
+          });
+        }
+      }
     }
 
     // 결과
@@ -159,6 +257,7 @@ export class InputValidator {
       valid,
       sanitized: valid ? inputStr : null,
       violations,
+      warnings,
       estimatedTokens,
     };
   }
@@ -249,9 +348,17 @@ export class InputValidator {
 
   /**
    * Prompt Injection 패턴 검사
+   * @param {string} input - 검사할 입력
+   * @param {Object} options - 옵션
+   * @param {boolean} options.isGeneratedCode - 코드 생성 컨텍스트 여부
+   * @param {boolean} options.isAgentOutput - Agent 출력물 여부
    */
-  _checkInjectionPatterns(input) {
+  _checkInjectionPatterns(input, options = {}) {
+    const { isGeneratedCode = false, isAgentOutput = false } = options;
     const matches = [];
+
+    // 코드 생성 컨텍스트에서 허용되는 패턴인지 확인
+    const isCodeContext = isGeneratedCode || isAgentOutput;
 
     for (const pattern of this.injectionPatterns) {
       // 정규식 재생성 (lastIndex 초기화)
@@ -259,9 +366,16 @@ export class InputValidator {
       const match = input.match(regex);
 
       if (match) {
+        const matchedText = match[0];
+
+        // 코드 컨텍스트에서 허용 패턴에 해당하면 스킵
+        if (isCodeContext && this._isAllowedCodePattern(matchedText)) {
+          continue;
+        }
+
         matches.push({
           pattern: pattern.source,
-          match: match[0].substring(0, 50), // 매치된 부분 일부만
+          match: matchedText.substring(0, 50), // 매치된 부분 일부만
         });
       }
     }
@@ -270,19 +384,48 @@ export class InputValidator {
   }
 
   /**
-   * 위험 문자열 검사
+   * 코드 생성 컨텍스트에서 허용되는 패턴인지 확인
    */
-  _checkDangerousStrings(input) {
-    const matches = [];
+  _isAllowedCodePattern(text) {
+    const textLower = text.toLowerCase();
+    return CODE_GENERATION_ALLOWLIST.some(allowed =>
+      textLower.includes(allowed.toLowerCase())
+    );
+  }
+
+  /**
+   * 위험 문자열 검사
+   * @param {string} input - 검사할 입력
+   * @param {Object} options - 옵션
+   * @param {boolean} options.isGeneratedCode - 코드 생성 컨텍스트 여부
+   * @param {boolean} options.isAgentOutput - Agent 출력물 여부
+   * @returns {Object} - { alwaysBlock: [], codeContextOnly: [] }
+   */
+  _checkDangerousStrings(input, _options = {}) {
+    // options는 향후 확장용으로 예약 (현재 미사용)
     const inputLower = input.toLowerCase();
 
-    for (const dangerous of this.dangerousStrings) {
+    const alwaysBlock = [];
+    const codeContextOnly = [];
+
+    // 항상 차단해야 하는 패턴 검사
+    for (const dangerous of DANGEROUS_STRINGS_ALWAYS_BLOCK) {
       if (inputLower.includes(dangerous.toLowerCase())) {
-        matches.push(dangerous);
+        alwaysBlock.push(dangerous);
       }
     }
 
-    return matches;
+    // 코드 컨텍스트에서만 허용되는 패턴 검사
+    for (const dangerous of DANGEROUS_STRINGS_CODE_CONTEXT) {
+      if (inputLower.includes(dangerous.toLowerCase())) {
+        codeContextOnly.push(dangerous);
+      }
+    }
+
+    // 매칭 결과가 없으면 빈 객체 대신 length가 0인 결과 반환
+    const hasMatches = alwaysBlock.length > 0 || codeContextOnly.length > 0;
+
+    return hasMatches ? { alwaysBlock, codeContextOnly } : { alwaysBlock: [], codeContextOnly: [], length: 0 };
   }
 
   /**

@@ -41,14 +41,17 @@ export class SkillLoader {
 
     const skillPath = path.join(this.skillsRoot, agentName);
 
-    // Path Validation (Phase D)
+    // Path Validation (Phase D) - 내부 시스템 경로용 검증 사용
     if (isEnabled('SECURITY_PATH_VALIDATION')) {
       const pathValidator = getPathValidator();
-      const validateResult = pathValidator.validateDocumentPath(skillPath);
+      // Skills는 내부 시스템 경로이므로 validateInternalPath() 사용
+      const relativePath = path.relative(process.cwd(), skillPath).replace(/\\/g, '/');
+      const validateResult = pathValidator.validateInternalPath(relativePath);
       if (!validateResult.valid) {
         const logger = getAuditLogger();
         logger.security('SKILL_PATH_VALIDATION_FAIL', `Invalid skill path: ${agentName}`, {
-          violations: validateResult.violations,
+          path: relativePath,
+          error: validateResult.error,
         });
         throw new Error(`[SECURITY] Invalid skill path: ${agentName}`);
       }

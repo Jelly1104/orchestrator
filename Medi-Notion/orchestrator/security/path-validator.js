@@ -22,6 +22,15 @@ const ALLOWED_BASE_PATHS = [
   'src/',
 ];
 
+// 내부 시스템 경로 (항상 허용) - Security Whitelist
+const INTERNAL_SYSTEM_PATHS = [
+  'orchestrator/skills/',
+  'orchestrator/agents/',
+  'orchestrator/config/',
+  'orchestrator/utils/',
+  'orchestrator/state/',
+];
+
 // 금지된 경로 패턴
 const FORBIDDEN_PATTERNS = [
   /\.\.\//,                    // Path traversal
@@ -138,6 +147,17 @@ export class PathValidator {
   }
 
   /**
+   * 내부 시스템 경로인지 확인 (항상 허용)
+   */
+  _isInternalSystemPath(normalized) {
+    return INTERNAL_SYSTEM_PATHS.some(internal => {
+      const internalNormalized = internal.replace(/\/$/, '');
+      return normalized.startsWith(internalNormalized) ||
+             normalized.startsWith(internalNormalized + '/');
+    });
+  }
+
+  /**
    * 거부 결과 생성 및 로깅
    */
   _reject(inputPath, errorType, message) {
@@ -171,6 +191,54 @@ export class PathValidator {
     }
 
     return result;
+  }
+
+  /**
+   * 내부 시스템 경로 검증 (Skills, Agents 등)
+   * orchestrator/skills/*, orchestrator/agents/* 등 허용
+   * @param {string} inputPath - 검증할 경로
+   * @returns {Object} - { valid, normalized, error }
+   */
+  validateInternalPath(inputPath) {
+    // 스텁 모드
+    if (!isEnabled('SECURITY_PATH_VALIDATION')) {
+      this.logger.debug('PATH_VALIDATION_STUB', `[STUB] Would validate internal: ${inputPath}`);
+      return { valid: true, normalized: inputPath, stub: true };
+    }
+
+    try {
+      // 1. 기본 검사
+      if (!inputPath || typeof inputPath !== 'string') {
+        return this._reject(inputPath, 'INVALID_INPUT', 'Path is empty or invalid');
+      }
+
+      // 2. 금지 패턴 검사 (Path Traversal 등)
+      for (const pattern of FORBIDDEN_PATTERNS) {
+        if (pattern.test(inputPath)) {
+          return this._reject(inputPath, 'FORBIDDEN_PATTERN', `Path matches forbidden pattern: ${pattern}`);
+        }
+      }
+
+      // 3. 경로 정규화
+      const normalized = this._normalize(inputPath);
+
+      // 4. 내부 시스템 경로인지 확인 (Whitelist)
+      if (this._isInternalSystemPath(normalized)) {
+        this.logger.debug('INTERNAL_PATH_VALIDATION_PASS', `Internal system path validated: ${normalized}`);
+        return { valid: true, normalized, internal: true };
+      }
+
+      // 5. 일반 허용 경로 확인
+      if (this._isWithinAllowedPaths(normalized)) {
+        this.logger.debug('PATH_VALIDATION_PASS', `Path validated: ${normalized}`);
+        return { valid: true, normalized };
+      }
+
+      return this._reject(inputPath, 'OUTSIDE_ALLOWED_PATHS', 'Path is outside allowed directories');
+
+    } catch (err) {
+      return this._reject(inputPath, 'VALIDATION_ERROR', err.message);
+    }
   }
 }
 
