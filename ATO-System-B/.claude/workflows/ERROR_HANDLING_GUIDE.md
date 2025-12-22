@@ -1,7 +1,8 @@
 # 에러 처리 가이드 v2.0
 
-> **문서 버전**: 2.0.1
+> **문서 버전**: 2.0.2
 > **최종 업데이트**: 2025-12-22
+> **물리적 경로**: `.claude/workflows/ERROR_HANDLING_GUIDE.md`
 > **상위 문서**: CLAUDE.md
 > **대상 Agent**: Leader, FeedbackLoop, Orchestrator
 

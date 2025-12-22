@@ -1,12 +1,18 @@
 # SYSTEM_MANIFEST.md (System B Control Tower)
 
-**Version**: 3.0.0
-**Last Updated**: 2025-12-22 (Clean Sweep Completed)
+**Version**: 4.0.0
+**Last Updated**: 2025-12-22 (Specification Synchronization)
 **Role**: Orchestrator's Configuration Map & Human Guide
 
 ## 1. System Identity
 
-We are **System B**, a Human-in-the-Loop AI Orchestration System.
+We are **ATO-System-B v2.0**, a Human-in-the-Loop AI Orchestration System.
+
+| Component | Version | Description |
+| :-------- | :------ | :---------- |
+| **System Identity** | ATO-System-B v2.0 | 리브랜딩 완료 (Medi-Notion → ATO-System-B) |
+| **Orchestrator Engine** | v4.0.0 | Leader-Sub Agent 협업 엔진 |
+| **Document Standard** | MANIFEST v4.0.0 | 본 문서 (Single Source of Truth) |
 
 ## 2. Document Map (The New Address Book)
 
@@ -67,12 +73,25 @@ Skill-Centric Refactoring (2025-12-22) 이후 모든 산출물은 `workspace/`�
 | review-agent | v1.1.0 | Ready |
 | viewer-agent | v1.4.0 | Ready |
 
-## 6. Removed Legacy Paths (Clean Sweep 2025-12-22)
+## 6. Service Paths (코드 저장소)
 
-다음 경로들은 삭제되었으며 더 이상 참조하면 안 됩니다:
+ATO-System-B v2.0의 실제 코드 구조입니다. 에이전트는 이 경로들에 대한 쓰기 권한을 가집니다.
 
-- ~~`src/backend/`~~ → `backend/` 사용
-- ~~`src/frontend/`~~ → `frontend/` 사용
+| Path | Description | Agent Access |
+| :--- | :---------- | :----------- |
+| `backend/src/` | Express API 서버 | ✅ code-agent |
+| `frontend/src/` | React 프론트엔드 | ✅ code-agent |
+| `orchestrator/` | 오케스트레이터 엔진 | ⚠️ 제한적 (skills만) |
+| `mcp-server/` | MCP 서버 모듈 | ✅ code-agent |
+| `src/` | 레거시 코드 (마이그레이션 대상) | ⚠️ 읽기 전용 |
+
+## 7. Removed Legacy Paths (Clean Sweep 2025-12-22)
+
+다음 경로들은 삭제되었거나 마이그레이션 대상입니다:
+
+- ~~`src/backend/`~~ → `backend/src/` 사용
+- ~~`src/frontend/`~~ → `frontend/src/` 사용
 - ~~`src/analysis/`~~ → `workspace/analysis/` 사용
 - ~~`src/features/dr-insight/`~~ → `workspace/features/dr-insight/` 사용
 - ~~`tests/` (root)~~ → 각 서비스 폴더 내 `tests/` 사용
+- ~~`.claude/global/`~~ → `.claude/rules/`, `.claude/workflows/`, `.claude/context/` 사용

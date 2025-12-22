@@ -1,7 +1,8 @@
 # PRD 통합 가이드 v2.0
 
-> **문서 버전**: 2.0.1
+> **문서 버전**: 2.0.2
 > **최종 업데이트**: 2025-12-22
+> **물리적 경로**: `.claude/workflows/PRD_GUIDE.md`
 > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: PRD_TEMPLATE_V2.md, PRD_TYPE_PIPELINE.md, PRD_REFERENCE_MAP.md
 

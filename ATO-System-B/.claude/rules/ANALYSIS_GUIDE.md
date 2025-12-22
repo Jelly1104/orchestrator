@@ -1,7 +1,8 @@
 # 분석 Agent 가이드 v2.0
 
-> **문서 버전**: 2.0.0
-> **최종 업데이트**: 2025-12-19
+> **문서 버전**: 2.0.1
+> **최종 업데이트**: 2025-12-22
+> **물리적 경로**: `.claude/rules/ANALYSIS_GUIDE.md`
 > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: ANALYSIS_AGENT_SPEC.md, DB_ACCESS_POLICY.md
 

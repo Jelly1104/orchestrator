@@ -1,7 +1,8 @@
 # DOCUMENT_PIPELINE.md
 
-> **문서 버전**: 1.2.1
+> **문서 버전**: 1.2.2
 > **최종 업데이트**: 2025-12-22
+> **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md`
 > **상위 문서**: `CLAUDE.md` > **대상**: 리더 에이전트
 
 ---

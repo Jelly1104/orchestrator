@@ -1,7 +1,8 @@
 # 검증 통합 가이드 v2.0
 
-> **문서 버전**: 2.0.0
-> **최종 업데이트**: 2025-12-19
+> **문서 버전**: 2.0.1
+> **최종 업데이트**: 2025-12-22
+> **물리적 경로**: `.claude/rules/VALIDATION_GUIDE.md`
 > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: OUTPUT_VALIDATION.md, PRD_GAP_CHECK.md, QUALITY_GATES.md
 

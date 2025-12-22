@@ -1,7 +1,8 @@
 # INCIDENT_PLAYBOOK.md
 
-> **버전**: 1.0.1
+> **버전**: 1.0.2
 > **최종 수정**: 2025-12-22
+> **물리적 경로**: `.claude/workflows/INCIDENT_PLAYBOOK.md`
 > **상위 문서**: `.claude/CLAUDE.md` > **목적**: Orchestrator 장애 대응 절차
 
 ---
