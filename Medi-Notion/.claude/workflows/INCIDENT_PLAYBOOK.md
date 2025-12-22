@@ -1,8 +1,8 @@
 # INCIDENT_PLAYBOOK.md
 
-> **버전**: 1.0.0
-> **최종 수정**: 2025-12-19
-> **목적**: Orchestrator 장애 대응 절차
+> **버전**: 1.0.1
+> **최종 수정**: 2025-12-22
+> **상위 문서**: `.claude/CLAUDE.md` > **목적**: Orchestrator 장애 대응 절차
 
 ---
 
@@ -10,12 +10,12 @@
 
 ### 1.1 심각도 레벨
 
-| 레벨 | 설명 | 예시 | 대응 시간 |
-|------|------|------|----------|
-| **P0** | 서비스 전면 중단 | API 키 만료, DB 연결 실패 | 즉시 |
-| **P1** | 핵심 기능 장애 | 파이프라인 실패, Agent 무응답 | 30분 이내 |
-| **P2** | 부분 기능 장애 | 특정 Agent 오류, 느린 응답 | 2시간 이내 |
-| **P3** | 경미한 이슈 | UI 버그, 로그 누락 | 24시간 이내 |
+| 레벨   | 설명             | 예시                          | 대응 시간   |
+| ------ | ---------------- | ----------------------------- | ----------- |
+| **P0** | 서비스 전면 중단 | API 키 만료, DB 연결 실패     | 즉시        |
+| **P1** | 핵심 기능 장애   | 파이프라인 실패, Agent 무응답 | 30분 이내   |
+| **P2** | 부분 기능 장애   | 특정 Agent 오류, 느린 응답    | 2시간 이내  |
+| **P3** | 경미한 이슈      | UI 버그, 로그 누락            | 24시간 이내 |
 
 ---
 
@@ -24,12 +24,14 @@
 ### 2.1 P0: API 키 만료/무효
 
 **증상**:
+
 ```
 Error: 401 Unauthorized
 Error: Invalid API key
 ```
 
 **대응 절차**:
+
 1. `.env` 파일 확인
 2. API 키 유효성 검증 (Provider 대시보드)
 3. 새 키 발급 및 교체
@@ -46,12 +48,14 @@ pm2 restart orchestrator
 ### 2.2 P0: DB 연결 실패
 
 **증상**:
+
 ```
 Error: ECONNREFUSED
 Error: Access denied for user
 ```
 
 **대응 절차**:
+
 1. DB 서버 상태 확인
 2. 네트워크 연결 확인
 3. 인증 정보 검증
@@ -69,12 +73,14 @@ telnet DB_HOST 3306
 ### 2.3 P1: LLM Provider 장애
 
 **증상**:
+
 ```
 Error: 503 Service Unavailable
 Error: Rate limit exceeded
 ```
 
 **대응 절차**:
+
 1. Provider 상태 페이지 확인
 2. Fallback Provider 자동 전환 확인
 3. 수동 Fallback 전환 (필요 시)
@@ -90,6 +96,7 @@ Error: Rate limit exceeded
 ```
 
 **Provider 상태 페이지**:
+
 - Anthropic: https://status.anthropic.com
 - OpenAI: https://status.openai.com
 - Google AI: https://status.cloud.google.com
@@ -97,11 +104,13 @@ Error: Rate limit exceeded
 ### 2.4 P1: Agent 무한 루프
 
 **증상**:
+
 - 토큰 사용량 급증
 - 동일 단계 반복
 - 응답 시간 초과
 
 **대응 절차**:
+
 1. 실행 중인 태스크 강제 종료
 2. 로그 분석으로 원인 파악
 3. maxRetries 제한 확인 (하드코딩: 5회)
@@ -120,19 +129,21 @@ tail -f orchestrator/logs/.running.json
 ### 2.5 P1: 토큰 한도 초과
 
 **증상**:
+
 ```
 Error: Token limit exceeded
 Error: Context length exceeded
 ```
 
 **대응 절차**:
-1. 입력 PRD 크기 확인 (최대 50KB)
+
+1. 입력 PRD 크기 확인 (최대 50KB, .claude/project/PRD.md)
 2. 요청 분할 처리
 3. 토큰 사용량 리포트 생성
 
 ```bash
 # PRD 크기 확인
-wc -c docs/prd/target.md
+wc -c .claude/project/PRD.md
 
 # 토큰 사용량 확인
 cat orchestrator/logs/TASK_ID.json | jq '.totalTokens'
@@ -141,10 +152,12 @@ cat orchestrator/logs/TASK_ID.json | jq '.totalTokens'
 ### 2.6 P2: Viewer 연결 실패
 
 **증상**:
+
 - WebSocket 연결 끊김
 - 실시간 업데이트 중단
 
 **대응 절차**:
+
 1. Viewer 서버 상태 확인
 2. 포트 충돌 확인 (3000)
 3. 서버 재시작
@@ -207,22 +220,22 @@ npm install
 
 ### 4.1 핵심 메트릭
 
-| 메트릭 | 정상 범위 | 경고 임계값 | 위험 임계값 |
-|--------|----------|------------|------------|
-| 응답 시간 | < 5s | > 10s | > 30s |
-| 토큰/요청 | < 10K | > 30K | > 50K |
-| 재시도 횟수 | 0-1 | 3 | 5 (하드 리밋) |
-| 성공률 | > 95% | < 90% | < 80% |
+| 메트릭      | 정상 범위 | 경고 임계값 | 위험 임계값   |
+| ----------- | --------- | ----------- | ------------- |
+| 응답 시간   | < 5s      | > 10s       | > 30s         |
+| 토큰/요청   | < 10K     | > 30K       | > 50K         |
+| 재시도 횟수 | 0-1       | 3           | 5 (하드 리밋) |
+| 성공률      | > 95%     | < 90%       | < 80%         |
 
 ### 4.2 로그 위치
 
-```
+```text
 orchestrator/logs/
-├── TASK_ID.json      # 실행 로그
-├── .running.json     # 실행 중 상태
-├── .hitl/            # HITL 대기열
-├── .rerun/           # 재실행 요청
-└── .feedback/        # 사용자 피드백
+├── TASK_ID.json      # [Main] 실행 메트릭 및 결과
+├── .running.json     # [State] 현재 실행 중인 프로세스 상태
+├── .hitl/            # [Queue] Human-in-the-Loop 승인 대기열
+├── .rerun/           # [Action] 재실행 요청 트리거
+└── audit/            # [Security] 보안 감사 로그 (PII 마스킹됨)
 ```
 
 ---
@@ -240,11 +253,11 @@ P0 → 전체 팀 + CTO (즉시 회의)
 
 ### 5.2 연락처
 
-| 역할 | 담당자 | 연락처 |
-|------|--------|--------|
-| 개발 리드 | TBD | @dev-lead |
-| PO | TBD | @po |
-| 인프라 | TBD | @infra |
+| 역할      | 담당자 | 연락처    |
+| --------- | ------ | --------- |
+| 개발 리드 | TBD    | @dev-lead |
+| PO        | TBD    | @po       |
+| 인프라    | TBD    | @infra    |
 
 ---
 
@@ -256,12 +269,14 @@ P0 → 전체 팀 + CTO (즉시 회의)
 ## 장애 리포트
 
 ### 개요
+
 - 발생 시간:
 - 복구 시간:
 - 영향 범위:
 - 심각도:
 
 ### 타임라인
+
 - HH:MM - 최초 감지
 - HH:MM - 대응 시작
 - HH:MM - 원인 파악
@@ -272,6 +287,7 @@ P0 → 전체 팀 + CTO (즉시 회의)
 ### 재발 방지책
 
 ### Action Items
+
 - [ ] 단기
 - [ ] 중기
 - [ ] 장기
@@ -297,6 +313,17 @@ P0 → 전체 팀 + CTO (즉시 회의)
 - [ ] DB 연결 상태
 - [ ] 로그 디스크 용량
 - [ ] 실행 중인 태스크 없음 확인
+
+---
+
+## 8. 관련 문서
+
+| 문서명                      | 물리적 경로                                 | 역할                                       |
+| --------------------------- | ------------------------------------------- | ------------------------------------------ |
+| **CLAUDE.md**               | `.claude/CLAUDE.md`                         | [Root] 최상위 헌법 및 안전 수칙            |
+| **ERROR_HANDLING_GUIDE.md** | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | [Workflows] 에러 유형별 자동 대응 절차     |
+| **AGENT_ARCHITECTURE.md**   | `.claude/workflows/AGENT_ARCHITECTURE.md`   | [Workflows] 에이전트 구조 및 복구 메커니즘 |
+| **DB_ACCESS_POLICY.md**     | `.claude/rules/DB_ACCESS_POLICY.md`         | [Rules] DB 접근 권한 및 제약 사항          |
 
 ---
 

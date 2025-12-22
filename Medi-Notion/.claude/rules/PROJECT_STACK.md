@@ -1,69 +1,68 @@
 # PROJECT_STACK.md - 프로젝트별 기술 스택 템플릿
 
-> **문서 버전**: 1.2.0
-> **최종 업데이트**: 2025-12-15
-> **상위 문서**: `CLAUDE.md`
-> **용도**: AI 에이전트에게 **"이 프로젝트만의 기술적 제약"**을 주입
+> **문서 버전**: 1.2.1
+> **최종 업데이트**: 2025-12-22
+> **상위 문서**: `.claude/CLAUDE.md` > **용도**: AI 에이전트에게 **"이 프로젝트만의 기술적 제약"**을 주입
 
 ---
 
 ## 🎯 프로젝트 개요 (Overview)
 
-| 항목 | 내용 |
-|------|------|
-| 프로젝트명 | 공지사항 목록 PoC (케이스 #1) |
-| 기반 PRD | `docs/case1-notice-list/PRD.md` |
-| 승인 상태 | [x] Draft (AI 추천) / [ ] Approved (사람 승인) |
-| 승인자 | - |
-| 승인일 | 2025-12-16 |
+| 항목       | 내용                                           |
+| ---------- | ---------------------------------------------- |
+| 프로젝트명 | 공지사항 목록 PoC (케이스 #1)                  |
+| 기반 PRD   | `docs/case1-notice-list/PRD.md`                |
+| 승인 상태  | [x] Draft (AI 추천) / [ ] Approved (사람 승인) |
+| 승인자     | -                                              |
+| 승인일     | 2025-12-16                                     |
 
 **⚠️ Legacy Integration 체크 시 주의사항**
 
-이 프로젝트는 `DOMAIN_SCHEMA.md`의 제약을 엄격히 따릅니다.
+이 프로젝트는 `.claude/rules/DOMAIN_SCHEMA.md`의 제약을 엄격히 따릅니다.
 DB 컬럼명 변경 금지 및 대용량 테이블 조회 시 인덱스 전략이 필수입니다.
 
 ---
 
 ## 2. 기술 스택 (Tech Stack)
 
-*해당하지 않는 영역은 삭제하거나 비워두세요.*
+_해당하지 않는 영역은 삭제하거나 비워두세요._
 
 ### 🟦 FE (Frontend)
 
-| 카테고리 | 기술 | 버전 | 비고 |
-|---------|------|------|------|
-| Framework | React (Vite) | 18.x | PoC용 단순 구성 |
-| Language | TypeScript | 5.x | Strict Mode |
-| Styling | Tailwind CSS | 3.x | |
-| HTTP Client | fetch | - | 내장 API |
-| Pkg Manager | npm | 10.x | |
+| 카테고리    | 기술         | 버전 | 비고            |
+| ----------- | ------------ | ---- | --------------- |
+| Framework   | React (Vite) | 18.x | PoC용 단순 구성 |
+| Language    | TypeScript   | 5.x  | Strict Mode     |
+| Styling     | Tailwind CSS | 3.x  |                 |
+| HTTP Client | fetch        | -    | 내장 API        |
+| Pkg Manager | npm          | 10.x |                 |
 
 ### ☕ BE (Backend)
 
-| 카테고리 | 기술 | 버전 | 비고 |
-|---------|------|------|------|
-| Runtime | Node.js | 20.x | LTS |
-| Framework | Express | 4.x | 빠른 구현용 |
-| Language | TypeScript | 5.x | |
-| Database | MySQL | 8.x | Legacy DB |
-| ORM | mysql2 | 3.x | Raw Query (레거시 호환) |
-| Testing | Vitest | 1.x | |
+| 카테고리  | 기술       | 버전 | 비고                    |
+| --------- | ---------- | ---- | ----------------------- |
+| Runtime   | Node.js    | 20.x | LTS                     |
+| Framework | Express    | 4.x  | 빠른 구현용             |
+| Language  | TypeScript | 5.x  |                         |
+| Database  | MySQL      | 8.x  | Legacy DB               |
+| ORM       | mysql2     | 3.x  | Raw Query (레거시 호환) |
+| Testing   | Vitest     | 1.x  |                         |
 
 ### 📱 APP (Mobile)
 
-| 카테고리 | 기술 | 버전 | 비고 |
-|---------|------|------|------|
-| Framework | Flutter | x.x.x | |
-| Language | Dart | x.x.x | Sound Null Safety |
-| State | Riverpod | x.x.x | |
+| 카테고리  | 기술     | 버전  | 비고              |
+| --------- | -------- | ----- | ----------------- |
+| Framework | Flutter  | x.x.x |                   |
+| Language  | Dart     | x.x.x | Sound Null Safety |
+| State     | Riverpod | x.x.x |                   |
 
 ### ☁️ Infra
 
-| 카테고리 | 기술 | 버전 | 비고 |
-|---------|------|------|------|
-| Cloud | AWS | - | |
-| IaC | Terraform | x.x | |
-| Container | Docker | x.x | |
+| 카테고리  | 기술      | 버전 | 비고 |
+| --------- | --------- | ---- | ---- |
+| Cloud     | AWS       | -    |      |
+| IaC       | Terraform | x.x  |      |
+| Container | Docker    | x.x  |      |
 
 ---
 
@@ -71,25 +70,25 @@ DB 컬럼명 변경 금지 및 대용량 테이블 조회 시 인덱스 전략�
 
 ### 필수 devDependencies
 
-| 패키지 | 권장 버전 | 용도 |
-|--------|----------|------|
-| `react` | ^18.2.0 | UI 라이브러리 |
-| `@types/react` | ^18.2.0 | React 타입 |
-| `@types/react-dom` | ^18.2.0 | ReactDOM 타입 |
-| `jsdom` | ^24.0.0 | 테스트 DOM 환경 |
-| `vitest` | ^1.0.0 | 테스트 러너 |
+| 패키지             | 권장 버전 | 용도            |
+| ------------------ | --------- | --------------- |
+| `react`            | ^18.2.0   | UI 라이브러리   |
+| `@types/react`     | ^18.2.0   | React 타입      |
+| `@types/react-dom` | ^18.2.0   | ReactDOM 타입   |
+| `jsdom`            | ^24.0.0   | 테스트 DOM 환경 |
+| `vitest`           | ^1.0.0    | 테스트 러너     |
 
 ### 🚨 금지 버전 (보안 취약점)
 
-| 패키지 | 금지 버전 | 안전 버전 |
-|--------|----------|----------|
-| `react` (19.x) | 19.0.0~19.0.2, 19.1.0~19.1.3, 19.2.0~19.2.2 | 19.0.3, 19.1.4, 19.2.3 |
+| 패키지         | 금지 버전     | 안전 버전   |
+| -------------- | ------------- | ----------- |
+| `react` (19.x) | 19.0.0~19.0.2 | 19.0.3 이상 |
 
-> ⚠️ Root/Frontend/Backend 간 React 버전 불일치 시 타입 에러 발생
+> ⚠️ 참고: 버전 규칙은 `.claude/rules/PROJECT_STACK.md` (이 문서)가 `package.json`보다 우선합니다.
 
 ### 버전 고정 (Resolutions)
 
-*의존성 충돌 방지를 위한 강제 버전 지정*
+_의존성 충돌 방지를 위한 강제 버전 지정_
 
 ```json
 {
@@ -126,23 +125,23 @@ DB 컬럼명 변경 금지 및 대용량 테이블 조회 시 인덱스 전략�
 
 AI는 아래 명령어를 사용하여 프로젝트를 실행하고 검증합니다.
 
-| 목적 | 명령어 | 설명 |
-|------|--------|------|
-| 개발 서버 | `[command]` | 예: `yarn dev` |
-| 전체 테스트 | `[command]` | 예: `yarn test` |
-| 커버리지 | `[command]` | 예: `yarn test:coverage` |
-| 린트/타입 | `[command]` | 예: `yarn lint && yarn type-check` |
-| 빌드 | `[command]` | 예: `yarn build` |
+| 목적        | 명령어      | 설명                               |
+| ----------- | ----------- | ---------------------------------- |
+| 개발 서버   | `[command]` | 예: `yarn dev`                     |
+| 전체 테스트 | `[command]` | 예: `yarn test`                    |
+| 커버리지    | `[command]` | 예: `yarn test:coverage`           |
+| 린트/타입   | `[command]` | 예: `yarn lint && yarn type-check` |
+| 빌드        | `[command]` | 예: `yarn build`                   |
 
 ---
 
 ## 📚 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `/CLAUDE.md` | [공통] 팀 아키텍처 원칙 및 헌법 (루트) |
-| `.claude/global/DOMAIN_SCHEMA.md` | [공통] DB 스키마 및 비즈니스 데이터 구조 |
-| `.claude/global/CODE_STYLE.md` | [공통] 언어별 코딩 스타일 가이드 |
+| 문서                             | 역할                                      |
+| -------------------------------- | ----------------------------------------- |
+| `CLAUDE.md`                      | [Root] 팀 아키텍처 원칙 및 헌법           |
+| `.claude/rules/DOMAIN_SCHEMA.md` | [Rules] DB 스키마 및 비즈니스 데이터 구조 |
+| `.claude/rules/CODE_STYLE.md`    | [Rules] 언어별 코딩 스타일 가이드         |
 
 ---
 

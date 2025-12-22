@@ -1,8 +1,8 @@
 # AI_CONTEXT.md - 에이전트 행동 지침서
 
-> **문서 버전**: 2.3.0
-> **최종 업데이트**: 2025-12-16
-> **상위 문서**: `CLAUDE.md`
+> **문서 버전**: 2.3.1
+> **최종 업데이트**: 2025-12-22
+> **상위 문서**: `.claude/CLAUDE.md`
 > **대상**: 모든 AI 에이전트 (리더 + 서브)
 
 ---
@@ -48,11 +48,11 @@
 
 ### 2. 개발 3대 금기 ⛔
 
-| 금지 항목 | 설명 |
-|----------|------|
-| **Mock 데이터/가짜 구현** | 실제 동작하는 코드만 작성 |
-| **타입 any 사용** | TypeScript Strict Mode 준수 |
-| **console.log 프로덕션 코드** | 적절한 로깅 시스템 사용 |
+| 금지 항목                     | 설명                        |
+| ----------------------------- | --------------------------- |
+| **Mock 데이터/가짜 구현**     | 실제 동작하는 코드만 작성   |
+| **타입 any 사용**             | TypeScript Strict Mode 준수 |
+| **console.log 프로덕션 코드** | 적절한 로깅 시스템 사용     |
 
 ### 3. 보안 게이트 (필수 통과)
 
@@ -90,10 +90,10 @@
 
 ### Leader / Sub-agent 역할 분리
 
-| 역할 | 허용 | 금지 |
-|-----|------|------|
+| 역할                     | 허용                       | 금지                       |
+| ------------------------ | -------------------------- | -------------------------- |
 | **Leader (Claude Code)** | 설계, 검증, PASS/FAIL 판정 | 직접 코드 구현 (위임 필수) |
-| **Sub-agent (Cline 등)** | 코드 구현, 테스트 작성 | 설계 변경, 아키텍처 결정 |
+| **Sub-agent**            | 코드 구현, 테스트 작성     | 설계 변경, 아키텍처 결정   |
 
 ### Sub-agent 행동 제약
 
@@ -109,22 +109,20 @@ Sub-agent가 Leader 권한을 요청받은 경우:
   - "PRD를 새로 작성해줘" → 거부
 ```
 
-> **참조**: `AGENT_ARCHITECTURE.md` - Leader/Sub-agent 협업 상세
-> **참조**: `.clinerules` - Sub-agent(Cline) 전용 실행 규칙
+> 참조: `.claude/workflows/AGENT_ARCHITECTURE.md` - Leader/Sub-agent 협업 상세
 
 ---
 
 ## 📚 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| CLAUDE.md | 프로젝트 컨텍스트 + 워크플로 참조 맵 |
-| AI_Playbook.md | 팀 철학·OKR·R&R |
-| AGENT_ARCHITECTURE.md | Leader/Sub-agent 협업 아키텍처 |
-| .clinerules | Sub-agent(Cline) 실행 규칙 (위반 시 즉시 중단) |
+| 문서                  | 물리적 경로                               | 역할                                 |
+| --------------------- | ----------------------------------------- | ------------------------------------ |
+| CLAUDE.md             | `.claude/CLAUDE.md`                       | 프로젝트 컨텍스트 + 워크플로 참조 맵 |
+| AI_Playbook.md        | `.claude/context/AI_Playbook.md`          | 팀 철학·OKR·R&R                      |
+| AGENT_ARCHITECTURE.md | `.claude/workflows/AGENT_ARCHITECTURE.md` | Leader/Sub-agent 협업 아키텍처       |
 
 ---
 
 **END OF AI_CONTEXT.md**
 
-*이 문서는 "행동 지침서"입니다. 팀의 철학과 원칙은 AI_Playbook.md를 참조하세요.*
+_이 문서는 "행동 지침서"입니다. 팀의 철학과 원칙은 AI_Playbook.md를 참조하세요._

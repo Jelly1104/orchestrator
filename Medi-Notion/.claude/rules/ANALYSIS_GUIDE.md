@@ -9,10 +9,10 @@
 
 ## 📋 Agent 로딩 설정
 
-| Agent | 로딩 문서 |
-|-------|----------|
-| **AnalysisAgent** | `.claude/global/ANALYSIS_GUIDE.md` (이 문서) |
-| **SubAgent** | `.claude/global/ANALYSIS_GUIDE.md` (DB 정책 섹션만) |
+| Agent         | 로딩 문서                                          |
+| ------------- | -------------------------------------------------- |
+| AnalysisAgent | `.claude/rules/ANALYSIS_GUIDE.md` (이 문서)        |
+| SubAgent      | `.claude/rules/ANALYSIS_GUIDE.md` (DB 정책 섹션만) |
 
 ---
 
@@ -21,15 +21,18 @@
 ### 1.1 왜 필요한가?
 
 **문제 상황 (Case #4/#5)**:
+
 - PRD: "HEAVY 세그먼트 분석 → SQL 쿼리 → 결과 해석"
 - Orchestrator 동작: IA/Wireframe/SDD 생성 (설계 파이프라인)
 - 결과: PRD와 산출물 불일치
 
 **근본 원인**:
+
 - 기존 Orchestrator는 **design 파이프라인**만 지원
 - 정량적 분석(SQL 실행 → 데이터 수집 → 해석)을 처리할 Agent 부재
 
 **해결책**:
+
 - **AnalysisAgent** 신규 개발
 - PRD type이 `QUANTITATIVE` 또는 `MIXED`일 때 호출
 
@@ -37,11 +40,11 @@
 
 ### 1.2 Agent 역할 비교
 
-| Agent | 역할 | 입력 | 출력 |
-|-------|------|------|------|
-| **LeaderAgent** | 전체 조율, 설계 문서 | PRD | IA, Wireframe, SDD |
-| **SubAgent** | 코드 구현 | Task + SDD | 소스 코드 |
-| **AnalysisAgent** | 데이터 분석 | PRD + Schema | SQL, 결과, 리포트 |
+| Agent             | 역할                 | 입력         | 출력               |
+| ----------------- | -------------------- | ------------ | ------------------ |
+| **LeaderAgent**   | 전체 조율, 설계 문서 | PRD          | IA, Wireframe, SDD |
+| **SubAgent**      | 코드 구현            | Task + SDD   | 소스 코드          |
+| **AnalysisAgent** | 데이터 분석          | PRD + Schema | SQL, 결과, 리포트  |
 
 ---
 
@@ -108,10 +111,10 @@ Step 6: 산출물 생성
 
 ### 3.2 MySQL 계정 분리
 
-| 계정 | 용도 | 권한 |
-|------|------|------|
-| **medigate_readonly** | AI 에이전트 기본 계정 | SELECT |
-| **medigate_write** | Leader 승인 후에만 사용 | SELECT, INSERT, UPDATE, DELETE |
+| 계정                  | 용도                    | 권한                           |
+| --------------------- | ----------------------- | ------------------------------ |
+| **medigate_readonly** | AI 에이전트 기본 계정   | SELECT                         |
+| **medigate_write**    | Leader 승인 후에만 사용 | SELECT, INSERT, UPDATE, DELETE |
 
 ```sql
 -- 읽기 전용 계정 생성 (AI 에이전트용)
@@ -128,6 +131,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON medigate.* TO 'medigate_write'@'%';
 ### 3.3 환경별 설정
 
 **개발 환경 (.env.development)**:
+
 ```env
 DB_USER=medigate_readonly
 DB_PASSWORD=[READONLY_PASSWORD]
@@ -136,6 +140,7 @@ DB_NAME=medigate
 ```
 
 **프로덕션 환경 (.env.production)**:
+
 ```env
 # CI/CD 파이프라인에서만 쓰기 권한 사용
 DB_USER=medigate_write
@@ -148,28 +153,30 @@ DB_NAME=medigate
 
 ### 3.4 에이전트 접근 규칙
 
-| Agent | 사용 계정 | 허용 | 금지 |
-|-------|----------|------|------|
-| SubAgent | medigate_readonly | SELECT | INSERT, UPDATE, DELETE |
-| AnalysisAgent | medigate_readonly | SELECT | INSERT, UPDATE, DELETE |
-| Leader | medigate_readonly (기본) | SELECT | 쓰기는 승인 후 |
+| Agent         | 사용 계정                | 허용   | 금지                   |
+| ------------- | ------------------------ | ------ | ---------------------- |
+| SubAgent      | medigate_readonly        | SELECT | INSERT, UPDATE, DELETE |
+| AnalysisAgent | medigate_readonly        | SELECT | INSERT, UPDATE, DELETE |
+| Leader        | medigate_readonly (기본) | SELECT | 쓰기는 승인 후         |
 
 ---
 
 ### 3.5 위반 시 대응
 
 **자동 차단**:
+
 1. 쓰기 쿼리 감지 시 → 쿼리 실행 전 파싱하여 INSERT/UPDATE/DELETE 감지 → 즉시 차단 및 로깅
 2. 권한 에러 발생 시 → MySQL 에러 로그 기록 → 알림 발송
 
 **로깅**:
+
 ```javascript
 logger.info({
   timestamp: new Date().toISOString(),
   user: connection.config.user,
   query: sql,
   type: getQueryType(sql), // SELECT, INSERT, etc.
-  agent: process.env.AGENT_ID
+  agent: process.env.AGENT_ID,
 });
 ```
 
@@ -179,16 +186,31 @@ logger.info({
 
 ### 4.1 SQL 생성 제약사항
 
-| 제약 | 설명 |
-|------|------|
-| SELECT only | INSERT/UPDATE/DELETE 금지 |
-| 인덱스 활용 | JOIN 시 인덱스 컬럼 사용 |
-| LIMIT 필수 | 대용량 테이블(USER_LOGIN, COMMENT) 접근 시 |
-| 컬럼명 정확성 | DOMAIN_SCHEMA.md에 정의된 이름만 사용 |
+| 제약          | 설명                                       |
+| ------------- | ------------------------------------------ |
+| SELECT only   | INSERT/UPDATE/DELETE 금지                  |
+| 인덱스 활용   | JOIN 시 인덱스 컬럼 사용                   |
+| LIMIT 필수    | 대용량 테이블(USER_LOGIN, COMMENT) 접근 시 |
+| 컬럼명 정확성 | DOMAIN_SCHEMA.md에 정의된 이름만 사용      |
 
 ---
 
-### 4.2 SQL 생성 프롬프트
+### 4.2 대용량 데이터 분석 전략 (Strategy for Large Datasets)
+
+분석 대상이 `DB_ACCESS_POLICY`의 제한(10,000행/30초)을 초과할 경우, 포기하지 말고 아래 전략을 **자동 적용**하십시오.
+
+1. **통계적 샘플링 (Statistical Sampling)**:
+
+   - 전체 전수 조사 대신 `RAND()` 등을 활용하여 5~10%의 표본을 추출해 경향성을 파악합니다.
+   - 예: `WHERE RAND() <= 0.05` (MySQL 8.0+)
+
+2. **배치 분할 처리 (Batch Processing)**:
+   - 전수 조사가 반드시 필요하다면, `LIMIT/OFFSET` 또는 `ID` 범위 기반으로 쿼리를 여러 번 나누어 실행할 계획을 세웁니다.
+   - 리포트에 "분할 실행된 데이터의 합계임"을 명시합니다.
+
+---
+
+### 4.3 SQL 생성 프롬프트
 
 ```
 당신은 메디게이트 데이터베이스 전문가입니다.
@@ -246,13 +268,13 @@ logger.info({
 
 ### 5.1 오류 유형별 처리
 
-| 오류 유형 | 예시 | 처리 방법 |
-|----------|------|----------|
-| 스키마 불일치 | 존재하지 않는 컬럼 | 사용자 확인 요청 → DOMAIN_SCHEMA 갱신 |
-| SQL 문법 오류 | JOIN 조건 누락 | 자동 수정 재시도 (최대 3회) |
-| 타임아웃 | 대용량 Full Scan | LIMIT 추가, WHERE 조건 강화 |
-| 빈 결과 | 조건에 맞는 데이터 없음 | 조건 완화 제안 또는 사용자 확인 |
-| 권한 오류 | SELECT 권한 없음 | 사용자에게 DB 권한 확인 요청 |
+| 오류 유형     | 예시                    | 처리 방법                             |
+| ------------- | ----------------------- | ------------------------------------- |
+| 스키마 불일치 | 존재하지 않는 컬럼      | 사용자 확인 요청 → DOMAIN_SCHEMA 갱신 |
+| SQL 문법 오류 | JOIN 조건 누락          | 자동 수정 재시도 (최대 3회)           |
+| 타임아웃      | 대용량 Full Scan        | LIMIT 추가, WHERE 조건 강화           |
+| 빈 결과       | 조건에 맞는 데이터 없음 | 조건 완화 제안 또는 사용자 확인       |
+| 권한 오류     | SELECT 권한 없음        | 사용자에게 DB 권한 확인 요청          |
 
 ---
 
@@ -326,14 +348,14 @@ Phase B: 설계/제안 (LeaderAgent)
 
 ## 8. 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `DOMAIN_SCHEMA.md` | 테이블/컬럼 정의, 스키마 검증 기준 |
-| `PRD_GUIDE.md` | PRD 유형/파이프라인 정의 |
-| `VALIDATION_GUIDE.md` | 산출물 검증 기준 |
+| 문서                  | 물리적 경로                         | 역할                               |
+| --------------------- | ----------------------------------- | ---------------------------------- |
+| `DOMAIN_SCHEMA.md`    | `.claude/rules/DOMAIN_SCHEMA.md`    | 테이블/컬럼 정의, 스키마 검증 기준 |
+| `PRD_GUIDE.md`        | `.claude/workflows/PRD_GUIDE.md`    | PRD 유형/파이프라인 정의           |
+| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준                   |
 
 ---
 
 **END OF ANALYSIS_GUIDE.md**
 
-*데이터는 거짓말하지 않습니다. 올바른 분석이 올바른 인사이트를 만듭니다.*
+_데이터는 거짓말하지 않습니다. 올바른 분석이 올바른 인사이트를 만듭니다._

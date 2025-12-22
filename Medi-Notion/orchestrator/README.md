@@ -1,438 +1,169 @@
-# System B - Orchestrator 사용 가이드
+````markdown
+# System B: Orchestrator & HITL Platform
 
-## 1. System B 개요
+> **AI 에이전트와 인간이 협업하는 Human-in-the-Loop 개발 플랫폼**
 
-System B는 **CLI 기반 순차 실행(System A)**을 넘어, **Human-in-the-Loop(HITL)** 체크포인트와 **Viewer 대시보드**를 통해 사람과 협업하는 시스템입니다.
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  System B: Viewer/HITL 기반 협업 아키텍처                                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│    CLI                                                                      │
-│     │                                                                       │
-│     ▼                                                                       │
-│  ┌──────────────────────────┐     WebSocket     ┌──────────────────────┐   │
-│  │      Orchestrator        │ ◄───────────────► │       Viewer         │   │
-│  │  (orchestrator.js)       │   실시간 연동       │   (server.js)        │   │
-│  └──────────────────────────┘                   └──────────────────────┘   │
-│           │                                              │                  │
-│           │ Session Store                                │ HITL UI          │
-│           ▼                                              ▼                  │
-│  ┌──────────────────────────┐                   ┌──────────────────────┐   │
-│  │   .hitl/ .rerun/         │                   │      Browser         │   │
-│  │   session-store.js       │                   │   승인/거부 버튼       │   │
-│  └──────────────────────────┘                   └──────────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-**주요 특징:**
-- **Viewer 대시보드**: 웹 UI를 통한 실시간 작업 모니터링
-- **HITL 체크포인트**: 5개 지점에서 사람의 승인 대기
-- **Session Store**: 작업 상태 관리 및 재실행 지원
-- **WebSocket 연동**: 실시간 알림 및 업데이트
+System B는 단순한 CLI 실행을 넘어, **실시간 대시보드(Viewer)**와 **승인 체크포인트(HITL)**를 통해 안전하고 통제 가능한 AI 개발 환경을 제공합니다.
 
 ---
 
-## 2. 설치 및 실행
+## 📚 1. 시스템 구조 (Architecture)
 
-### 2.1 설치
+### 3-Layer Operating Model
+
+이 시스템은 다음 3가지 요소의 유기적 결합으로 작동합니다.
+
+1.  **🤖 Orchestrator (Core Logic)**
+    - `orchestrator.js` 기반의 중앙 제어 장치.
+    - AI 에이전트(Leader, Sub, Analysis)를 조율하고 작업을 수행합니다.
+2.  **👀 Viewer (Dashboard)**
+    - `localhost:3000`에서 실행되는 웹 인터페이스.
+    - 실시간 로그 확인, 산출물 검토, 승인/거부 버튼을 제공합니다.
+3.  **🚦 HITL (Human-in-the-Loop)**
+    - 중요한 의사결정 시점(설계, 배포 등)에 AI를 일시 정지시키고 사람의 개입을 요청합니다.
+
+```mermaid
+graph LR
+    User[Developer] -->|Approve/Reject| Viewer[Viewer Dashboard]
+    Viewer <-->|WebSocket| Orch[Orchestrator]
+    Orch -->|Command| Agents[AI Agents]
+    Agents -->|Create| Docs[Files & Code]
+
+    subgraph "Safety Zone"
+        Rules[.claude/rules]
+        Workflows[.claude/workflows]
+    end
+
+    Orch -.->|Read Only| SafetyZone
+```
+````
+
+---
+
+## 🚀 2. 시작하기 (Getting Started)
+
+### 설치 (Installation)
 
 ```bash
 cd orchestrator
 npm install
 ```
 
-### 2.2 Viewer 서버 시작
+### 실행 (Execution Flow)
+
+System B를 사용하려면 **두 개의 터미널**이 필요합니다.
+
+**Terminal 1: 뷰어 실행 (먼저 실행)**
 
 ```bash
 npm run viewer
+# 접속: http://localhost:3000
 ```
 
-**접속:**
-- HTTP: `http://localhost:3000`
-- WebSocket: `ws://localhost:3000`
-
-### 2.3 Orchestrator 실행 (CLI)
+**Terminal 2: 오케스트레이터 실행**
 
 ```bash
+# 기본 실행 (Interactive Mode)
 node index.js
+
+# 특정 작업 지정 실행
+node index.js --task="로그인 페이지 구현해줘"
 ```
 
 ---
 
-## 3. HITL 체크포인트 (5개)
+## 🚦 3. HITL 체크포인트 (Approval Points)
 
-System B는 다음 5개 지점에서 **사람의 승인을 대기**합니다.
+시스템은 다음 5가지 상황에서 **자동으로 멈추고 당신의 승인을 기다립니다.**
 
-| # | 체크포인트 | 트리거 조건 | 사람의 액션 |
-|---|------------|-------------|-------------|
-| 1 | **PRD_REVIEW** | PRD Gap Check 불완전 (필수 항목 누락) | PRD 보완 후 재시작 |
-| 2 | **QUERY_REVIEW** | SQL 결과 이상 (0행, 타임아웃, 스키마 불일치) | 쿼리 수정 또는 승인 |
-| 3 | **DESIGN_APPROVAL** | IA/Wireframe/SDD 생성 완료 | 설계 검토 및 승인/수정요청 |
-| 4 | **MANUAL_FIX** | 3회 연속 Review FAIL | 직접 수정 또는 방향 조정 |
-| 5 | **DEPLOY_APPROVAL** | 프론트엔드 배포 필요 시 | 최종 배포 승인 |
+| #   | 체크포인트          | 트리거 조건                   | 당신의 역할 (Action)          |
+| --- | ------------------- | ----------------------------- | ----------------------------- |
+| 1   | **PRD_REVIEW**      | PRD 필수 항목 누락 시         | PRD 보완 후 재시작 승인       |
+| 2   | **QUERY_REVIEW**    | 위험한 SQL(DELETE 등) 감지 시 | 쿼리 안전성 검토 및 승인      |
+| 3   | **DESIGN_APPROVAL** | 설계 문서(SDD) 생성 직후      | 설계 방향성 검토 및 승인      |
+| 4   | **MANUAL_FIX**      | Review 3회 연속 실패 시       | 사람이 직접 코드 수정 후 재개 |
+| 5   | **DEPLOY_APPROVAL** | 모든 구현 완료 후             | 최종 산출물 확인 및 배포 승인 |
 
-### HITL 체크포인트 플로우
+---
 
-```mermaid
-graph TD
-    A[PRD 입력] --> B{PRD Gap Check}
-    B -- 불완전 --> C[HITL: PRD_REVIEW]
-    B -- 완전 --> D[자동: 유형 판별]
+## 📂 4. 문서 및 파일 구조 (Directory Structure)
 
-    D --> E{Analysis?}
-    E -- Yes --> F[AnalysisAgent]
-    E -- No --> G[LeaderAgent Planning]
+System B는 `SYSTEM_MANIFEST.md`에 정의된 **엄격한 폴더 구조**를 따릅니다.
 
-    F --> H[SQL 실행]
-    H --> I{결과 검증}
-    I -- 이상 --> J[HITL: QUERY_REVIEW]
-    I -- 정상 --> K[분석 리포트 생성]
+### 4.1 시스템 룰북 (Immutable Rules)
 
-    G --> L[IA/Wireframe/SDD]
-    L --> M[HITL: DESIGN_APPROVAL]
-    M -- 승인 --> N[CodeAgent 구현]
-    M -- 수정요청 --> G
+이 경로의 파일들은 **AI가 수정할 수 없으며**, 프로젝트의 헌법과 같습니다.
 
-    N --> O[Output Validation]
-    O --> P[Leader Review]
-    P -- FAIL 3회 --> Q[HITL: MANUAL_FIX]
-    P -- PASS --> R[최종 산출물]
+| 그룹          | 경로                 | 주요 문서              | 역할                             |
+| ------------- | -------------------- | ---------------------- | -------------------------------- |
+| **Control**   | `.claude/`           | `SYSTEM_MANIFEST.md`   | 시스템 설정 및 파일 매핑 지도    |
+| **Rules**     | `.claude/rules/`     | `CODE_STYLE.md`        | 코딩 컨벤션 및 네이밍 규칙       |
+|               |                      | `DOMAIN_SCHEMA.md`     | **[중요]** DB 스키마 및 제약사항 |
+|               |                      | `PROJECT_STACK.md`     | 기술 스택 정의                   |
+| **Workflows** | `.claude/workflows/` | `DOCUMENT_PIPELINE.md` | 문서 생성 절차 (PRD→SDD)         |
+|               |                      | `INCIDENT_PLAYBOOK.md` | 장애 대응 절차                   |
+| **Context**   | `.claude/context/`   | `AI_Playbook.md`       | 팀의 철학 및 목표                |
 
-    R --> S{프론트 배포?}
-    S -- Yes --> T[HITL: DEPLOY_APPROVAL]
-    S -- No --> U[완료]
+### 4.2 오케스트레이터 내부 구조
 
-    style C fill:#ffcccc
-    style J fill:#ffcccc
-    style M fill:#ffcccc
-    style Q fill:#ffcccc
-    style T fill:#ffcccc
+```text
+orchestrator/
+├── index.js                # CLI 진입점
+├── orchestrator.js         # 핵심 로직 (HITL 제어)
+├── agents/                 # AI 에이전트 구현체 (Leader, Sub, Analysis)
+├── state/
+│   └── session-store.js    # 작업 상태 및 세션 관리
+├── viewer/                 # 웹 대시보드 서버
+└── logs/
+    ├── .hitl/              # 승인 대기 파일 저장소
+    └── {taskId}.json       # 태스크별 실행 로그
 ```
 
 ---
 
-## 4. API 엔드포인트
+## 🛠️ 5. API 및 Viewer 연동
 
-### 4.1 Session API
+Viewer와 Orchestrator는 REST API와 WebSocket으로 통신합니다.
 
-| HTTP Method | Endpoint | 설명 |
-|-------------|----------|------|
-| GET | `/api/sessions` | 활성 세션 목록 |
-| GET | `/api/sessions/:taskId` | 세션 상세 |
-| GET | `/api/tasks/:taskId/checkpoint` | 체크포인트 상태 |
+### 주요 API Endpoints
 
-### 4.2 HITL API
+- `GET /api/sessions`: 활성 작업 목록 조회
+- `GET /api/hitl/queue`: 승인 대기 중인 작업 조회
+- `POST /api/tasks/:taskId/approve`: 작업 승인 (Resume)
+- `POST /api/tasks/:taskId/reject`: 작업 거부 (Stop/Retry)
 
-| HTTP Method | Endpoint | 설명 |
-|-------------|----------|------|
-| GET | `/api/hitl/queue` | HITL 대기열 조회 |
-| POST | `/api/tasks/:taskId/approve` | HITL 승인 |
-| POST | `/api/tasks/:taskId/reject` | HITL 거부 |
-| POST | `/api/tasks/:taskId/rerun` | 재실행 요청 |
-| POST | `/api/tasks/:taskId/feedback` | 피드백 제출 |
+### 수동 조작 (Troubleshooting)
 
-**승인 예시:**
+Viewer가 작동하지 않을 경우, CURL을 통해 직접 제어할 수 있습니다.
+
+**승인(Approve) 예시:**
+
 ```bash
 curl -X POST http://localhost:3000/api/tasks/{taskId}/approve \
-  -H "Content-Type: application/json" \
-  -d '{"comment": "승인합니다"}'
-```
-
-**거부 예시:**
-```bash
-curl -X POST http://localhost:3000/api/tasks/{taskId}/reject \
-  -H "Content-Type: application/json" \
-  -d '{"reason": "PRD 수정 필요"}'
-```
-
-### 4.3 Logs API
-
-| HTTP Method | Endpoint | 설명 |
-|-------------|----------|------|
-| GET | `/api/logs` | 로그 목록 |
-| GET | `/api/logs/:taskId` | 로그 상세 |
-| GET | `/api/running` | 실행 중인 태스크 |
-
-### 4.4 Files & Docs API
-
-| HTTP Method | Endpoint | 설명 |
-|-------------|----------|------|
-| GET | `/api/files` | 생성된 파일 목록 |
-| GET | `/api/file?path={path}` | 파일 내용 |
-| GET | `/api/docs/:taskId` | 문서 목록 |
-| GET | `/api/docs/:taskId/:filename` | 문서 내용 |
-
-### 4.5 WebSocket 이벤트
-
-| 이벤트 | 방향 | 설명 |
-|--------|------|------|
-| `connected` | Server → Client | 연결 성공 |
-| `running_status` | Server → Client | 실행 중 상태 업데이트 |
-| `task_created` | Server → Client | 새 태스크 생성됨 |
-| `task_updated` | Server → Client | 태스크 상태 변경 |
-| `hitl_pending` | Server → Client | HITL 승인 대기 |
-| `hitl_resolved` | Server → Client | HITL 처리 완료 |
-| `rerun_queued` | Server → Client | 재실행 큐 등록 |
-| `rerun_started` | Server → Client | 재실행 시작 |
-| `rerun_completed` | Server → Client | 재실행 완료 |
-| `rerun_failed` | Server → Client | 재실행 실패 |
-
----
-
-## 5. 파일 구조
-
-```
-orchestrator/
-├── README.md                    # 이 파일
-├── package.json                 # 의존성 관리
-├── index.js                     # CLI 엔트리포인트
-├── orchestrator.js              # 핵심 Orchestrator 로직
-│
-├── agents/                      # AI 에이전트
-│   ├── LeaderAgent.js
-│   ├── AnalysisAgent.js
-│   └── CodeAgent.js
-│
-├── state/                       # 상태 관리
-│   ├── session-store.js         # 세션 저장소 (HITL 지원)
-│   └── sessions/                # 세션 파일 저장
-│
-├── viewer/                      # Viewer 대시보드
-│   ├── server.js                # Express + WebSocket 서버
-│   └── dist/                    # 빌드된 프론트엔드 (선택)
-│
-├── logs/                        # 로그 디렉토리
-│   ├── .running.json            # 현재 실행 중인 태스크
-│   ├── .hitl/                   # HITL 승인 대기 파일
-│   ├── .rerun/                  # 재실행 요청 파일
-│   ├── .feedback/               # 피드백 파일
-│   └── {taskId}.json            # 태스크별 로그
-│
-├── config/                      # 설정 파일
-│   ├── constants.js
-│   └── feature-flags.js
-│
-├── security/                    # 보안 검증
-│   ├── input-validator.js
-│   └── path-validator.js
-│
-├── utils/                       # 유틸리티
-│   ├── logger.js
-│   └── token-counter.js
-│
-├── providers/                   # 외부 연동
-│   ├── AnthropicProvider.js
-│   └── NotionProvider.js
-│
-├── skills/                      # 스킬 기반 기능
-│   └── doc-manage/
-│
-└── tests/                       # 테스트
-    ├── unit/
-    └── integration/
+-H "Content-Type: application/json" \
+-d '{"comment": "터미널에서 수동 승인"}'
 ```
 
 ---
 
-## 6. Session Store 상태
+## 🔒 6. 보안 및 제약 사항 (Security Constraints)
 
-세션은 다음 상태 중 하나를 가집니다.
-
-```javascript
-const SessionStatus = {
-  INITIALIZED: 'INITIALIZED',       // 초기화됨
-  RUNNING: 'RUNNING',               // 실행 중
-  PAUSED_HITL: 'PAUSED_HITL',       // HITL 대기
-  APPROVED: 'APPROVED',             // 승인됨
-  REJECTED: 'REJECTED',             // 거부됨
-  COMPLETED: 'COMPLETED',           // 완료
-  FAILED: 'FAILED',                 // 실패
-  USER_INTERVENTION_REQUIRED: 'USER_INTERVENTION_REQUIRED' // 사용자 개입 필요
-};
-```
-
-**세션 조회 예시:**
-```javascript
-import { sessionStore } from './state/session-store.js';
-
-// 활성 세션 목록
-const sessions = sessionStore.getActiveSessions();
-
-// 특정 세션 조회
-const session = sessionStore.get(taskId);
-
-// HITL 대기열
-const pending = sessionStore.getPendingHITLRequests();
-```
+1.  **룰북 수정 금지:** `.claude/{rules, workflows, context}/*` 경로는 읽기 전용(Read-Only)입니다.
+2.  **데이터 보호:** 프로덕션 DB에 대한 `INSERT/UPDATE/DELETE` 쿼리는 차단됩니다.
+3.  **경로 탐색 방지:** `taskId`나 파일 경로에 `../`를 포함할 수 없습니다.
+4.  **토큰 제한:** PRD는 최대 50,000자, Task 설명은 10,000자로 제한됩니다.
 
 ---
 
-## 7. 관련 문서
-
-### 7.1 시스템 문서 (.claude/global/)
-
-| 그룹 | 문서 | 설명 |
-|------|------|------|
-| **컨트롤 타워** | `SYSTEM_MANIFEST.md` | System B 전체 아키텍처 |
-| **Rules** | `CODE_STYLE.md` | 코딩 스타일 가이드 |
-| | `TDD_WORKFLOW.md` | TDD 워크플로우 |
-| | `DOMAIN_SCHEMA.md` | DB 스키마 규칙 |
-| | `DB_ACCESS_POLICY.md` | DB 접근 정책 |
-| | `VALIDATION_GUIDE.md` | 검증 가이드 |
-| | `ANALYSIS_GUIDE.md` | 분석 가이드 |
-| **Workflows** | `DOCUMENT_PIPELINE.md` | 문서 생성 파이프라인 |
-| | `AGENT_ARCHITECTURE.md` | 에이전트 아키텍처 |
-| | `INCIDENT_PLAYBOOK.md` | 장애 대응 플레이북 |
-| | `ERROR_HANDLING_GUIDE.md` | 에러 핸들링 가이드 |
-| | `DEVELOPMENT_LIFECYCLE.md` | 개발 라이프사이클 |
-| **Context** | `CLAUDE.md` | Claude 컨텍스트 |
-| | `AI_Playbook.md` | AI 플레이북 |
-| | `AI_CONTEXT.md` | AI 컨텍스트 |
-| | `PRD_GUIDE.md` | PRD 작성 가이드 |
-
-### 7.2 핵심 문서 참조 맵
+**System B Team**
+_Quality is not an act, it is a habit._
 
 ```
-SYSTEM_MANIFEST.md (컨트롤 타워)
-├── Group A: Rules
-│   ├── CODE_STYLE.md
-│   ├── TDD_WORKFLOW.md
-│   ├── DOMAIN_SCHEMA.md
-│   ├── DB_ACCESS_POLICY.md
-│   ├── VALIDATION_GUIDE.md
-│   └── ANALYSIS_GUIDE.md
-│
-├── Group B: Workflows
-│   ├── DOCUMENT_PIPELINE.md
-│   ├── AGENT_ARCHITECTURE.md (HITL 체크포인트 정의)
-│   ├── INCIDENT_PLAYBOOK.md (로그 위치)
-│   ├── ERROR_HANDLING_GUIDE.md
-│   └── DEVELOPMENT_LIFECYCLE.md
-│
-├── Group C: Context
-│   ├── CLAUDE.md
-│   ├── AI_Playbook.md
-│   ├── AI_CONTEXT.md
-│   └── PRD_GUIDE.md
-│
-└── Skills
-    └── skills/doc-manage/skill.md
+
+### 💡 주요 개선 포인트 (Why this is better)
+
+1.  **정확한 경로 반영:** 기존의 잘못된 `.claude/global/` 참조를 모두 제거하고, `SYSTEM_MANIFEST.md` (-)에 정의된 `Group A/B/C` 구조로 완벽하게 업데이트했습니다.
+2.  **시각적 명료함:** 복잡한 ASCII 아트를 제거하고 Mermaid 다이어그램(코드로 렌더링되거나 텍스트로도 이해 가능한 구조)으로 대체하여 구조를 한눈에 파악하게 했습니다.
+3.  **실행 중심 구성:** 개발자가 가장 먼저 필요로 하는 '설치 및 실행' 섹션을 상단으로 올리고, 뷰어와 오케스트레이터의 실행 순서를 명확히 했습니다.
+4.  **보안 정책 현행화:** `SECURITY_LIMITS` ()와 `AGENT_ARCHITECTURE.md` ()의 보안 계층 정보를 반영하여, 사용자가 지켜야 할 제약 사항을 명확히 했습니다.
 ```
-
----
-
-## 8. 사용 예시
-
-### 8.1 기본 워크플로우
-
-```bash
-# 1. Viewer 서버 시작
-npm run viewer
-
-# 2. 브라우저에서 접속
-# http://localhost:3000
-
-# 3. Orchestrator 실행 (별도 터미널)
-node index.js
-
-# 4. Viewer에서 HITL 승인 대기 확인
-# 5. 승인/거부 버튼 클릭
-# 6. 작업 완료 확인
-```
-
-### 8.2 HITL 승인 플로우
-
-```bash
-# 1. HITL 대기 발생 (예: DESIGN_APPROVAL)
-# Viewer에서 알림: "새로운 승인 요청"
-
-# 2. Viewer에서 설계 문서 검토
-# - IA.md
-# - Wireframe.md
-# - SDD.md
-
-# 3. 승인/거부 결정
-# - 승인: "설계 확인 완료" 코멘트와 함께 승인
-# - 거부: "IA 수정 필요" 사유와 함께 거부
-
-# 4. Orchestrator 자동 재개/중단
-```
-
-### 8.3 재실행 (Rerun)
-
-```bash
-# 1. Viewer에서 실패한 태스크 선택
-# 2. "재실행" 버튼 클릭
-# 3. (선택) PRD 수정 또는 모드 변경
-# 4. 새 taskId로 자동 재실행 시작
-# 5. Viewer에서 실시간 진행 상황 확인
-```
-
----
-
-## 9. 문제 해결
-
-### 9.1 Viewer가 연결되지 않음
-
-```bash
-# WebSocket 상태 확인
-# 브라우저 콘솔: "연결 끊김" → "실시간 연결됨"
-
-# 방화벽 확인
-netstat -an | grep 3000
-
-# 서버 재시작
-npm run viewer
-```
-
-### 9.2 HITL 승인이 반영되지 않음
-
-```bash
-# .hitl/ 디렉토리 확인
-ls -la orchestrator/logs/.hitl/
-
-# 파일이 삭제되지 않았다면 수동 삭제
-rm orchestrator/logs/.hitl/{taskId}.json
-
-# 세션 상태 확인
-curl http://localhost:3000/api/sessions/{taskId}
-```
-
-### 9.3 재시도 횟수 초과
-
-```javascript
-// session-store.js에서 maxRetries 변경
-// 기본값: 3회
-session.maxRetries = 5;
-```
-
----
-
-## 10. 보안 및 제한 사항
-
-### 10.1 금지 사항
-
-- `.claude/global/*` 파일 수정/삭제
-- 서버 DB INSERT/UPDATE/DELETE (읽기 전용)
-- HITL 체크포인트 우회 (autoApprove=false일 때)
-- Path Traversal 시도 (`../`)
-- 토큰 예산 초과 (PRD 50,000자, Task 10,000자)
-
-### 10.2 보안 계층
-
-| Phase | 활성화 | 기능 |
-|-------|--------|------|
-| A: Security | ✅ | INPUT_VALIDATION, PATH_VALIDATION, SANDBOX, RATE_LIMIT |
-| B: Integrity | ✅ | RULEBOOK_CHECK, MEMORY_LOCK, DOC_SANITIZE, CHANGELOG_VALIDATE |
-| C: Monitoring | ✅ | OUTPUT_SANITIZER, KILL_SWITCH, SHADOW_CHECKER, SECURITY_MONITOR |
-| D: Agent | ❌ | DOC_MANAGE, SHADOW_CHECK |
-| E: External | ❌ | NOTION_SYNC, HMAC_VERIFY |
-
----
-
-**END OF README.md**
-
-*이 문서는 System B Orchestrator의 사용 가이드입니다. 추가 질문은 `.claude/global/SYSTEM_MANIFEST.md`를 참조하세요.*

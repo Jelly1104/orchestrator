@@ -1,15 +1,15 @@
 # PRD 통합 가이드 v2.0
 
-> **문서 버전**: 2.0.0
-> **최종 업데이트**: 2025-12-19
+> **문서 버전**: 2.0.1
+> **최종 업데이트**: 2025-12-22
 > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: PRD_TEMPLATE_V2.md, PRD_TYPE_PIPELINE.md, PRD_REFERENCE_MAP.md
 
 ## 📋 PRDAnalyzer 로딩 설정
 
-| Agent           | 로딩 문서                               |
-| --------------- | --------------------------------------- |
-| **PRDAnalyzer** | `.claude/global/PRD_GUIDE.md` (이 문서) |
+| Agent           | 로딩 문서                                  |
+| --------------- | ------------------------------------------ |
+| **PRDAnalyzer** | `.claude/workflows/PRD_GUIDE.md` (이 문서) |
 
 ---
 
@@ -379,10 +379,10 @@ deliverables:
 
 ## 8. 관련 문서
 
-| 문서                   | 역할                                    |
-| ---------------------- | --------------------------------------- |
-| `DOMAIN_SCHEMA.md`     | 테이블/컬럼 정의 (정량적 PRD 필수 참조) |
-| `VALIDATION_GUIDE.md`  | 산출물 검증 기준                        |
+| 문서                  | 물리적 경로                         | 역할                                    |
+| --------------------- | ----------------------------------- | --------------------------------------- |
+| `DOMAIN_SCHEMA.md`    | `.claude/rules/DOMAIN_SCHEMA.md`    | 테이블/컬럼 정의 (정량적 PRD 필수 참조) |
+| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준                        |
 
 ---
 

@@ -1,9 +1,8 @@
 # CODE_STYLE.md - 코딩 스타일 가이드 (범용)
 
-> **문서 버전**: 1.2.0
-> **최종 업데이트**: 2025-12-15
-> **상위 문서**: `CLAUDE.md`
-> **대상**: 모든 AI 에이전트
+> **문서 버전**: 1.2.1
+> **최종 업데이트**: 2025-12-22
+> **상위 문서**: `CLAUDE.md` > **대상**: 모든 AI 에이전트
 
 ---
 
@@ -24,9 +23,10 @@
 프로젝트/
 ├── CLAUDE.md              # Claude Code 자동 로딩 (진입점)
 └── .claude/
-    ├── global/            # 공통 규칙 (수정 금지)
-    └── project/
-        └── PROJECT_STACK.md
+    ├── rules/             # [Group A] 제약 사항 (Code Style, DB Schema)
+    │   └── PROJECT_STACK.md
+    ├── workflows/         # [Group B] 실행 절차
+    └── context/           # [Group C] 배경 지식
 ```
 
 ---
@@ -35,12 +35,12 @@
 
 ### 1.1 절대 금지 사항 (Never)
 
-| 금지 항목 | 설명 |
-|----------|------|
-| **Mock 데이터/가짜 구현** | 실제 동작하는 로직만 작성 (TDD 준수) |
-| **타입 회피** | `any`, `dynamic`, `Object` 사용 금지 |
-| **Magic Number** | 의미 불명한 숫자는 반드시 `const`로 추출 |
-| **Legacy Renaming** | **DB 컬럼명(`U_ID` 등)을 임의로 camelCase(`userId`)로 변환 금지.** (매핑 오류 원인 1순위) |
+| 금지 항목                 | 설명                                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| **Mock 데이터/가짜 구현** | 실제 동작하는 로직만 작성 (TDD 준수)                                                      |
+| **타입 회피**             | `any`, `dynamic`, `Object` 사용 금지                                                      |
+| **Magic Number**          | 의미 불명한 숫자는 반드시 `const`로 추출                                                  |
+| **Legacy Renaming**       | **DB 컬럼명(`U_ID` 등)을 임의로 camelCase(`userId`)로 변환 금지.** (매핑 오류 원인 1순위) |
 
 ### 1.2 함수 작성 규칙
 
@@ -68,13 +68,20 @@ function process() {
 
 AI는 아래 **두 가지 세계**를 명확히 구분해야 합니다.
 
-| 대상 | 규칙 | 예시 | 비고 |
-|------|------|------|------|
-| **일반 변수/함수** | `camelCase` | `fetchUserData()`, `isValid` | Modern Standard |
-| **클래스/컴포넌트** | `PascalCase` | `UserService`, `ArticleCard` | Modern Standard |
-| **상수** | `UPPER_SNAKE` | `MAX_RETRY_COUNT` | Modern Standard |
-| **Legacy DB 컬럼** | `UPPER_SNAKE` | `U_ID`, `BOARD_IDX`, `REG_DATE` | ⚠️ `DOMAIN_SCHEMA` 준수 |
-| **Legacy DTO** | `UPPER_SNAKE` | `user.U_NAME` | **DB 매핑용 객체는 변형 금지** |
+| 대상                | 규칙          | 예시                            | 비고                           |
+| ------------------- | ------------- | ------------------------------- | ------------------------------ |
+| **일반 변수/함수**  | `camelCase`   | `fetchUserData()`, `isValid`    | Modern Standard                |
+| **클래스/컴포넌트** | `PascalCase`  | `UserService`, `ArticleCard`    | Modern Standard                |
+| **상수**            | `UPPER_SNAKE` | `MAX_RETRY_COUNT`               | Modern Standard                |
+| **Legacy DB 컬럼**  | `UPPER_SNAKE` | `U_ID`, `BOARD_IDX`, `REG_DATE` | ⚠️ `DOMAIN_SCHEMA` 준수        |
+| **Legacy DTO**      | `UPPER_SNAKE` | `user.U_NAME`                   | **DB 매핑용 객체는 변형 금지** |
+
+**[가독성 vs 정합성 충돌 해결 전략]**
+
+1. **Boundary Layer (API/DB 접점)**: 정합성 우선. 가독성이 떨어져도 `U_MAJOR_CODE_1` 등 레거시 이름을 그대로 사용하십시오.
+2. **Business Layer (로직 내부)**: 가독성 우선. 레거시 데이터를 다룰 때는 현대적인 이름으로 **래핑(Wrapping)**하거나 **매핑 함수**를 사용하여 격리하십시오.
+   - 예: `const userMajor = legacyUser.U_MAJOR_CODE_1;` (O)
+   - 금지: `U_MAJOR_CODE_1` 컬럼 자체를 `userMajor`로 `ALTER TABLE` 하려는 시도 (X)
 
 ---
 
@@ -94,7 +101,7 @@ interface User {
 interface UserLegacyDto {
   U_ID: string;
   U_NAME: string;
-  U_ALIVE: 'Y' | 'N';
+  U_ALIVE: "Y" | "N";
 }
 ```
 
@@ -189,14 +196,14 @@ AND BOARD_IDX = 100;
 
 ---
 
-## 📚 관련 문서
+## 📚 Updated Related Docs
 
-| 문서 | 역할 |
-|------|------|
-| `CLAUDE.md` | 최상위 헌법 (충돌 시 이 문서가 우선) |
-| `PROJECT_STACK.md` | 프로젝트별 기술 스택/버전 정의 |
-| `DOMAIN_SCHEMA.md` | 필독 DB 컬럼명 및 네이밍 기준 원천 |
-| `QUALITY_GATES.md` | 스타일 준수 여부 최종 검증 체크리스트 |
+| 문서               | 역할                                                |
+| ------------------ | --------------------------------------------------- |
+| `CLAUDE.md`        | 최상위 헌법 (충돌 시 이 문서가 우선)                |
+| `PROJECT_STACK.md` | 프로젝트별 기술 스택/버전 정의 (.claude/rules/)     |
+| `DOMAIN_SCHEMA.md` | 필독 DB 컬럼명 및 네이밍 기준 원천 (.claude/rules/) |
+| `QUALITY_GATES.md` | 스타일 준수 여부 최종 검증 체크리스트               |
 
 ---
 

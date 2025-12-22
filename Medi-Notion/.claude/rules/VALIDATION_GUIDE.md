@@ -9,10 +9,10 @@
 
 ## 📋 Agent 로딩 설정
 
-| Agent | 로딩 문서 |
-|-------|----------|
-| **OutputValidator** | `.claude/global/VALIDATION_GUIDE.md` (이 문서) |
-| **Leader (Review Mode)** | `.claude/global/VALIDATION_GUIDE.md` (이 문서) |
+| Agent                    | 로딩 문서                                     |
+| ------------------------ | --------------------------------------------- |
+| **OutputValidator**      | `.claude/rules/VALIDATION_GUIDE.md` (이 문서) |
+| **Leader (Review Mode)** | `.claude/rules/VALIDATION_GUIDE.md` (이 문서) |
 
 ---
 
@@ -63,6 +63,7 @@ PRD 입력
 ```
 
 **누락 시 질문**:
+
 ```
 "PRD에서 [항목명]이 명확하지 않습니다.
 예시) [예시 제공]
@@ -93,6 +94,7 @@ PRD 유형: {카테고리} > {서브 유형}
 ### 2.3 간극 질문 생성
 
 **산출물 관련**:
+
 ```
 [체크리스트 있으면]
 "체크리스트에 {N}개 항목이 있습니다:
@@ -109,6 +111,7 @@ PRD 유형: {카테고리} > {서브 유형}
 ```
 
 **데이터 관련**:
+
 ```
 "다음 테이블/컬럼을 사용할 예정입니다:
  - USERS (U_ID, U_KIND, U_ALIVE)
@@ -142,15 +145,15 @@ PRD 유형: {카테고리} > {서브 유형}
 
 ### 3.1 Step 1: Syntax/Lint 검증
 
-| 대상 | 검증 항목 | 심각도 |
-|------|----------|--------|
-| SQL | INSERT/UPDATE/DELETE 금지 | 🚨 ERROR |
-| SQL | DROP/TRUNCATE/ALTER 금지 | 🚨 ERROR |
-| SQL | SELECT * 사용 | ⚠️ WARNING |
-| SQL | 세미콜론 누락 | ⚠️ WARNING |
-| SQL | 대용량 테이블 LIMIT 없음 | ⚠️ WARNING |
-| Markdown | 내용 비어있음 | 🚨 ERROR |
-| Markdown | 제목(#) 없음 | ⚠️ WARNING |
+| 대상     | 검증 항목                 | 심각도     |
+| -------- | ------------------------- | ---------- |
+| SQL      | INSERT/UPDATE/DELETE 금지 | 🚨 ERROR   |
+| SQL      | DROP/TRUNCATE/ALTER 금지  | 🚨 ERROR   |
+| SQL      | SELECT \* 사용            | ⚠️ WARNING |
+| SQL      | 세미콜론 누락             | ⚠️ WARNING |
+| SQL      | 대용량 테이블 LIMIT 없음  | ⚠️ WARNING |
+| Markdown | 내용 비어있음             | 🚨 ERROR   |
+| Markdown | 제목(#) 없음              | ⚠️ WARNING |
 
 ---
 
@@ -195,6 +198,7 @@ DOMAIN_SCHEMA.md 대조
 ### 3.4 검증 결과 포맷
 
 **성공 시**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔍 Output Validation 결과
@@ -214,6 +218,7 @@ DOMAIN_SCHEMA.md 대조
 ```
 
 **실패 시**:
+
 ```
 상태: ❌ FAILED
 
@@ -229,12 +234,14 @@ DOMAIN_SCHEMA.md 대조
 ### 4.1 코드 품질 (Code Quality)
 
 **Schema Compliance**:
+
 - [ ] `DOMAIN_SCHEMA.md`의 **실제 레거시 컬럼명** 사용
   - ❌ `user.id`, `user.active`
   - ✅ `user.U_ID`, `user.U_ALIVE`
 - [ ] Hallucination Check: 존재하지 않는 테이블/컬럼 추측 금지
 
 **구조 및 네이밍**:
+
 - [ ] 함수 길이 ≤ 30줄
 - [ ] 중첩 깊이 ≤ 3단계
 - [ ] TypeScript `any` 타입 금지
@@ -253,10 +260,12 @@ DOMAIN_SCHEMA.md 대조
 ### 4.3 보안 (Security)
 
 **의료 데이터 특화**:
+
 - [ ] PHI(환자정보) 보호: 주민번호, 진료내역 평문 노출 금지
 - [ ] 로그 마스킹: 이메일, 전화번호, 면허번호 로그 금지
 
 **레거시 DB 보호**:
+
 - [ ] Full Scan 방지: `COMMENT`, `USER_LOGIN` 조회 시 인덱스/페이징 필수
 - [ ] SQL Injection: 파라미터 바인딩 사용
 
@@ -264,11 +273,11 @@ DOMAIN_SCHEMA.md 대조
 
 ### 4.4 성능 (Performance)
 
-| 유형 | 목표 | 최대 허용 |
-|------|------|----------|
-| 단순 조회 | < 100ms | 200ms |
-| 복합 조회 | < 200ms | 500ms |
-| 대용량 조회 | < 500ms | 1,000ms |
+| 유형        | 목표    | 최대 허용 |
+| ----------- | ------- | --------- |
+| 단순 조회   | < 100ms | 200ms     |
+| 복합 조회   | < 200ms | 500ms     |
+| 대용량 조회 | < 500ms | 1,000ms   |
 
 - [ ] N+1 문제 해결
 - [ ] `SELECT *` 대신 필요 컬럼만 명시
@@ -278,10 +287,12 @@ DOMAIN_SCHEMA.md 대조
 ### 4.5 Safety Check
 
 **룰북 불변성**:
-- [ ] `.claude/global/` 내 파일 변경 없음
+
+- [ ] `.claude/rules/` 내 파일 변경 없음
 - [ ] `CLAUDE.md` 변경 없음
 
 **서버 데이터 보호**:
+
 - [ ] INSERT 쿼리 없음
 - [ ] UPDATE 쿼리 없음
 - [ ] DELETE 쿼리 없음
@@ -309,26 +320,26 @@ Review FAIL 시:
 
 ```yaml
 # 회원 세그먼트 관련
-'활성 회원': ['u_alive', 'active', 'segment', '활성', 'alive']
-'세그먼트': ['segment', 'heavy', 'medium', 'light', '세그먼트']
+"활성 회원": ["u_alive", "active", "segment", "활성", "alive"]
+"세그먼트": ["segment", "heavy", "medium", "light", "세그먼트"]
 
 # 전문과목 관련
-'전문과목': ['u_major_code', 'major', '분포', '과목', 'specialty']
-'진료과': ['u_major_code', 'department', '진료']
+"전문과목": ["u_major_code", "major", "분포", "과목", "specialty"]
+"진료과": ["u_major_code", "department", "진료"]
 
 # 근무형태 관련
-'근무형태': ['u_work_type', 'work_type', '근무', 'employment']
-'직장유형': ['u_work_type', '직장', 'workplace']
+"근무형태": ["u_work_type", "work_type", "근무", "employment"]
+"직장유형": ["u_work_type", "직장", "workplace"]
 
 # 행동 데이터 관련
-'로그인': ['user_login', 'login', 'login_date', '접속']
-'댓글': ['comment', 'comment_idx', '댓글', '작성']
-'게시글': ['board', 'board_idx', '게시', '포스트']
+"로그인": ["user_login", "login", "login_date", "접속"]
+"댓글": ["comment", "comment_idx", "댓글", "작성"]
+"게시글": ["board", "board_idx", "게시", "포스트"]
 
 # 분석 관련
-'프로필': ['user_detail', 'profile', '프로필', '인적사항']
-'조인': ['join', 'inner join', 'left join', '결합']
-'분포': ['distribution', 'group by', '분포', '비율']
+"프로필": ["user_detail", "profile", "프로필", "인적사항"]
+"조인": ["join", "inner join", "left join", "결합"]
+"분포": ["distribution", "group by", "분포", "비율"]
 ```
 
 ---
@@ -340,16 +351,18 @@ Review FAIL 시:
 
 ## 전체 평가: [PASS / FAIL]
 
-| Phase | 결과 | 핵심 지표 |
-|-------|------|---------|
-| PRD Gap Check | ✅ PASS | 필수 4/4, 산출물 6개 매핑 |
+| Phase             | 결과    | 핵심 지표                 |
+| ----------------- | ------- | ------------------------- |
+| PRD Gap Check     | ✅ PASS | 필수 4/4, 산출물 6개 매핑 |
 | Output Validation | ✅ PASS | Syntax 6/6, PRD 매칭 100% |
-| Quality Gates | ✅ PASS | Schema 100%, 테스트 93% |
+| Quality Gates     | ✅ PASS | Schema 100%, 테스트 93%   |
 
 ## 발견된 이슈
+
 [없음 또는 이슈 상세]
 
 ## 권장 사항
+
 [없음 또는 개선 권고]
 ```
 
@@ -357,14 +370,14 @@ Review FAIL 시:
 
 ## 7. 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `DOMAIN_SCHEMA.md` | 스키마 정합성 검증 기준 |
-| `PRD_GUIDE.md` | PRD 유형/파이프라인 정의 |
-| `CLAUDE.md` | 품질 기준 최상위 근거 |
+| 문서               | 역할                     |
+| ------------------ | ------------------------ |
+| `DOMAIN_SCHEMA.md` | 스키마 정합성 검증 기준  |
+| `PRD_GUIDE.md`     | PRD 유형/파이프라인 정의 |
+| `CLAUDE.md`        | 품질 기준 최상위 근거    |
 
 ---
 
 **END OF VALIDATION_GUIDE.md**
 
-*품질은 타협의 대상이 아닙니다. 이 게이트를 통과하지 못한 코드는 '미완성'입니다.*
+_품질은 타협의 대상이 아닙니다. 이 게이트를 통과하지 못한 코드는 '미완성'입니다._

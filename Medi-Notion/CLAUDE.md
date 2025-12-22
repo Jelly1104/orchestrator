@@ -10,7 +10,7 @@
 ## 🤖 LLM 에이전트 연동
 
 Leader Agent (LLM-Agnostic)는 프로젝트 루트의 `CLAUDE.md`를 **자동으로 읽습니다**.
-이 파일이 진입점 역할을 하며, 상세 규칙은 `.claude/global/` 문서를 참조합니다.
+이 파일이 진입점 역할을 하며, 상세 규칙은 `SYSTEM_MANIFEST.md에` 정의된 경로를 참조합니다.
 
 > **Multi-LLM 지원**: Leader/Sub-agent는 Claude, GPT-4, Gemini 등으로 교체 가능합니다.
 
@@ -77,6 +77,11 @@ Leader Agent (LLM-Agnostic)는 프로젝트 루트의 `CLAUDE.md`를 **자동으
 
 1. **불변성(Immutability)**: `CLAUDE.md`를 포함한 공통 문서는 프로젝트 내에서 수정하지 않는다.
 2. **오버라이딩(Overriding)**: 공통 원칙과 다른 예외 사항은 반드시 `PROJECT_STACK.md`에 정의하여 우선 적용받는다.
+3. 혁신과 안정의 균형 (Innovation vs Stability):
+
+- Application Layer (Code/UX): 과감한 혁신과 리팩토링을 지향한다. (Aggressive)
+- Infrastructure Layer (DB/Schema): 기존 구조의 보존과 안정성을 최우선으로 한다. (Conservative)
+- 충돌 해결: "DB 스키마를 변경해야만 혁신이 가능하다"면, 혁신을 포기하고 스키마를 준수한다.
 
 ---
 
@@ -86,11 +91,13 @@ AI 에이전트는 아래 행위를 **절대 수행하지 않습니다**.
 
 ### 1. 룰북 불변성 (Rulebook Immutability)
 
-| 대상                | 규칙                                    |
-| ------------------- | --------------------------------------- |
-| `.claude/global/*`  | 🔴 **읽기 전용** - 수정/삭제 금지       |
-| `.claude/project/*` | 🟢 수정 가능 (PROJECT_STACK.md, PRD.md) |
-| `CLAUDE.md`         | 🔴 **읽기 전용** - 수정/삭제 금지       |
+| 대상                  | 규칙                                    |
+| --------------------- | --------------------------------------- |
+| `.claude/rules/*`     | 🔴 **읽기 전용** - 수정/삭제 금지       |
+| `.claude/workflows/*` | 🔴 **읽기 전용** - 수정/삭제 금지       |
+| `.claude/context/*`   | 🔴 **읽기 전용** - 수정/삭제 금지       |
+| `.claude/project/*`   | 🟢 수정 가능 (PROJECT_STACK.md, PRD.md) |
+| `CLAUDE.md`           | 🔴 **읽기 전용** - 수정/삭제 금지       |
 
 ### 2. 서버 데이터 보호 (Data Protection)
 
@@ -155,20 +162,16 @@ MAX_RETRIES_PER_HOUR: 20 # 시간당 최대 재시도 횟수
 
 ## 📂 표준 프로젝트 구조 (Standard Directory Layout)
 
-AI 에이전트는 프로젝트 탐색 시 아래 구조를 기본으로 가정합니다.
+System B (HITL Orchestrator)는 아래의 구조를 따릅니다. 에이전트는 파일 탐색 시 이 구조를 가정해야 합니다.
 
-```
+```text
 (Project Root)/
-├── CLAUDE.md                    # 진입점
+├── CLAUDE.md                    # 🔴 Root Constitution (진입점)
 ├── .claude/
-│   ├── global/                  # 🔴 읽기 전용
-│   │   ├── AI_CONTEXT.md
-│   │   ├── DOMAIN_SCHEMA.md
-│   │   ├── QUALITY_GATES.md
-│   │   └── ...
-│   └── project/                 # 🟢 수정 가능
-│       ├── PRD.md
-│       └── PROJECT_STACK.md
+│   ├── SYSTEM_MANIFEST.md       # 🧠 Control Tower (파일 맵 & 로딩 전략)
+│   ├── rules/                   # [Group A] 제약 사항 (Code Style, DB Schema)
+│   ├── workflows/               # [Group B] 실행 절차 (Pipeline, Architecture)
+│   └── context/                 # [Group C] 배경 지식 (Playbook, Context)
 ├── src/
 ├── tests/
 └── docs/
@@ -176,36 +179,37 @@ AI 에이전트는 프로젝트 탐색 시 아래 구조를 기본으로 가정�
 
 ### 📚 룰북 구조
 
-**진입점** (🤖 Leader Agent 자동 로딩)
+상세한 파일 매핑과 로딩 전략은 **.claude/SYSTEM_MANIFEST.md**에 정의되어 있습니다.
 
-| 카테고리 | 문서        | 역할                |
-| -------- | ----------- | ------------------- |
-| -        | `CLAUDE.md` | 팀 공통 헌법 (What) |
+## Group A: Rules (Constraints)
 
-**Core Documents (11개) - 공통 (🔴 Global)**
+엄격하게 준수해야 하는 제약 사항
 
-| 카테고리          | 문서                    | 역할                               |
-| ----------------- | ----------------------- | ---------------------------------- |
-| 00. Core Rulebook | `AI_CONTEXT.md`         | 에이전트 행동 규칙 (How)           |
-|                   | `SUBAGENT_RULES.md`     | Sub-agent 실행 헌법 (LLM-Agnostic) |
-| 01. Context       | `AI_Playbook.md`        | 팀 철학/전략 (Why)                 |
-|                   | `DOMAIN_SCHEMA.md`      | 도메인 스키마 (Map)                |
-| 02. Workflows     | `TDD_WORKFLOW.md`       | 기능 개발 워크플로                 |
-|                   | `DOCUMENT_PIPELINE.md`  | 문서화 파이프라인                  |
-|                   | `AGENT_ARCHITECTURE.md` | Leader/Sub-agent 협업 아키텍처     |
-| 03. Guards        | `QUALITY_GATES.md`      | 품질/보안 기준                     |
-|                   | `INCIDENT_PLAYBOOK.md`  | 장애 대응 절차 + Provider Fallback |
-|                   | `DB_ACCESS_POLICY.md`   | DB 권한 정책 (AI 전용 읽기 계정)   |
-| 04. Standards     | `CODE_STYLE.md`         | 코딩 스타일                        |
+문서,역할
+CODE_STYLE.md,코딩 컨벤션
+DOMAIN_SCHEMA.md,데이터베이스 스키마 (Source of Truth)
+DB_ACCESS_POLICY.md,DB 접근 권한 및 보안 정책
+VALIDATION_GUIDE.md,품질 검증 기준
+TDD_WORKFLOW.md,TDD 개발 절차
 
-**Templates (2개) - 프로젝트별 (🟢 Project)**
+## Group B: Workflows (Processes)
 
-| 카테고리      | 문서               | 역할                                             |
-| ------------- | ------------------ | ------------------------------------------------ |
-| 05. Templates | `PRD.md`           | 기능 요구사항 정의                               |
-|               | `PROJECT_STACK.md` | 기술 스택 및 제약사항 정의 (AI 추천 → 사람 승인) |
+작업 순서와 협업 절차
 
----
+문서,역할
+DOCUMENT_PIPELINE.md,문서화 파이프라인 (PRD→SDD→Code)
+AGENT_ARCHITECTURE.md,에이전트 협업 및 HITL 체크포인트
+INCIDENT_PLAYBOOK.md,장애 대응 및 복구 절차
+PRD_GUIDE.md,요구사항 정의 가이드
+
+## Group C: Context (Philosophy)
+
+팀의 철학 및 행동 강령
+
+문서,역할
+CLAUDE.md,최상위 헌법 (Safety Rules)
+AI_Playbook.md,팀 철학 및 OKR
+AI_CONTEXT.md,에이전트 세부 행동 수칙
 
 ## 📖 미래전략실 개발 가이드
 
@@ -326,13 +330,13 @@ Testing:
 
 AI 에이전트 실행 중 **인간 검토가 필수**인 시점을 명시합니다.
 
-| 체크포인트 | 타이밍 | 검토 항목 | 담당자 |
-|------------|--------|-----------|--------|
-| **PRD 승인** | 파이프라인 시작 전 | 요구사항 완전성, 비즈니스 로직 | PM/기획자 |
-| **설계 검토** | Planning Phase 완료 후 | IA, Wireframe, SDD 품질 | Tech Lead |
-| **분석 검증** | Analysis Phase 완료 후 | SQL 정확성, 인사이트 타당성 | 데이터 분석가 |
-| **코드 리뷰** | Coding Phase 완료 후 | 보안, 성능, 코드 품질 | 개발자 |
-| **최종 승인** | 모든 Phase 완료 후 | PRD 충족 여부, 배포 준비 | PM |
+| 체크포인트    | 타이밍                 | 검토 항목                      | 담당자        |
+| ------------- | ---------------------- | ------------------------------ | ------------- |
+| **PRD 승인**  | 파이프라인 시작 전     | 요구사항 완전성, 비즈니스 로직 | PM/기획자     |
+| **설계 검토** | Planning Phase 완료 후 | IA, Wireframe, SDD 품질        | Tech Lead     |
+| **분석 검증** | Analysis Phase 완료 후 | SQL 정확성, 인사이트 타당성    | 데이터 분석가 |
+| **코드 리뷰** | Coding Phase 완료 후   | 보안, 성능, 코드 품질          | 개발자        |
+| **최종 승인** | 모든 Phase 완료 후     | PRD 충족 여부, 배포 준비       | PM            |
 
 ### HITL 개입 트리거
 
@@ -346,8 +350,7 @@ AI 에이전트 실행 중 **인간 검토가 필수**인 시점을 명시합니
   - DB 스키마 불일치 발견
   - 예상치 못한 에러 발생
 
-중단 시 행동:
-  1. 현재까지 산출물 저장
+중단 시 행동: 1. 현재까지 산출물 저장
   2. 에러/경고 로그 기록
   3. 사용자에게 상황 설명
   4. 명시적 승인 대기
@@ -357,13 +360,13 @@ AI 에이전트 실행 중 **인간 검토가 필수**인 시점을 명시합니
 
 파이프라인 완료 시 AI는 **완료 보고서**를 출력하며, 인간은 다음을 수행합니다:
 
-| 순서 | 인간 액션 | 참조 자료 |
-|------|-----------|-----------|
-| 1 | 산출물 위치 확인 | 완료 보고서의 📁 산출물 위치 |
-| 2 | PRD 충족 여부 검토 | HANDOFF.md, 원본 PRD |
-| 3 | 품질 기준 확인 | QUALITY_GATES.md |
-| 4 | 피드백 반영 요청 (필요 시) | 재실행 또는 수동 수정 |
-| 5 | 개발팀 전달 | HANDOFF.md |
+| 순서 | 인간 액션                  | 참조 자료                    |
+| ---- | -------------------------- | ---------------------------- |
+| 1    | 산출물 위치 확인           | 완료 보고서의 📁 산출물 위치 |
+| 2    | PRD 충족 여부 검토         | HANDOFF.md, 원본 PRD         |
+| 3    | 품질 기준 확인             | QUALITY_GATES.md             |
+| 4    | 피드백 반영 요청 (필요 시) | 재실행 또는 수동 수정        |
+| 5    | 개발팀 전달                | HANDOFF.md                   |
 
 ### Task ID 네이밍 규칙
 
@@ -371,13 +374,14 @@ AI 에이전트 실행 중 **인간 검토가 필수**인 시점을 명시합니
 
 **형식**: `{case번호}-{short-name}-{YYYYMMDD}`
 
-| 패턴 | 예시 | 설명 |
-|------|------|------|
-| 분석 케이스 | `case4-heavy-segment-20251219` | Case 번호 + 핵심 키워드 |
-| 설계 케이스 | `recruit-agent-design-20251219` | 기능명 + design |
-| 혼합 케이스 | `case5-dormancy-predict-20251219` | Case 번호 + 핵심 동사 |
+| 패턴        | 예시                              | 설명                    |
+| ----------- | --------------------------------- | ----------------------- |
+| 분석 케이스 | `case4-heavy-segment-20251219`    | Case 번호 + 핵심 키워드 |
+| 설계 케이스 | `recruit-agent-design-20251219`   | 기능명 + design         |
+| 혼합 케이스 | `case5-dormancy-predict-20251219` | Case 번호 + 핵심 동사   |
 
 **산출물 경로 규칙**:
+
 ```
 docs/{task-id}/           # 설계 문서 (IA, SDD, Wireframe)
 src/analysis/{task-id}/   # 분석 결과 (SQL, JSON, 리포트)
