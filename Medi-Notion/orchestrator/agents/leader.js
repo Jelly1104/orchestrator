@@ -395,10 +395,11 @@ PRD에 산출물 체크리스트가 있으면 반드시 해당 항목들을 모�
 
   /**
    * Review Mode - 코드 검증
+   * v1.2.0: Score 기반 판정 (80점 기준)
    * @param {string} code - 생성된 코드
    * @param {string} sdd - SDD 문서
    * @param {string} testResults - 테스트 결과
-   * @returns {Object} - { passed, feedback, usage }
+   * @returns {Object} - { passed, score, feedback, usage }
    */
   async review(code, sdd, testResults = '') {
     // 보안: 입력 검증 (코드와 SDD는 내부 생성물이지만 길이 제한 적용)
@@ -417,32 +418,47 @@ PRD에 산출물 체크리스트가 있으면 반드시 해당 항목들을 모�
 ## 역할
 - 코드 리뷰
 - QUALITY_GATES.md 기준 검증
-- PASS/FAIL 판정
+- Score 기반 PASS/FAIL 판정 (80점 이상 PASS)
 
 ## 검증 기준
 ${context}
 
+## Score 산정 기준 (100점 만점)
+각 항목별 점수를 합산하여 총점을 계산합니다:
+
+| 항목 | 배점 | 기준 |
+|------|------|------|
+| 코드 품질 | 25점 | 가독성, 네이밍 컨벤션, 중복 제거 |
+| Schema 준수 | 25점 | DOMAIN_SCHEMA.md 컬럼명 사용, 테이블 관계 정확성 |
+| PRD 체크리스트 매칭 | 30점 | Output Validation 결과 기반 |
+| 보안 | 20점 | SQL Injection 방지, 입력 검증, 민감 정보 노출 없음 |
+
 ## Output Validation 결과 (PRD 체크리스트 매칭)
-Output Validation에서 누락 항목이 있으면 반드시 FAIL 판정하고 수정 지시에 포함하세요.
+Output Validation에서 누락 항목이 있으면 해당 비율만큼 PRD 점수 감점.
+예: 5개 중 4개 매칭 = 30점 × (4/5) = 24점
 
 ## 출력 규칙
-1. <VERDICT> 태그에 PASS 또는 FAIL 명시
-2. <FEEDBACK> 태그에 상세 피드백 제공
-3. FAIL 시 구체적인 수정 지시 포함
-4. Output Validation 누락 항목이 있으면 반드시 FAIL
+1. <SCORE> 태그에 총점 (0-100) 명시
+2. <VERDICT> 태그에 PASS (80점 이상) 또는 FAIL (80점 미만) 명시
+3. <FEEDBACK> 태그에 상세 피드백 제공
+4. FAIL 시 구체적인 수정 지시 포함
 
 ## 출력 형식
-<VERDICT>PASS</VERDICT> 또는 <VERDICT>FAIL</VERDICT>
+<SCORE>85</SCORE>
+<VERDICT>PASS</VERDICT>
 
 <FEEDBACK>
 ## 검증 결과 요약
-[전체 평가]
+총점: [점수]/100점
 
-## 항목별 검증
-- 코드 품질: [결과]
-- Schema 준수: [결과]
-- 테스트: [결과]
-- 보안: [결과]
+## 항목별 점수
+- 코드 품질: [점수]/25
+- Schema 준수: [점수]/25
+- PRD 체크리스트: [점수]/30
+- 보안: [점수]/20
+
+## 상세 피드백
+[강점 및 개선점]
 
 ## 수정 필요 사항 (FAIL 시)
 [구체적인 수정 지시]
@@ -465,23 +481,32 @@ ${wrappedCode}
 
 ${validationSection}
 
-위 코드를 QUALITY_GATES.md 기준으로 검증해주세요.
-⚠️ Output Validation에서 누락 항목이 있으면 반드시 FAIL 판정하세요.`;
+위 코드를 QUALITY_GATES.md 기준으로 검증하고 점수를 매겨주세요.
+- 80점 이상: PASS
+- 80점 미만: FAIL (HITL 수동 수정 필요)`;
 
     // Provider를 통한 메시지 전송 (Multi-LLM 지원)
     const response = await this._sendMessage(systemPrompt, userMessage);
 
     const content = response.content;
 
+    // Score 추출 (v1.2.0)
+    const scoreStr = this.extractTag(content, 'SCORE').trim();
+    const score = parseInt(scoreStr, 10) || 0;
+
     const verdict = this.extractTag(content, 'VERDICT').trim().toUpperCase();
     const feedback = this.extractTag(content, 'FEEDBACK');
 
+    // 80점 기준 PASS/FAIL 판정
+    const passed = score >= 80 && verdict === 'PASS';
+
     return {
-      passed: verdict === 'PASS',
+      passed,
+      score,           // v1.2.0: Score 추가
       verdict,
       feedback,
       raw: content,
-      provider: response.provider, // 사용된 Provider 정보 추가
+      provider: response.provider,
       usage: {
         inputTokens: response.usage.inputTokens,
         outputTokens: response.usage.outputTokens

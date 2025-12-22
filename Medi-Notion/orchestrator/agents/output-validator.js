@@ -1,13 +1,14 @@
 /**
- * Output Validator (자체 검증 모듈) v1.1.0
+ * Output Validator (자체 검증 모듈) v1.2.0
  *
  * Native Agent 산출물 생성 후 검증 수행:
  * 1. Syntax/Lint 검증 (SQL, Markdown 등)
  * 2. PRD 체크리스트 매칭 검증
  * 3. 스키마 정합성 검증 (DOMAIN_SCHEMA.md 기반)
  * 4. 설계 문서 품질 검증 (IA, Wireframe, SDD) - v1.1.0 추가
+ * 5. Score 기반 PASS/FAIL 판정 (80점 기준) - v1.2.0 추가
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 import fs from 'fs';
@@ -70,6 +71,7 @@ export class OutputValidator {
 
   /**
    * 전체 검증 실행
+   * v1.2.0: Score 기반 PASS/FAIL 판정 (80점 기준)
    * @param {Object} outputs - 산출물 목록 { name, type, content }[]
    * @param {Object} prdAnalysis - PRD 분석 결과 (Gap Check)
    * @returns {Object} - 검증 결과
@@ -77,22 +79,29 @@ export class OutputValidator {
   validate(outputs, prdAnalysis) {
     const results = {
       passed: true,
+      score: 100,              // v1.2.0: 총 Score (100점 만점)
       timestamp: new Date().toISOString(),
       summary: {
         total: outputs.length,
         syntaxPassed: 0,
         prdMatched: 0,
         schemaValid: 0,
-        designDocs: {          // v1.1.0: 설계 문서 검증 요약
+        designDocs: {
           total: 0,
           passed: 0,
           avgScore: 0
         }
       },
+      scoreBreakdown: {        // v1.2.0: Score 세부 내역
+        syntax: 25,            // 25점 만점
+        schema: 25,            // 25점 만점
+        prdMatch: 30,          // 30점 만점
+        security: 20           // 20점 만점
+      },
       details: [],
       errors: [],
       warnings: [],
-      designDocResults: []     // v1.1.0: 설계 문서별 상세 결과
+      designDocResults: []
     };
 
     // 1. 각 산출물별 검증
@@ -180,14 +189,52 @@ export class OutputValidator {
       results.summary.designDocs.avgScore = Math.round(totalScore / results.designDocResults.length);
     }
 
-    // 최종 판정 (설계 문서 모드에서는 점수 기반 판정)
+    // ========== v1.2.0: Score 기반 판정 (80점 기준) ==========
+    // Syntax 점수 계산 (25점 만점)
+    const syntaxRate = results.summary.total > 0
+      ? results.summary.syntaxPassed / results.summary.total
+      : 1;
+    results.scoreBreakdown.syntax = Math.round(25 * syntaxRate);
+
+    // Schema 점수 계산 (25점 만점)
+    const schemaOutputs = results.details.filter(d => d.checks.schema);
+    const schemaRate = schemaOutputs.length > 0
+      ? schemaOutputs.filter(d => d.checks.schema?.passed).length / schemaOutputs.length
+      : 1;
+    results.scoreBreakdown.schema = Math.round(25 * schemaRate);
+
+    // PRD 체크리스트 매칭 점수 계산 (30점 만점)
+    if (results.prdMatch) {
+      const prdRate = results.prdMatch.total > 0
+        ? results.prdMatch.matched / results.prdMatch.total
+        : 1;
+      results.scoreBreakdown.prdMatch = Math.round(30 * prdRate);
+    }
+
+    // 보안 점수 계산 (20점 만점)
+    // 보안 에러가 있으면 감점
+    const securityErrors = results.errors.filter(e =>
+      e.message?.includes('INSERT') ||
+      e.message?.includes('UPDATE') ||
+      e.message?.includes('DELETE') ||
+      e.message?.includes('DROP')
+    );
+    results.scoreBreakdown.security = securityErrors.length === 0 ? 20 : 0;
+
+    // 총 Score 계산
+    results.score = results.scoreBreakdown.syntax +
+                    results.scoreBreakdown.schema +
+                    results.scoreBreakdown.prdMatch +
+                    results.scoreBreakdown.security;
+
+    // 최종 판정 (80점 기준)
     const hasDesignDocs = results.summary.designDocs.total > 0;
     if (hasDesignDocs) {
-      // 설계 문서 모드: 평균 점수 70점 이상이면 PASS
-      results.passed = results.summary.designDocs.avgScore >= 70 && results.errors.filter(e => e.type !== 'SYNTAX').length === 0;
+      // 설계 문서 모드: 평균 점수 70점 이상 + 총 Score 80점 이상
+      results.passed = results.summary.designDocs.avgScore >= 70 && results.score >= 80;
     } else {
-      // 기존 모드: 에러 없으면 PASS
-      results.passed = results.errors.length === 0;
+      // 코드 모드: 총 Score 80점 이상
+      results.passed = results.score >= 80;
     }
 
     return results;
@@ -902,6 +949,7 @@ export class OutputValidator {
 
   /**
    * 검증 결과 포맷팅
+   * v1.2.0: Score 정보 추가
    */
   formatValidationResult(result) {
     let output = '';
@@ -910,9 +958,20 @@ export class OutputValidator {
     output += '🔍 자체 검증 (Output Validation) 결과\n';
     output += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
 
-    // 요약
+    // 요약 (v1.2.0: Score 추가)
     const status = result.passed ? '✅ PASSED' : '❌ FAILED';
     output += `상태: ${status}\n`;
+    output += `📊 총점: ${result.score || 0}/100점 (80점 이상 PASS)\n\n`;
+
+    // Score 세부 내역 (v1.2.0)
+    if (result.scoreBreakdown) {
+      output += `📈 점수 내역:\n`;
+      output += `  - Syntax:      ${result.scoreBreakdown.syntax}/25\n`;
+      output += `  - Schema:      ${result.scoreBreakdown.schema}/25\n`;
+      output += `  - PRD 매칭:    ${result.scoreBreakdown.prdMatch}/30\n`;
+      output += `  - 보안:        ${result.scoreBreakdown.security}/20\n\n`;
+    }
+
     output += `산출물: ${result.summary.total}개\n`;
     output += `  - Syntax 통과: ${result.summary.syntaxPassed}/${result.summary.total}\n`;
     output += `  - Schema 유효: ${result.summary.schemaValid}/${result.details.filter(d => d.checks.schema).length}\n`;

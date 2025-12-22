@@ -363,6 +363,7 @@ export class Orchestrator {
 
   /**
    * HITL 체크포인트가 필요한지 확인
+   * v1.2.0: missing 배열 체크 개선, review_score 추가
    * @param {string} phase - 현재 phase
    * @param {Object} context - 컨텍스트 정보
    * @returns {string|null} - 필요한 체크포인트 또는 null
@@ -376,8 +377,9 @@ export class Orchestrator {
     // AGENT_ARCHITECTURE.md 기반 HITL 체크포인트
     switch (phase) {
       case 'planning':
-        // 1. PRD 보완 필요 시
-        if (context.gapCheck?.missing?.length > 0) {
+        // 1. PRD 보완 필요 시 (v1.2.0: missing 배열 체크 개선)
+        // gapCheck.missing 또는 gapCheck.hasHighSeverityGaps 체크
+        if (context.gapCheck?.missing?.length > 0 || context.gapCheck?.hasHighSeverityGaps) {
           return HITLCheckpoint.PRD_REVIEW;
         }
         break;
@@ -399,6 +401,13 @@ export class Orchestrator {
       case 'review_fail':
         // 4. 3회 FAIL 시 수동 수정
         if (context.retryCount >= 3) {
+          return HITLCheckpoint.MANUAL_FIX;
+        }
+        break;
+
+      case 'review_score':
+        // 4-1. Review Score 80점 미만 시 수동 수정 (v1.2.0 신규)
+        if (context.score !== undefined && context.score < 80) {
           return HITLCheckpoint.MANUAL_FIX;
         }
         break;

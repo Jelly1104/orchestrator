@@ -69,6 +69,7 @@ export class PRDAnalyzer {
 
   /**
    * PRD 전체 분석 (Gap Check 포함)
+   * v1.2.0: gapCheck.missing 배열 추가 (HITL 트리거 연동)
    */
   async analyze(prdContent) {
     const result = {
@@ -78,6 +79,7 @@ export class PRDAnalyzer {
       reference: null,
       dataRequirements: [],
       gaps: [],
+      missing: [],          // HITL 트리거용 누락 항목 배열
       confirmationNeeded: []
     };
 
@@ -100,6 +102,9 @@ export class PRDAnalyzer {
 
     // 6. Gap 식별
     result.gaps = this.identifyGaps(result);
+
+    // 6.1 missing 배열 추출 (HITL 트리거용)
+    result.missing = result.gaps.missing || [];
 
     // 7. 확인 필요 항목 생성
     result.confirmationNeeded = this.generateConfirmations(result);
@@ -418,29 +423,35 @@ export class PRDAnalyzer {
   }
 
   /**
-   * Gap 식별
+   * Gap 식별 (v1.2.0: HITL 트리거용 missing 배열 추가)
    */
   identifyGaps(analysisResult) {
     const gaps = [];
+    const missing = []; // HITL 트리거용 누락 항목 배열
 
     // 필수 항목 누락
     const { requiredFields } = analysisResult;
     if (!requiredFields.objective.exists) {
       gaps.push({ type: 'MISSING_FIELD', field: '목적(Objective)', severity: 'HIGH' });
+      missing.push('목적(Objective)');
     }
     if (!requiredFields.targetUser.exists) {
       gaps.push({ type: 'MISSING_FIELD', field: '타겟 유저(Target User)', severity: 'HIGH' });
+      missing.push('타겟 유저(Target User)');
     }
     if (!requiredFields.coreFeatures.exists) {
       gaps.push({ type: 'MISSING_FIELD', field: '핵심 기능(Core Features)', severity: 'HIGH' });
+      missing.push('핵심 기능(Core Features)');
     }
     if (!requiredFields.successCriteria.exists) {
       gaps.push({ type: 'MISSING_FIELD', field: '성공 지표(Success Criteria)', severity: 'MEDIUM' });
+      missing.push('성공 지표(Success Criteria)');
     }
 
     // 산출물 누락
     if (analysisResult.deliverables.length === 0) {
       gaps.push({ type: 'NO_DELIVERABLES', severity: 'HIGH' });
+      missing.push('산출물 체크리스트');
     }
 
     // 정량적인데 데이터 요구사항 없음
@@ -449,12 +460,16 @@ export class PRDAnalyzer {
       analysisResult.dataRequirements.length === 0
     ) {
       gaps.push({ type: 'NO_DATA_REQUIREMENTS', severity: 'MEDIUM' });
+      missing.push('데이터 요구사항(테이블/컬럼)');
     }
 
     // 레퍼런스 없음
     if (!analysisResult.reference) {
       gaps.push({ type: 'NO_REFERENCE', severity: 'LOW' });
     }
+
+    // missing 배열을 gaps에 첨부 (HITL 트리거용)
+    gaps.missing = missing;
 
     return gaps;
   }
@@ -514,30 +529,91 @@ export class PRDAnalyzer {
 
   /**
    * PRD v2 유형 판별 (Orchestrator에서 호출)
+   * v1.2.0: gapCheck 결과 포함 (HITL 트리거 연동)
    * @param {string} prdContent - PRD 텍스트 내용
-   * @returns {Object} - { type, pipeline }
+   * @returns {Object} - { type, pipeline, gapCheck }
    */
   classifyPRDv2(prdContent) {
     if (!prdContent || typeof prdContent !== 'string') {
-      return { type: 'QUALITATIVE', pipeline: 'design' };
+      return { type: 'QUALITATIVE', pipeline: 'design', gapCheck: null };
     }
 
     // PRD v2 명시적 type 필드 추출
     const typeMatch = prdContent.match(/type\s*:\s*(QUANTITATIVE|QUALITATIVE|MIXED)/i);
     const pipelineMatch = prdContent.match(/pipeline\s*:\s*(analysis|design|code|mixed)/i);
 
+    // 산출물 추출 (Gap Check 용)
+    const deliverables = this.extractDeliverables(prdContent);
+
+    // Gap Check 실행 (동기 버전)
+    const gapCheckResult = this._runGapCheckSync(prdContent, deliverables);
+
     if (typeMatch) {
       const type = typeMatch[1].toUpperCase();
       const pipeline = pipelineMatch ? pipelineMatch[1].toLowerCase() : this.inferPipeline(type);
-      return { type, pipeline };
+      return { type, pipeline, gapCheck: gapCheckResult };
     }
 
     // v2 필드가 없으면 기존 로직으로 추론
-    const deliverables = this.extractDeliverables(prdContent);
     const inferredType = this.classifyPRD(prdContent, deliverables);
     const inferredPipeline = this.inferPipeline(inferredType);
 
-    return { type: inferredType, pipeline: inferredPipeline };
+    return { type: inferredType, pipeline: inferredPipeline, gapCheck: gapCheckResult };
+  }
+
+  /**
+   * Gap Check 동기 버전 (classifyPRDv2용)
+   */
+  _runGapCheckSync(prdContent, deliverables) {
+    const requiredFields = this.checkRequiredFields(prdContent);
+    const prdType = this.classifyPRD(prdContent, deliverables);
+    const dataRequirements = (prdType === 'QUANTITATIVE' || prdType === 'MIXED')
+      ? this.extractDataRequirements(prdContent)
+      : [];
+    const reference = this.matchReference(prdContent);
+
+    // Gap 식별
+    const gaps = [];
+    const missing = [];
+
+    if (!requiredFields.objective.exists) {
+      gaps.push({ type: 'MISSING_FIELD', field: '목적(Objective)', severity: 'HIGH' });
+      missing.push('목적(Objective)');
+    }
+    if (!requiredFields.targetUser.exists) {
+      gaps.push({ type: 'MISSING_FIELD', field: '타겟 유저(Target User)', severity: 'HIGH' });
+      missing.push('타겟 유저(Target User)');
+    }
+    if (!requiredFields.coreFeatures.exists) {
+      gaps.push({ type: 'MISSING_FIELD', field: '핵심 기능(Core Features)', severity: 'HIGH' });
+      missing.push('핵심 기능(Core Features)');
+    }
+    if (!requiredFields.successCriteria.exists) {
+      gaps.push({ type: 'MISSING_FIELD', field: '성공 지표(Success Criteria)', severity: 'MEDIUM' });
+      missing.push('성공 지표(Success Criteria)');
+    }
+    if (deliverables.length === 0) {
+      gaps.push({ type: 'NO_DELIVERABLES', severity: 'HIGH' });
+      missing.push('산출물 체크리스트');
+    }
+    if ((prdType === 'QUANTITATIVE' || prdType === 'MIXED') && dataRequirements.length === 0) {
+      gaps.push({ type: 'NO_DATA_REQUIREMENTS', severity: 'MEDIUM' });
+      missing.push('데이터 요구사항(테이블/컬럼)');
+    }
+    if (!reference) {
+      gaps.push({ type: 'NO_REFERENCE', severity: 'LOW' });
+    }
+
+    return {
+      prdType,
+      requiredFields,
+      deliverables,
+      dataRequirements,
+      reference,
+      gaps,
+      missing,
+      hasHighSeverityGaps: gaps.filter(g => g.severity === 'HIGH').length > 0
+    };
   }
 
   /**
