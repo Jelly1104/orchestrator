@@ -1,0 +1,43 @@
+{
+  "taskId": "case5-run-003",
+  "prdPath": "# [Case #5] 휴면 예정 회원 예측 및 분석 (Quantitative Analysis)\n\n## 1. 목적 (Objective)\n\n- 최근 1년간 로그인 이력이 없는 '휴면 전환 임박' 의사 회원을 식별하여 마케팅 타겟 리스트를 추출함.\n- **분석 목표:** 로그인 공백 기간별 회원 수 분포 파악 및 전문과목별 휴면 비율 분석.\n\n## 2. PRD 유형 및 파이프라인\n\n- **Type:** QUANTITATIVE (정량 분석)\n- **Pipeline:** analysis\n\n## 3. 데이터 요구사항 (Data Requirements) - 🚨 필수 매핑 정보\n\nAnalysisAgent는 아래 매핑 정보를 기반으로 SQL을 생성해야 합니다.\n\n### 3.1 조회 대상 테이블 (Target Tables)\n\n1. **USERS (회원 마스터)**\n   - 역할: 회원 상태 및 기본 정보 확인\n   - 필수 조건: `U_STATUS = 'ACTIVE'` (활성 회원만 대상)\n2. **USER_DETAIL (회원 상세)**\n   - 역할: 전문과목(Major) 정보 확인\n   - 매핑: `USERS.U_ID = USER_DETAIL.U_ID`\n3. **USER_LOGIN (로그인 이력) - 🚨 대용량 주의**\n   - 역할: 마지막 로그인 시점 확인\n   - 매핑: `USERS.U_ID = USER_LOGIN.U_ID`\n   - **제약:** `GROUP BY`를 사용하여 회원별 최신 `UL_LOG_DATE`만 추출할 것.\n\n### 3.2 필수 조회 컬럼 (Target Columns)\n\n- **회원 ID:** `USERS.U_ID`\n- **회원명:** `USERS.U_NAME` (※ 결과 출력 시 마스킹 처리 필수: `CONCAT(LEFT(U_NAME, 1), '**')`)\n- **전문과목:** `USER_DETAIL.U_MAJOR_CODE_1` (주의: `MAJOR_CODE` 아님)\n- **최종 로그인:** `MAX(USER_LOGIN.UL_LOG_DATE)`\n\n### 3.3 분석 로직 (Analysis Logic)\n\n- **휴면 임박 기준:** 최종 로그인 날짜가 현재(`NOW()`)로부터 **11개월 이전**인 회원.\n- **쿼리 구조 제안:**\n  1. `USER_LOGIN`을 `U_ID`로 그룹핑하여 `LAST_LOGIN_DATE` 추출.\n  2. `USERS` 및 `USER_DETAIL`과 조인.\n  3. `LAST_LOGIN_DATE < DATE_SUB(NOW(), INTERVAL 11 MONTH)` 조건 필터링.\n\n## 4. 성공 지표 및 산출물 (Success Metrics & Deliverables)\n\n1. **성공 지표:**\n   - 실행 가능한 SQL 쿼리 생성 (문법 오류 없음).\n   - 휴면 임박 회원 리스트 추출 (최소 1명 이상).\n2. **산출물 체크리스트:**\n   - [ ] `query.sql`: 추출 쿼리 파일 (LIMIT 1000 포함 필수).\n   - [ ] `analysis_report.md`: 전문과목별 휴면 예정자 분포 테이블 포함.\n",
+  "status": "RUNNING",
+  "currentPhase": "analysis",
+  "currentCheckpoint": null,
+  "createdAt": "2025-12-22T09:04:13.434Z",
+  "updatedAt": "2025-12-22T09:04:13.437Z",
+  "history": [
+    {
+      "event": "SESSION_CREATED",
+      "data": {
+        "prdPath": "# [Case #5] 휴면 예정 회원 예측 및 분석 (Quantitative Analysis)\n\n## 1. 목적 (Objective)\n\n- 최근 1년간 로그인 이력이 없는 '휴면 전환 임박' 의사 회원을 식별하여 마케팅 타겟 리스트를 추출함.\n- **분석 목표:** 로그인 공백 기간별 회원 수 분포 파악 및 전문과목별 휴면 비율 분석.\n\n## 2. PRD 유형 및 파이프라인\n\n- **Type:** QUANTITATIVE (정량 분석)\n- **Pipeline:** analysis\n\n## 3. 데이터 요구사항 (Data Requirements) - 🚨 필수 매핑 정보\n\nAnalysisAgent는 아래 매핑 정보를 기반으로 SQL을 생성해야 합니다.\n\n### 3.1 조회 대상 테이블 (Target Tables)\n\n1. **USERS (회원 마스터)**\n   - 역할: 회원 상태 및 기본 정보 확인\n   - 필수 조건: `U_STATUS = 'ACTIVE'` (활성 회원만 대상)\n2. **USER_DETAIL (회원 상세)**\n   - 역할: 전문과목(Major) 정보 확인\n   - 매핑: `USERS.U_ID = USER_DETAIL.U_ID`\n3. **USER_LOGIN (로그인 이력) - 🚨 대용량 주의**\n   - 역할: 마지막 로그인 시점 확인\n   - 매핑: `USERS.U_ID = USER_LOGIN.U_ID`\n   - **제약:** `GROUP BY`를 사용하여 회원별 최신 `UL_LOG_DATE`만 추출할 것.\n\n### 3.2 필수 조회 컬럼 (Target Columns)\n\n- **회원 ID:** `USERS.U_ID`\n- **회원명:** `USERS.U_NAME` (※ 결과 출력 시 마스킹 처리 필수: `CONCAT(LEFT(U_NAME, 1), '**')`)\n- **전문과목:** `USER_DETAIL.U_MAJOR_CODE_1` (주의: `MAJOR_CODE` 아님)\n- **최종 로그인:** `MAX(USER_LOGIN.UL_LOG_DATE)`\n\n### 3.3 분석 로직 (Analysis Logic)\n\n- **휴면 임박 기준:** 최종 로그인 날짜가 현재(`NOW()`)로부터 **11개월 이전**인 회원.\n- **쿼리 구조 제안:**\n  1. `USER_LOGIN`을 `U_ID`로 그룹핑하여 `LAST_LOGIN_DATE` 추출.\n  2. `USERS` 및 `USER_DETAIL`과 조인.\n  3. `LAST_LOGIN_DATE < DATE_SUB(NOW(), INTERVAL 11 MONTH)` 조건 필터링.\n\n## 4. 성공 지표 및 산출물 (Success Metrics & Deliverables)\n\n1. **성공 지표:**\n   - 실행 가능한 SQL 쿼리 생성 (문법 오류 없음).\n   - 휴면 임박 회원 리스트 추출 (최소 1명 이상).\n2. **산출물 체크리스트:**\n   - [ ] `query.sql`: 추출 쿼리 파일 (LIMIT 1000 포함 필수).\n   - [ ] `analysis_report.md`: 전문과목별 휴면 예정자 분포 테이블 포함.\n"
+      },
+      "timestamp": "2025-12-22T09:04:13.435Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "initialized"
+      },
+      "timestamp": "2025-12-22T09:04:13.436Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "analysis"
+      },
+      "timestamp": "2025-12-22T09:04:13.438Z"
+    }
+  ],
+  "metadata": {
+    "pipeline": "analysis",
+    "mode": null,
+    "projectRoot": "/Users/m2-mini/Desktop/eunah/ATO-System-B",
+    "maxRetries": 3,
+    "autoApprove": true
+  },
+  "retryCount": 0,
+  "maxRetries": 3
+}

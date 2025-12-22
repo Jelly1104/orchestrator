@@ -1,0 +1,76 @@
+{
+  "taskId": "verify-ctx-02",
+  "prdPath": "Test Leader Agent Context Loading",
+  "status": "PAUSED_HITL",
+  "currentPhase": "design_approval",
+  "currentCheckpoint": "DESIGN_APPROVAL",
+  "createdAt": "2025-12-22T08:54:28.126Z",
+  "updatedAt": "2025-12-22T08:54:43.137Z",
+  "history": [
+    {
+      "event": "SESSION_CREATED",
+      "data": {
+        "prdPath": "Test Leader Agent Context Loading"
+      },
+      "timestamp": "2025-12-22T08:54:28.127Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "initialized"
+      },
+      "timestamp": "2025-12-22T08:54:28.128Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "design_approval"
+      },
+      "timestamp": "2025-12-22T08:54:43.136Z"
+    },
+    {
+      "event": "PAUSED_FOR_HITL",
+      "data": {
+        "checkpoint": "DESIGN_APPROVAL",
+        "context": {
+          "files": {
+            "ia": null,
+            "wireframe": null,
+            "sdd": null,
+            "handoff": null
+          },
+          "gapCheck": null,
+          "message": "설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.",
+          "docsPath": "docs/verify-ctx-02/"
+        }
+      },
+      "timestamp": "2025-12-22T08:54:43.138Z"
+    }
+  ],
+  "metadata": {
+    "pipeline": "auto",
+    "mode": null,
+    "projectRoot": "/Users/m2-mini/Desktop/eunah/ATO-System-B",
+    "maxRetries": 3,
+    "autoApprove": true
+  },
+  "retryCount": 0,
+  "maxRetries": 3,
+  "hitlContext": {
+    "checkpoint": "DESIGN_APPROVAL",
+    "pausedAt": "2025-12-22T08:54:43.137Z",
+    "context": {
+      "files": {
+        "ia": null,
+        "wireframe": null,
+        "sdd": null,
+        "handoff": null
+      },
+      "gapCheck": null,
+      "message": "설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.",
+      "docsPath": "docs/verify-ctx-02/"
+    }
+  }
+}

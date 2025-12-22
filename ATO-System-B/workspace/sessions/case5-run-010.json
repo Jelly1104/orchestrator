@@ -1,0 +1,43 @@
+{
+  "taskId": "case5-run-010",
+  "prdPath": "# [Case #5] 휴면 예정 회원 예측 및 분석 (Quantitative Analysis)\n\n## 1. 목적 (Objective)\n\n- 최근 1년간 로그인 이력이 없는 '휴면 전환 임박' 의사 회원을 식별하여 마케팅 타겟 리스트를 추출함.\n- **분석 목표:** 로그인 공백 기간별 회원 수 분포 파악 및 전문과목별 휴면 비율 분석.\n\n## 2. PRD 유형 및 파이프라인\n\n- **Type:** QUANTITATIVE (정량 분석)\n- **Pipeline:** analysis\n\n## 3. 데이터 요구사항 (Data Requirements) - 🚨 필수 매핑 정보 (DOMAIN_SCHEMA v1.1 기준)\n\nAnalysisAgent는 아래 매핑 정보를 기반으로 SQL을 생성해야 합니다.\n\n### 3.1 조회 대상 테이블 (Target Tables)\n\n1. **USERS (회원 마스터)**\n   - 역할: 회원 상태 확인\n   - 필수 컬럼: `U_ID` (회원ID), `U_NAME` (이름), `U_STATUS` (상태)\n   - 조건: `U_STATUS = 'ACTIVE'`\n2. **USER_DETAIL (회원 상세)**\n   - 역할: 전문과목 확인\n   - 조인 키: `USERS.U_ID = USER_DETAIL.U_ID`\n   - 필수 컬럼: `U_MAJOR_CODE_1` (전문과목 코드 - **주의: MAJOR_CODE 아님**)\n3. **USER_LOGIN (로그인 이력)**\n   - 역할: 마지막 로그인 시점 확인\n   - 조인 키: `USERS.U_ID = USER_LOGIN.U_ID`\n   - 필수 컬럼: `UL_LOG_DATE` (로그인 일시)\n   - **전략:** 대용량 테이블이므로 반드시 `GROUP BY U_ID` 후 `MAX(UL_LOG_DATE)`를 사용해야 함.\n\n### 3.2 분석 로직 (Analysis Logic)\n\n- **휴면 임박 기준:** 최종 로그인 날짜가 현재(`NOW()`)로부터 **11개월 이전**인 회원.\n- **필터링 조건:**\n  ```sql\n  WHERE last_login_date < DATE_SUB(NOW(), INTERVAL 11 MONTH)\n  AND last_login_date > DATE_SUB(NOW(), INTERVAL 12 MONTH)\n  ```\n\n4. 성공 지표 및 산출물 (Success Metrics & Deliverables)\n1. 성공 지표:\n   ◦ 실행 가능한 SQL 쿼리 생성 (문법 오류 없음).\n   ◦ 휴면 임박 회원 리스트 추출 (최소 1명 이상).\n1. 산출물 체크리스트:\n   ◦ [ ] query.sql: 추출 쿼리 파일 (LIMIT 1000 포함 필수).\n   ◦ [ ] analysis_report.md: 전문과목(U_MAJOR_CODE_1)별 휴면 예정자 분포 테이블 포함.\n",
+  "status": "RUNNING",
+  "currentPhase": "analysis",
+  "currentCheckpoint": null,
+  "createdAt": "2025-12-22T09:34:53.079Z",
+  "updatedAt": "2025-12-22T09:34:53.082Z",
+  "history": [
+    {
+      "event": "SESSION_CREATED",
+      "data": {
+        "prdPath": "# [Case #5] 휴면 예정 회원 예측 및 분석 (Quantitative Analysis)\n\n## 1. 목적 (Objective)\n\n- 최근 1년간 로그인 이력이 없는 '휴면 전환 임박' 의사 회원을 식별하여 마케팅 타겟 리스트를 추출함.\n- **분석 목표:** 로그인 공백 기간별 회원 수 분포 파악 및 전문과목별 휴면 비율 분석.\n\n## 2. PRD 유형 및 파이프라인\n\n- **Type:** QUANTITATIVE (정량 분석)\n- **Pipeline:** analysis\n\n## 3. 데이터 요구사항 (Data Requirements) - 🚨 필수 매핑 정보 (DOMAIN_SCHEMA v1.1 기준)\n\nAnalysisAgent는 아래 매핑 정보를 기반으로 SQL을 생성해야 합니다.\n\n### 3.1 조회 대상 테이블 (Target Tables)\n\n1. **USERS (회원 마스터)**\n   - 역할: 회원 상태 확인\n   - 필수 컬럼: `U_ID` (회원ID), `U_NAME` (이름), `U_STATUS` (상태)\n   - 조건: `U_STATUS = 'ACTIVE'`\n2. **USER_DETAIL (회원 상세)**\n   - 역할: 전문과목 확인\n   - 조인 키: `USERS.U_ID = USER_DETAIL.U_ID`\n   - 필수 컬럼: `U_MAJOR_CODE_1` (전문과목 코드 - **주의: MAJOR_CODE 아님**)\n3. **USER_LOGIN (로그인 이력)**\n   - 역할: 마지막 로그인 시점 확인\n   - 조인 키: `USERS.U_ID = USER_LOGIN.U_ID`\n   - 필수 컬럼: `UL_LOG_DATE` (로그인 일시)\n   - **전략:** 대용량 테이블이므로 반드시 `GROUP BY U_ID` 후 `MAX(UL_LOG_DATE)`를 사용해야 함.\n\n### 3.2 분석 로직 (Analysis Logic)\n\n- **휴면 임박 기준:** 최종 로그인 날짜가 현재(`NOW()`)로부터 **11개월 이전**인 회원.\n- **필터링 조건:**\n  ```sql\n  WHERE last_login_date < DATE_SUB(NOW(), INTERVAL 11 MONTH)\n  AND last_login_date > DATE_SUB(NOW(), INTERVAL 12 MONTH)\n  ```\n\n4. 성공 지표 및 산출물 (Success Metrics & Deliverables)\n1. 성공 지표:\n   ◦ 실행 가능한 SQL 쿼리 생성 (문법 오류 없음).\n   ◦ 휴면 임박 회원 리스트 추출 (최소 1명 이상).\n1. 산출물 체크리스트:\n   ◦ [ ] query.sql: 추출 쿼리 파일 (LIMIT 1000 포함 필수).\n   ◦ [ ] analysis_report.md: 전문과목(U_MAJOR_CODE_1)별 휴면 예정자 분포 테이블 포함.\n"
+      },
+      "timestamp": "2025-12-22T09:34:53.080Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "initialized"
+      },
+      "timestamp": "2025-12-22T09:34:53.080Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "analysis"
+      },
+      "timestamp": "2025-12-22T09:34:53.082Z"
+    }
+  ],
+  "metadata": {
+    "pipeline": "analysis",
+    "mode": null,
+    "projectRoot": "/Users/m2-mini/Desktop/eunah/ATO-System-B",
+    "maxRetries": 3,
+    "autoApprove": true
+  },
+  "retryCount": 0,
+  "maxRetries": 3
+}

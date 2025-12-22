@@ -1,0 +1,76 @@
+{
+  "taskId": "test-leader-ctx",
+  "prdPath": "리더 에이전트 문서 로딩 테스트",
+  "status": "PAUSED_HITL",
+  "currentPhase": "design_approval",
+  "currentCheckpoint": "DESIGN_APPROVAL",
+  "createdAt": "2025-12-22T08:49:05.626Z",
+  "updatedAt": "2025-12-22T08:49:29.515Z",
+  "history": [
+    {
+      "event": "SESSION_CREATED",
+      "data": {
+        "prdPath": "리더 에이전트 문서 로딩 테스트"
+      },
+      "timestamp": "2025-12-22T08:49:05.627Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "initialized"
+      },
+      "timestamp": "2025-12-22T08:49:05.628Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "design_approval"
+      },
+      "timestamp": "2025-12-22T08:49:29.515Z"
+    },
+    {
+      "event": "PAUSED_FOR_HITL",
+      "data": {
+        "checkpoint": "DESIGN_APPROVAL",
+        "context": {
+          "files": {
+            "ia": null,
+            "wireframe": null,
+            "sdd": null,
+            "handoff": null
+          },
+          "gapCheck": null,
+          "message": "설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.",
+          "docsPath": "docs/test-leader-ctx/"
+        }
+      },
+      "timestamp": "2025-12-22T08:49:29.516Z"
+    }
+  ],
+  "metadata": {
+    "pipeline": "auto",
+    "mode": null,
+    "projectRoot": "/Users/m2-mini/Desktop/eunah/ATO-System-B",
+    "maxRetries": 3,
+    "autoApprove": true
+  },
+  "retryCount": 0,
+  "maxRetries": 3,
+  "hitlContext": {
+    "checkpoint": "DESIGN_APPROVAL",
+    "pausedAt": "2025-12-22T08:49:29.515Z",
+    "context": {
+      "files": {
+        "ia": null,
+        "wireframe": null,
+        "sdd": null,
+        "handoff": null
+      },
+      "gapCheck": null,
+      "message": "설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.",
+      "docsPath": "docs/test-leader-ctx/"
+    }
+  }
+}

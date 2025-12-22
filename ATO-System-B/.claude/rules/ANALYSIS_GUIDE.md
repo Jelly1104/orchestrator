@@ -2,8 +2,7 @@
 
 > **문서 버전**: 2.0.1
 > **최종 업데이트**: 2025-12-22
-> **물리적 경로**: `.claude/rules/ANALYSIS_GUIDE.md`
-> **관리자**: 미래전략실 (ATO Team)
+> **물리적 경로**: `.claude/rules/ANALYSIS_GUIDE.md` > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: ANALYSIS_AGENT_SPEC.md, DB_ACCESS_POLICY.md
 
 ---
@@ -80,9 +79,10 @@ Step 5: 결과 해석 (MIXED일 때)
   - 인사이트 도출
         ↓
 Step 6: 산출물 생성
-  - src/analysis/*.sql
-  - src/analysis/results/*.json
-  - reports/analysis_report.md
+  - {task-root}/results/*.sql        (쿼리 파일)
+  - {task-root}/results/*.json       (데이터 파일)
+  - {task-root}/results/report.md    (분석 리포트)
+  (모든 산출물은 results 폴더 내에 통합 저장)
 
 [출력] SQL 파일, 결과 데이터, 분석 리포트
 ```
