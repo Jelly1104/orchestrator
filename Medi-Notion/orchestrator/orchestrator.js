@@ -4,7 +4,7 @@
  * Leader ↔ Sub-agent 자동 협업 시스템
  *
  * 흐름:
- * 1. Task 입력
+ * 1. Task 입력 (또는 HITL Resume)
  * 2. (Auto) Leader Planning
  * 3. (Auto) Sub-agent Coding
  * 4. (Auto) Leader Review
@@ -17,12 +17,15 @@
  * - API 키 보호
  * - Rate Limiting
  *
- * HITL 지원 (v3.4.0):
+ * HITL 지원 (v3.5.0):
  * - Session Store 연동
  * - Pause/Resume 메커니즘
  * - HITL 체크포인트 (5종)
+ * - Resume 로직 (APPROVED 세션 재개)
+ * - Graceful Exit (process.exit)
+ * - Feature Flag 연동
  *
- * @version 3.4.0
+ * @version 3.5.0
  */
 
 import fs from 'fs';
@@ -438,6 +441,7 @@ export class Orchestrator {
 
   /**
    * 오케스트레이션 실행
+   * v3.5.0: Resume 로직 추가 - 기존 세션 재개 지원
    * @param {string} taskDescription - 작업 설명
    * @param {Object} options - 추가 옵션
    * @returns {Object} - 실행 결과
@@ -464,6 +468,24 @@ export class Orchestrator {
 
     // Rate Limiting 체크
     this.checkRateLimit();
+
+    // ========== Phase 0: Resume 로직 (v3.5.0) ==========
+    // 기존 세션이 APPROVED 상태면 중단된 지점부터 재개
+    if (isEnabled('HITL_RESUME_ENABLED')) {
+      const existingSession = sessionStore.get(taskId);
+      if (existingSession && existingSession.status === SessionStatus.APPROVED) {
+        console.log('\n▶️  HITL Resume 감지');
+        console.log(`   Task ID: ${taskId}`);
+        console.log(`   중단 지점: ${existingSession.currentCheckpoint}`);
+        console.log(`   Phase: ${existingSession.currentPhase}`);
+
+        // 세션 재개
+        this.resumeSession(taskId);
+
+        // 중단 지점에 따라 적절한 위치부터 재개
+        return await this._resumeFromCheckpoint(taskId, existingSession, options);
+      }
+    }
 
     // 메트릭 트래커 초기화
     const metrics = new MetricsTracker(taskId);
@@ -899,6 +921,7 @@ export class Orchestrator {
 
   /**
    * Analysis 파이프라인 실행 (정량적 PRD용)
+   * v3.5.0: QUERY_REVIEW 체크포인트 연동
    * @param {string} taskId - 태스크 ID
    * @param {string} taskDescription - 작업 설명
    * @param {string} prdContent - PRD 내용
@@ -910,6 +933,7 @@ export class Orchestrator {
 
     const metrics = new MetricsTracker(taskId);
     metrics.startPhase('analysis');
+    sessionStore.updatePhase(taskId, 'analysis');
 
     try {
       // PRD 파싱
@@ -922,7 +946,47 @@ export class Orchestrator {
         parsedPRD.dbConnection = options.dbConfig;
       }
 
-      // AnalysisAgent 실행
+      // ========== Phase 7-2: QUERY_REVIEW 체크포인트 (v3.5.0) ==========
+      // 쿼리 생성 단계에서 위험 쿼리 감지 시 HITL 트리거
+      console.log('📊 [Analysis] 쿼리 생성 중...');
+      const generatedQueries = await this.analysisAgent.generateQueries(parsedPRD);
+
+      // 위험 쿼리 검사
+      const dangerousQueries = this._detectDangerousQueries(generatedQueries);
+
+      if (dangerousQueries.length > 0 && !isEnabled('HITL_AUTO_APPROVE_QUERY') && !this.autoApprove) {
+        console.log(`\n⚠️  위험 쿼리 감지: ${dangerousQueries.length}개`);
+        dangerousQueries.forEach((q, i) => {
+          console.log(`   ${i + 1}. ${q.type}: ${q.query.substring(0, 100)}...`);
+        });
+
+        const queryCheckpoint = this.checkHITLRequired('query', { isDangerous: true });
+
+        if (queryCheckpoint) {
+          sessionStore.updatePhase(taskId, 'query_review');
+          await this.pauseForHITL(taskId, queryCheckpoint, {
+            dangerousQueries,
+            allQueries: generatedQueries,
+            message: '위험한 SQL 쿼리가 감지되었습니다. 검토 후 승인하거나 수정을 요청해주세요.',
+            warning: 'DELETE, DROP, TRUNCATE, UPDATE 등의 구문이 포함되어 있습니다.'
+          });
+
+          // Graceful Exit
+          if (isEnabled('HITL_GRACEFUL_EXIT')) {
+            return this._gracefulExitForHITL(taskId, 'QUERY_REVIEW');
+          }
+
+          // Exit 없이 대기
+          const approval = await this.waitForApproval(taskId);
+          if (!approval.approved) {
+            throw new Error(`Query Review 거부됨: ${approval.session?.hitlContext?.rejectionReason}`);
+          }
+          this.resumeSession(taskId);
+          console.log('✅ Query Review 승인됨 - 쿼리 실행 진행');
+        }
+      }
+
+      // AnalysisAgent 실행 (승인된 쿼리로)
       console.log('📊 [Analysis] AnalysisAgent 시작...');
       const analysisResult = await this.analysisAgent.analyze(parsedPRD);
 
@@ -1673,6 +1737,327 @@ export class Orchestrator {
     }
 
     return `${shortName}-${dateStr}`;
+  }
+
+  // ========== HITL Resume & Graceful Exit (v3.5.0) ==========
+
+  /**
+   * HITL 체크포인트에서 중단된 세션 재개
+   * @param {string} taskId - 태스크 ID
+   * @param {Object} session - 저장된 세션 정보
+   * @param {Object} options - 실행 옵션
+   * @returns {Object} - 실행 결과
+   */
+  async _resumeFromCheckpoint(taskId, session, options = {}) {
+    const checkpoint = session.currentCheckpoint;
+    const phase = session.currentPhase;
+    const context = session.hitlContext?.context || {};
+
+    console.log(`\n🔄 Resume 시작: ${checkpoint} → ${phase}`);
+
+    const metrics = new MetricsTracker(taskId);
+
+    try {
+      switch (checkpoint) {
+        case HITLCheckpoint.PRD_REVIEW:
+          // PRD Review 승인 후 → 파이프라인 분기부터 재개
+          console.log('   → PRD Review 승인됨, 파이프라인 실행 재개');
+          sessionStore.updatePhase(taskId, 'pipeline_routing');
+
+          // 저장된 컨텍스트에서 파이프라인 정보 추출
+          const pipeline = context.pipeline || 'design';
+          const prdContent = session.prdPath || '';
+          const taskDescription = session.metadata?.taskDescription || '';
+
+          if (pipeline === 'analysis') {
+            return await this.runAnalysisPipeline(taskId, taskDescription, prdContent, options);
+          } else if (pipeline === 'mixed') {
+            return await this.runMixedPipeline(taskId, taskDescription, prdContent, options);
+          }
+          // design 파이프라인: Planning부터 시작
+          return await this._resumeDesignPipeline(taskId, session, metrics, options);
+
+        case HITLCheckpoint.QUERY_REVIEW:
+          // Query Review 승인 후 → 쿼리 실행부터 재개
+          console.log('   → Query Review 승인됨, 쿼리 실행 재개');
+          sessionStore.updatePhase(taskId, 'query_execution');
+          return await this._resumeQueryExecution(taskId, session, metrics, options);
+
+        case HITLCheckpoint.DESIGN_APPROVAL:
+          // Design Approval 승인 후 → Coding부터 재개
+          console.log('   → Design Approval 승인됨, 구현 단계 재개');
+          sessionStore.updatePhase(taskId, 'coding');
+          return await this._resumeCodingPhase(taskId, session, metrics, options);
+
+        case HITLCheckpoint.MANUAL_FIX:
+          // Manual Fix 승인 후 → 재시도 카운터 초기화하고 Coding 재개
+          console.log('   → Manual Fix 승인됨, 재시도 카운터 초기화');
+          sessionStore.updatePhase(taskId, 'coding_retry');
+          return await this._resumeCodingPhase(taskId, session, metrics, options);
+
+        case HITLCheckpoint.DEPLOY_APPROVAL:
+          // Deploy Approval 승인 후 → 완료 처리
+          console.log('   → Deploy Approval 승인됨, 배포 완료 처리');
+          const result = { success: true, taskId, deployed: true };
+          this.completeSession(taskId, result);
+          return result;
+
+        default:
+          console.log(`   ⚠️ 알 수 없는 체크포인트: ${checkpoint}`);
+          throw new Error(`Unknown checkpoint: ${checkpoint}`);
+      }
+    } catch (error) {
+      console.error(`\n❌ Resume 에러: ${error.message}`);
+      this.failSession(taskId, error);
+      return { success: false, taskId, error: error.message };
+    }
+  }
+
+  /**
+   * Design 파이프라인 재개 (PRD Review 이후)
+   */
+  async _resumeDesignPipeline(taskId, session, metrics, options) {
+    const prdContent = session.prdPath || '';
+    const taskDescription = session.metadata?.taskDescription || '';
+
+    // Planning부터 시작
+    console.log('📋 [Phase 1] Leader Planning 시작 (Resume)...');
+    metrics.startPhase('planning');
+
+    const planResult = await this.leader.plan(taskDescription, prdContent);
+    metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+    metrics.endPhase('planning', 'success');
+
+    // 설계 문서 저장
+    if (this.saveFiles) {
+      await this.savePlanningDocs(taskId, planResult);
+    }
+
+    // DESIGN_APPROVAL 체크포인트로 이동
+    return await this._checkDesignApprovalAndContinue(taskId, planResult, metrics, options);
+  }
+
+  /**
+   * Query 실행 재개 (Query Review 이후)
+   */
+  async _resumeQueryExecution(taskId, session, metrics, options) {
+    const context = session.hitlContext?.context || {};
+    const sql = context.sql;
+
+    console.log('📊 [Query] 승인된 쿼리 실행 재개...');
+
+    // AnalysisAgent를 통해 쿼리 실행
+    const result = await this.analysisAgent.executeApprovedQuery(sql, taskId);
+
+    if (result.success) {
+      this.completeSession(taskId, result);
+    } else {
+      this.failSession(taskId, result.error || 'Query execution failed');
+    }
+
+    return result;
+  }
+
+  /**
+   * Coding 단계 재개 (Design Approval / Manual Fix 이후)
+   */
+  async _resumeCodingPhase(taskId, session, metrics, options) {
+    const context = session.hitlContext?.context || {};
+
+    // 저장된 설계 문서 로드
+    const docsDir = path.join(this.projectRoot, 'docs', taskId);
+    const planResult = {
+      ia: this._loadDocIfExists(path.join(docsDir, 'IA.md')),
+      wireframe: this._loadDocIfExists(path.join(docsDir, 'Wireframe.md')),
+      sdd: this._loadDocIfExists(path.join(docsDir, 'SDD.md')),
+      handoff: this._loadDocIfExists(path.join(docsDir, 'HANDOFF.md')),
+    };
+
+    // Coding 시작
+    console.log('⚙️  [Phase 2] CodeAgent Coding 시작 (Resume)...');
+    metrics.startPhase('coding_resume');
+
+    const codingResult = await this.codeAgent.implement({
+      sdd: planResult.sdd,
+      wireframe: planResult.wireframe,
+      ia: planResult.ia,
+      handoff: planResult.handoff
+    });
+
+    metrics.addTokens('codeagent', codingResult.usage.inputTokens, codingResult.usage.outputTokens);
+    metrics.endPhase('coding_resume', 'success');
+
+    // 파일 저장
+    if (this.saveFiles) {
+      await this.subagent.saveFiles(codingResult.files);
+    }
+
+    // Review
+    console.log('🔍 [Phase 3] Leader Review 시작 (Resume)...');
+    const codeForReview = Object.entries(codingResult.files)
+      .map(([path, content]) => `### ${path}\n\`\`\`\n${content}\n\`\`\``)
+      .join('\n\n');
+
+    const reviewResult = await this.leader.review(codeForReview, planResult.sdd);
+
+    const finalResult = {
+      success: reviewResult.passed,
+      taskId,
+      pipeline: 'design',
+      files: codingResult.files,
+      review: reviewResult,
+      metrics: metrics.generateReport()
+    };
+
+    if (finalResult.success) {
+      this.completeSession(taskId, finalResult);
+    } else {
+      this.failSession(taskId, 'Review failed after resume');
+    }
+
+    return finalResult;
+  }
+
+  /**
+   * 설계 문서 승인 체크 후 계속 진행
+   */
+  async _checkDesignApprovalAndContinue(taskId, planResult, metrics, options) {
+    // Feature Flag: AUTO_APPROVE_DESIGN 체크
+    if (!isEnabled('HITL_AUTO_APPROVE_DESIGN') && !this.autoApprove) {
+      const designCheckpoint = this.checkHITLRequired('design', {
+        requiresApproval: true,
+        hasIA: !!planResult.ia,
+        hasSDD: !!planResult.sdd,
+        hasWireframe: !!planResult.wireframe
+      });
+
+      if (designCheckpoint) {
+        sessionStore.updatePhase(taskId, 'design_approval');
+        await this.pauseForHITL(taskId, designCheckpoint, {
+          files: {
+            ia: planResult.ia ? 'IA.md 생성됨' : null,
+            wireframe: planResult.wireframe ? 'Wireframe.md 생성됨' : null,
+            sdd: planResult.sdd ? 'SDD.md 생성됨' : null,
+            handoff: planResult.handoff ? 'HANDOFF.md 생성됨' : null
+          },
+          message: '설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.',
+          docsPath: `docs/${taskId}/`
+        });
+
+        // Graceful Exit
+        if (isEnabled('HITL_GRACEFUL_EXIT')) {
+          return this._gracefulExitForHITL(taskId, 'DESIGN_APPROVAL');
+        }
+
+        // Exit 없이 대기
+        const approval = await this.waitForApproval(taskId);
+        if (!approval.approved) {
+          throw new Error(`설계 승인 거부됨: ${approval.session?.hitlContext?.rejectionReason}`);
+        }
+        this.resumeSession(taskId);
+      }
+    }
+
+    // Coding 단계로 진행
+    return await this._resumeCodingPhase(taskId, { hitlContext: { context: {} } }, metrics, options);
+  }
+
+  /**
+   * HITL Pause 후 우아한 프로세스 종료
+   * @param {string} taskId - 태스크 ID
+   * @param {string} checkpoint - 체크포인트 유형
+   * @returns {Object} - 종료 상태 반환
+   */
+  _gracefulExitForHITL(taskId, checkpoint) {
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`⏸️  HITL 체크포인트 도달: ${checkpoint}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`   Task ID: ${taskId}`);
+    console.log(`   상태: 사용자 승인 대기 중`);
+    console.log('');
+    console.log('   📋 다음 단계:');
+    console.log('      1. Viewer에서 산출물 검토');
+    console.log('      2. 승인 또는 거부 결정');
+    console.log('      3. 승인 후 동일 taskId로 재실행하여 Resume');
+    console.log('');
+    console.log('   🔄 Resume 명령:');
+    console.log(`      node cli.js --taskId=${taskId}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    // 프로세스 종료 (상태는 session-store에 저장됨)
+    const exitResult = {
+      success: false,
+      taskId,
+      status: 'PAUSED_HITL',
+      checkpoint,
+      message: `HITL checkpoint reached: ${checkpoint}. Process exiting. Resume after approval.`,
+      resumeCommand: `node cli.js --taskId=${taskId}`
+    };
+
+    // 비동기 종료 (로그 출력 완료 후)
+    if (isEnabled('HITL_GRACEFUL_EXIT')) {
+      setImmediate(() => {
+        console.log('👋 프로세스 종료 (HITL 대기)');
+        process.exit(0);
+      });
+    }
+
+    return exitResult;
+  }
+
+  /**
+   * 파일이 존재하면 로드, 없으면 null 반환
+   */
+  _loadDocIfExists(filePath) {
+    try {
+      if (fs.existsSync(filePath)) {
+        return fs.readFileSync(filePath, 'utf-8');
+      }
+    } catch {
+      // 무시
+    }
+    return null;
+  }
+
+  /**
+   * 위험 쿼리 감지 (v3.5.0)
+   * DELETE, DROP, TRUNCATE, UPDATE 등 데이터 변경 쿼리 감지
+   * @param {Array} queries - 생성된 쿼리 목록
+   * @returns {Array} - 위험 쿼리 목록
+   */
+  _detectDangerousQueries(queries) {
+    const dangerous = [];
+    const dangerousPatterns = [
+      { pattern: /\bDELETE\s+FROM\b/i, type: 'DELETE' },
+      { pattern: /\bDROP\s+(TABLE|DATABASE|INDEX|VIEW)\b/i, type: 'DROP' },
+      { pattern: /\bTRUNCATE\s+TABLE\b/i, type: 'TRUNCATE' },
+      { pattern: /\bUPDATE\s+\w+\s+SET\b/i, type: 'UPDATE' },
+      { pattern: /\bALTER\s+TABLE\b/i, type: 'ALTER' },
+      { pattern: /\bINSERT\s+INTO\b/i, type: 'INSERT' },
+      { pattern: /\bEXEC\s*\(/i, type: 'EXEC' },
+      { pattern: /\bGRANT\b/i, type: 'GRANT' },
+      { pattern: /\bREVOKE\b/i, type: 'REVOKE' },
+    ];
+
+    const queryList = Array.isArray(queries) ? queries : [queries];
+
+    queryList.forEach((queryObj, index) => {
+      const query = typeof queryObj === 'string' ? queryObj : queryObj.sql || queryObj.query || '';
+
+      for (const { pattern, type } of dangerousPatterns) {
+        if (pattern.test(query)) {
+          dangerous.push({
+            index,
+            type,
+            query: query.substring(0, 500),
+            fullQuery: query
+          });
+          break; // 하나만 감지되면 충분
+        }
+      }
+    });
+
+    return dangerous;
   }
 }
 
