@@ -1,0 +1,50 @@
+﻿Content ID,필드(JSON),설명,DB값,JSON값,결과,DB컬럼
+1192725,content_id,콘텐츠ID,1192725,1192725,O,BOARD_IDX
+1192725,title,제목,[net 2000+@] ★'삼성본튼튼의원'에서 부원장님을 모십니다 (추후 매달 금토일 오프예정)★,[net 2000+@] ★'삼성본튼튼의원'에서 부원장님을 모십니다 (추후 매달 금토일 오프예정)★,O,TITLE
+1192725,listing_type,초빙유형,INVITE_1,INVITE_1,O,INVITE_TYPE
+1192725,listing_type_name,초빙유형명,NULL,봉직의,X,(derived)
+1192725,service_type,서비스유형,SERVICE_2,SERVICE_2,O,SERVICE_TYPE
+1192725,service_type_name,서비스유형명,NULL,프리미엄,X,(derived)
+1192725,specialty.codes,진료과코드,"['SPC103', 'SPC110', 'SPC114', 'SPC116', 'SPC117']","['SPC103', 'SPC110', 'SPC114', 'SPC116', 'SPC117']",O,specialty_codes
+1192725,specialty.code_names,진료과명,NULL,"내과,신경과,응급의학과,일반의,외과",X,(derived)
+1192725,period.start_date,시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,X,START_DATE
+1192725,period.end_date,종료일,2025-11-10 00:00:00,2025-12-10T00:00:00Z,X,END_DATE
+1192725,period.created_at,등록일,2025-10-03 17:29:17,2025-10-03T17:29:17Z,X,REG_DATE
+1192725,period.updated_at,수정일,2025-10-03 17:29:17,2025-10-03T17:29:17Z,X,MOD_DATE
+1192725,recjob_apply.apply_start_date,지원시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,X,START_DATE
+1192725,recjob_apply.apply_end_date,지원종료일,2025-11-10 00:00:00,2025-11-10T00:00:00Z,X,END_DATE
+1192725,recjob_recruit.num,모집인원,1,1,O,RECRUIT_NUM
+1192725,recjob_recruit.career_type,경력유형,CAREER_0,CAREER_0,O,CAREER_TYPE
+1192725,recjob_recruit.regular_flag,정규직여부,Y,Y,O,REGULAR_FLAG
+1192725,recjob_terms.pay_amount,급여,2075,2075,O,PAY
+1192725,recjob_terms.work_hour,근무시간,09.00-19.00,09.00-19.00,O,WORK_HOUR
+1192725,recjob_terms.saturday_hour,토요일근무시간,09.00-14.00,09.00-14.00,O,S_WORK_HOUR
+1192725,recjob_terms.saturday_work,토요일근무여부,N,N,O,S_WORK_FLAG
+1192725,recjob_terms.holiday_work,공휴일근무여부,Y,N,X,H_WORK_FLAG
+1192725,recjob_terms.night_work,야간근무여부,Y,Y,O,NIGHT_WORK_FLAG
+1192725,recjob_benefits.conference_attend,학회참석,N,N,O,ATTEND_FLAG
+1192725,recjob_org.org_id,기관ID,leejay0628,leejay0628,O,U_ID
+1192725,recjob_org.org_contact_name,담당자명,이정상,이정상,O,MGR_NAME
+1192725,recjob_contact.phone,연락처,NULL,032-553-7575,X,MGR_TEL
+1192725,location.zipcode,우편번호,NULL,21096,X,COMPANY_ZIPCODE
+1192725,location.address,주소,NULL,"인천광역시 계양구 봉오대로 613, 2층 201호 (효성동)",X,COMPANY_ADDR
+351985,content_id,콘텐츠ID,351985,351985,O,board_idx
+351985,title,제목,71.[암사역+재래시장] 병원입지의 길목  들어보셨나요?  길목은 이러한 곳을 말합니다.(이비인후과 추천입지)(유튜브 有),71.[암사역+재래시장] 병원입지의 길목,X,title
+351985,lease_property.area_supply,공급면적,200,200,O,supply_area
+351985,lease_property.area_exclusive,전용면적,133,133,O,private_area
+351985,lease_property.deposit,보증금,15000,15000,O,secure_money
+351985,lease_property.monthly_rent,월세,590,590,O,month_price
+351985,lease_property.management_cost,관리비,90,NULL,X,mng_cost
+351985,lease_property.premium,권리금,,0,X,premium_price
+351985,lease_property.price,매매가,,0,X,price
+351985,lease_property.floor_current,현재층,3,3,O,rent_layer
+351985,lease_property.floor_total,전체층,6,6,O,tot_over_layer
+351985,lease_property.floor_underground,지하층,2,NULL,X,tot_under_layer
+351985,lease_property.dealer_type,중개유형,2,2,O,dealer_type
+351985,specialty.codes,진료과코드,SPC115,SPC115,O,spc_code
+351985,location.address,주소,서울 강동구 올림픽로 786 본번지,서울 강동구 올림픽로 786 본번지,O,address
+351985,location.zipcode,우편번호,05264,NULL,X,zipcode
+351985,location.coordinates,좌표,NULL,NULL,O,(derived)
+351985,lease_detail.usage_type_names,시설정보,"UST006,UST008,UST009,UST011",NULL,X,usage_type
+351985,period.created_at,등록일,2024-07-23 19:08:28,NULL,X,reg_date
+351985,period.updated_at,수정일,2025-03-20 16:18:21,NULL,X,mod_date

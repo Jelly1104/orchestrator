@@ -1,0 +1,63 @@
+카테고리	JSON 필드	DB 테이블	DB 컬럼	설명	변환규칙	비고
+=== RECRUIT (봉직의) ===
+기본	content_id	CBIZ_RECJOB	BOARD_IDX	콘텐츠ID	직접매핑	PK
+기본	title	CBIZ_RECJOB	TITLE	제목	직접매핑
+기본	listing_type	CBIZ_RECJOB	INVITE_TYPE	초빙유형코드	직접매핑
+기본	listing_type_name	-	-	초빙유형명	코드→명칭	파생
+기본	service_type	CBIZ_RECJOB	SERVICE_TYPE	서비스유형코드	직접매핑
+기본	service_type_name	-	-	서비스유형명	코드→명칭	파생
+진료과	specialty.codes	CBIZ_RECJOB_MAP	MAP_CODE	진료과코드	배열변환	MAP_TYPE='SPC'
+진료과	specialty.code_names	-	-	진료과명	코드→명칭	파생
+기간	period.start_date	CBIZ_RECJOB	START_DATE	시작일	ISO8601변환
+기간	period.end_date	CBIZ_RECJOB	END_DATE	종료일	ISO8601변환
+기간	period.created_at	CBIZ_RECJOB	REG_DATE	등록일	ISO8601변환
+기간	period.updated_at	CBIZ_RECJOB	MOD_DATE	수정일	ISO8601변환
+지원	recjob_apply.apply_start_date	CBIZ_RECJOB	START_DATE	지원시작일	ISO8601변환
+지원	recjob_apply.apply_end_date	CBIZ_RECJOB	END_DATE	지원종료일	ISO8601변환
+채용	recjob_recruit.num	CBIZ_RECJOB	RECRUIT_NUM	모집인원	직접매핑
+채용	recjob_recruit.career_type	CBIZ_RECJOB	CAREER_TYPE	경력유형	직접매핑
+채용	recjob_recruit.regular_flag	CBIZ_RECJOB	REGULAR_FLAG	정규직여부	직접매핑	Y/N
+근무조건	recjob_terms.pay_amount	CBIZ_RECJOB	PAY	급여(만원)	직접매핑
+근무조건	recjob_terms.work_hour	CBIZ_RECJOB	WORK_HOUR	근무시간	직접매핑
+근무조건	recjob_terms.saturday_work	CBIZ_RECJOB	S_WORK_FLAG	토요일근무여부	직접매핑	Y/N
+근무조건	recjob_terms.holiday_work	CBIZ_RECJOB	H_WORK_FLAG	공휴일근무여부	직접매핑	Y/N
+근무조건	recjob_terms.night_work	CBIZ_RECJOB	NIGHT_WORK_FLAG	야간근무여부	직접매핑	Y/N
+복리후생	recjob_benefits.conference_attend	CBIZ_RECJOB	ATTEND_FLAG	학회참석	직접매핑	Y/N
+기관	recjob_org.org_id	CBIZ_RECJOB	U_ID	기관ID	직접매핑
+기관	recjob_org.org_contact_name	CBIZ_RECJOB	MGR_NAME	담당자명	직접매핑
+연락처	recjob_contact.phone	CBIZ_RECJOB	MGR_TEL	연락처	직접매핑
+위치	location.zipcode	CBIZ_RECJOB	COMPANY_ZIPCODE	우편번호	직접매핑
+위치	location.address	CBIZ_RECJOB	COMPANY_ADDR	주소	직접매핑
+
+=== LEASE (임대) ===
+기본	content_id	CBIZ_LEASE	board_idx	콘텐츠ID	직접매핑	PK
+기본	title	CBIZ_LEASE	title	제목	직접매핑
+기본	listing_type	CBIZ_LEASE	lease_type	임대유형코드	직접매핑
+기본	listing_type_names	-	-	임대유형명	코드→명칭	파생
+기본	corporation_name	CBIZ_LEASE	com_name	중개업소명	직접매핑
+매물정보	lease_property.area_supply	CBIZ_LEASE	supply_area	공급면적(m²)	직접매핑
+매물정보	lease_property.area_exclusive	CBIZ_LEASE	private_area	전용면적(m²)	직접매핑
+매물정보	lease_property.deposit	CBIZ_LEASE	secure_money	보증금(만원)	직접매핑
+매물정보	lease_property.monthly_rent	CBIZ_LEASE	month_price	월세(만원)	직접매핑
+매물정보	lease_property.management_cost	CBIZ_LEASE	mng_cost	관리비(만원)	직접매핑
+매물정보	lease_property.premium	CBIZ_LEASE	premium_price	권리금(만원)	직접매핑
+매물정보	lease_property.price	CBIZ_LEASE	price	매매가(만원)	직접매핑
+매물정보	lease_property.floor_current	CBIZ_LEASE	rent_layer	현재층	직접매핑
+매물정보	lease_property.floor_total	CBIZ_LEASE	tot_over_layer	전체층(지상)	직접매핑
+매물정보	lease_property.floor_underground	CBIZ_LEASE	tot_under_layer	지하층	직접매핑
+매물정보	lease_property.dealer_type	CBIZ_LEASE	dealer_type	중개유형코드	직접매핑
+매물정보	lease_property.dealer_type_name	-	-	중개유형명	코드→명칭	파생
+매물정보	lease_property.primary_amount	CBIZ_LEASE	-	주요금액	deposit/price선택	조건부
+매물정보	lease_property.mall_type	CBIZ_LEASE	-	몰유형코드	직접매핑
+진료과	specialty.codes	CBIZ_LEASE	spc_code	진료과코드	배열변환
+진료과	specialty.code_names	-	-	진료과명	코드→명칭	파생
+위치	location.address	CBIZ_LEASE	address	주소	직접매핑
+위치	location.zipcode	CBIZ_LEASE	zipcode	우편번호	직접매핑
+위치	location.coordinates	CBIZ_LEASE	xPos, yPos	좌표	lat,lng합성	파생
+위치	location.sido_code	CBIZ_LEASE	sido_code	시도코드	직접매핑	2자리
+위치	location.sgg_code	CBIZ_LEASE	sgg_code	시군구코드	직접매핑	4자리
+위치	location.emd_code	CBIZ_LEASE	-	읍면동코드	외부조회	8자리
+시설	lease_detail.usage_type	CBIZ_LEASE	usage_type	시설정보코드	배열변환
+시설	lease_detail.usage_type_names	-	-	시설정보명	코드→명칭	파생
+기간	period.created_at	CBIZ_LEASE	reg_date	등록일	ISO8601변환
+기간	period.updated_at	CBIZ_LEASE	mod_date	수정일	ISO8601변환

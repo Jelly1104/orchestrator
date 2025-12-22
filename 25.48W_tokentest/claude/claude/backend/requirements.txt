@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+httpx
+pillow
+python-multipart
+pydantic
+python-dotenv
+tiktoken>=0.7.0

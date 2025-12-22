@@ -1,0 +1,117 @@
+﻿Content ID,필드(JSON),설명,DB값,JSON값,결과,DB컬럼
+1173545,content_id,콘텐츠ID,1173545,1173545,O,BOARD_IDX
+1173545,title,제목,초음파 및 내과 진료 가능하신 원장님 모십니다. ( 파트타임 - 주 3일 4일근무) -내년2-3월부터,초음파 및 내과 진료 가능하신 원장님 모십니다. ( 파트타임 - 주 3일 4일근무) -내년2-3월부터,O,TITLE
+1173545,listing_type,초빙유형,INVITE_1,INVITE_1,O,INVITE_TYPE
+1173545,listing_type_name,초빙유형명,NULL,봉직의,X,(derived)
+1173545,service_type,서비스유형,SERVICE_1,SERVICE_1,O,SERVICE_TYPE
+1173545,service_type_name,서비스유형명,NULL,일반,X,(derived)
+1173545,specialty.codes,진료과코드,"['SPC101', 'SPC103', 'SPC116', 'SPC122']","['SPC101', 'SPC103', 'SPC116', 'SPC122']",O,specialty_codes
+1173545,specialty.code_names,진료과명,NULL,"가정의학과,내과,일반의,영상의학과",X,(derived)
+1173545,period.start_date,시작일,2025-12-06 00:00:00,2025-06-07T00:00:00Z,X,START_DATE
+1173545,period.end_date,종료일,2025-12-12 00:00:00,2027-01-10T00:00:00Z,X,END_DATE
+1173545,period.created_at,등록일,2025-06-02 10:22:18,2025-06-02T10:22:18Z,X,REG_DATE
+1173545,period.updated_at,수정일,2025-12-03 10:04:27,2025-12-03T10:04:27Z,X,MOD_DATE
+1173545,recjob_apply.apply_start_date,지원시작일,2025-12-06 00:00:00,2025-12-06T00:00:00Z,X,START_DATE
+1173545,recjob_apply.apply_end_date,지원종료일,2025-12-12 00:00:00,2025-12-12T00:00:00Z,X,END_DATE
+1173545,recjob_recruit.num,모집인원,1,1,O,RECRUIT_NUM
+1173545,recjob_recruit.career_type,경력유형,CAREER_0,CAREER_0,O,CAREER_TYPE
+1173545,recjob_recruit.regular_flag,정규직여부,Y,Y,O,REGULAR_FLAG
+1173545,recjob_terms.pay_amount,급여,1525,1525,O,PAY
+1173545,recjob_terms.work_hour,근무시간,08.30-18.00,08.30-18.00,O,WORK_HOUR
+1173545,recjob_terms.saturday_hour,토요일근무시간,08.30-13.00,08.30-13.00,O,S_WORK_HOUR
+1173545,recjob_terms.saturday_work,토요일근무여부,N,N,O,S_WORK_FLAG
+1173545,recjob_terms.holiday_work,공휴일근무여부,Y,N,X,H_WORK_FLAG
+1173545,recjob_terms.night_work,야간근무여부,N,N,O,NIGHT_WORK_FLAG
+1173545,recjob_benefits.conference_attend,학회참석,N,N,O,ATTEND_FLAG
+1173545,recjob_org.org_id,기관ID,gshcg,gshcg,O,U_ID
+1173545,recjob_org.org_contact_name,담당자명,홍창균,홍창균,O,MGR_NAME
+1173545,recjob_contact.phone,연락처,,031-298-7434,X,MGR_TEL
+1173545,location.zipcode,우편번호,,18302,X,COMPANY_ZIPCODE
+1173545,location.address,주소,,경기도 화성시 봉담읍 동화길 91 401~403호 (웅신아트프라자),X,COMPANY_ADDR
+1192177,content_id,콘텐츠ID,1192177,1192177,O,BOARD_IDX
+1192177,title,제목,★실수령 1600-1800★ 톤즈의원 대전둔산점에서 함께하실 원장님 한 분 모십니다.,★실수령 1600-1800★ 톤즈의원 대전둔산점에서 함께하실 원장님 한 분 모십니다.,O,TITLE
+1192177,listing_type,초빙유형,INVITE_1,INVITE_1,O,INVITE_TYPE
+1192177,listing_type_name,초빙유형명,NULL,봉직의,X,(derived)
+1192177,service_type,서비스유형,SERVICE_9,SERVICE_9,O,SERVICE_TYPE
+1192177,service_type_name,서비스유형명,NULL,플래티넘,X,(derived)
+1192177,specialty.codes,진료과코드,"['SPC101', 'SPC102', 'SPC103', 'SPC104', 'SPC105', 'SPC106', 'SPC107', 'SPC108', 'SPC109', 'SPC110',...","['SPC101', 'SPC102', 'SPC103', 'SPC104', 'SPC105', 'SPC106', 'SPC107', 'SPC108', 'SPC109', 'SPC110',...",O,specialty_codes
+1192177,specialty.code_names,진료과명,NULL,"가정의학과,결핵과,내과,마취통증의학과,비뇨의학과,산부인과,직업환경의학과,성형외과,소아청소년과,신경과,신경외과,안과,응급의학과,이비인후과,일반의,외과,진단검사의학과,재활의학과,정신건...",X,(derived)
+1192177,period.start_date,시작일,2025-10-14 00:00:00,2025-10-14T00:00:00Z,X,START_DATE
+1192177,period.end_date,종료일,2025-11-11 00:00:00,2025-12-29T00:00:00Z,X,END_DATE
+1192177,period.created_at,등록일,2025-09-29 20:15:38,2025-09-29T20:15:38Z,X,REG_DATE
+1192177,period.updated_at,수정일,2025-10-14 12:40:01,2025-10-14T12:40:01Z,X,MOD_DATE
+1192177,recjob_apply.apply_start_date,지원시작일,2025-10-14 00:00:00,2025-10-14T00:00:00Z,X,START_DATE
+1192177,recjob_apply.apply_end_date,지원종료일,2025-11-11 00:00:00,2025-11-11T00:00:00Z,X,END_DATE
+1192177,recjob_recruit.num,모집인원,1,1,O,RECRUIT_NUM
+1192177,recjob_recruit.career_type,경력유형,CAREER_0,CAREER_0,O,CAREER_TYPE
+1192177,recjob_recruit.regular_flag,정규직여부,N,N,O,REGULAR_FLAG
+1192177,recjob_terms.pay_amount,급여,15500,15500,O,PAY
+1192177,recjob_terms.work_hour,근무시간,10.00-20.00,10.00-20.00,O,WORK_HOUR
+1192177,recjob_terms.saturday_hour,토요일근무시간,10.00-16.30,10.00-16.30,O,S_WORK_HOUR
+1192177,recjob_terms.saturday_work,토요일근무여부,N,N,O,S_WORK_FLAG
+1192177,recjob_terms.holiday_work,공휴일근무여부,Y,N,X,H_WORK_FLAG
+1192177,recjob_terms.night_work,야간근무여부,N,N,O,NIGHT_WORK_FLAG
+1192177,recjob_benefits.conference_attend,학회참석,Y,Y,O,ATTEND_FLAG
+1192177,recjob_org.org_id,기관ID,sasha17,sasha17,O,U_ID
+1192177,recjob_org.org_contact_name,담당자명,박유라,박유라,O,MGR_NAME
+1192177,recjob_contact.phone,연락처,,042-719-7827,X,MGR_TEL
+1192177,location.zipcode,우편번호,,35229,X,COMPANY_ZIPCODE
+1192177,location.address,주소,,"대전광역시 서구 대덕대로 223, 4층 403호 (둔산동)",X,COMPANY_ADDR
+1192725,content_id,콘텐츠ID,1192725,1192725,O,BOARD_IDX
+1192725,title,제목,[net 2000+@] ★'삼성본튼튼의원'에서 부원장님을 모십니다 (추후 매달 금토일 오프예정)★,[net 2000+@] ★삼성본튼튼의원에서 부원장님을 모십니다★,X,TITLE
+1192725,listing_type,초빙유형,INVITE_1,INVITE_1,O,INVITE_TYPE
+1192725,listing_type_name,초빙유형명,NULL,봉직의,X,(derived)
+1192725,service_type,서비스유형,SERVICE_2,SERVICE_2,O,SERVICE_TYPE
+1192725,service_type_name,서비스유형명,NULL,프리미엄,X,(derived)
+1192725,specialty.codes,진료과코드,"['SPC103', 'SPC110', 'SPC114', 'SPC116', 'SPC117']","['SPC103', 'SPC110', 'SPC114', 'SPC116', 'SPC117']",O,specialty_codes
+1192725,specialty.code_names,진료과명,NULL,"내과,신경과,응급의학과,일반의,외과",X,(derived)
+1192725,period.start_date,시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,X,START_DATE
+1192725,period.end_date,종료일,2025-11-10 00:00:00,2025-12-10T00:00:00Z,X,END_DATE
+1192725,period.created_at,등록일,2025-10-03 17:29:17,2025-10-03T17:29:17Z,X,REG_DATE
+1192725,period.updated_at,수정일,2025-10-03 17:29:17,2025-10-03T17:29:17Z,X,MOD_DATE
+1192725,recjob_apply.apply_start_date,지원시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,X,START_DATE
+1192725,recjob_apply.apply_end_date,지원종료일,2025-11-10 00:00:00,2025-11-10T00:00:00Z,X,END_DATE
+1192725,recjob_recruit.num,모집인원,1,1,O,RECRUIT_NUM
+1192725,recjob_recruit.career_type,경력유형,CAREER_0,CAREER_0,O,CAREER_TYPE
+1192725,recjob_recruit.regular_flag,정규직여부,Y,Y,O,REGULAR_FLAG
+1192725,recjob_terms.pay_amount,급여,2075,2075,O,PAY
+1192725,recjob_terms.work_hour,근무시간,09.00-19.00,09.00-19.00,O,WORK_HOUR
+1192725,recjob_terms.saturday_hour,토요일근무시간,09.00-14.00,09.00-14.00,O,S_WORK_HOUR
+1192725,recjob_terms.saturday_work,토요일근무여부,N,N,O,S_WORK_FLAG
+1192725,recjob_terms.holiday_work,공휴일근무여부,Y,N,X,H_WORK_FLAG
+1192725,recjob_terms.night_work,야간근무여부,Y,Y,O,NIGHT_WORK_FLAG
+1192725,recjob_benefits.conference_attend,학회참석,N,N,O,ATTEND_FLAG
+1192725,recjob_org.org_id,기관ID,leejay0628,leejay0628,O,U_ID
+1192725,recjob_org.org_contact_name,담당자명,이정상,이정상,O,MGR_NAME
+1192725,recjob_contact.phone,연락처,NULL,032-553-7575,X,MGR_TEL
+1192725,location.zipcode,우편번호,NULL,21096,X,COMPANY_ZIPCODE
+1192725,location.address,주소,NULL,"인천광역시 계양구 봉오대로 613, 2층 201호 (효성동)",X,COMPANY_ADDR
+1193222,content_id,콘텐츠ID,1193222,1193222,O,BOARD_IDX
+1193222,title,제목,정규직 원장님 증원 공고,정규직 원장님 증원 공고,O,TITLE
+1193222,listing_type,초빙유형,INVITE_1,INVITE_1,O,INVITE_TYPE
+1193222,listing_type_name,초빙유형명,NULL,봉직의,X,(derived)
+1193222,service_type,서비스유형,SERVICE_1,SERVICE_1,O,SERVICE_TYPE
+1193222,service_type_name,서비스유형명,NULL,일반,X,(derived)
+1193222,specialty.codes,진료과코드,"['SPC116', 'SPC124']","['SPC116', 'SPC124']",O,specialty_codes
+1193222,specialty.code_names,진료과명,NULL,"일반의,피부과",X,(derived)
+1193222,period.start_date,시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,X,START_DATE
+1193222,period.end_date,종료일,2025-11-10 00:00:00,2025-12-10T00:00:00Z,X,END_DATE
+1193222,period.created_at,등록일,2025-10-10 14:17:05,2025-10-10T14:17:05Z,X,REG_DATE
+1193222,period.updated_at,수정일,2025-11-04 10:32:44,2025-11-04T10:32:44Z,X,MOD_DATE
+1193222,recjob_apply.apply_start_date,지원시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,X,START_DATE
+1193222,recjob_apply.apply_end_date,지원종료일,2025-11-10 00:00:00,2025-11-10T00:00:00Z,X,END_DATE
+1193222,recjob_recruit.num,모집인원,1,1,O,RECRUIT_NUM
+1193222,recjob_recruit.career_type,경력유형,CAREER_0,CAREER_0,O,CAREER_TYPE
+1193222,recjob_recruit.regular_flag,정규직여부,Y,Y,O,REGULAR_FLAG
+1193222,recjob_terms.pay_amount,급여,1325,1325,O,PAY
+1193222,recjob_terms.work_hour,근무시간,09.30-18.30,09.30-18.30,O,WORK_HOUR
+1193222,recjob_terms.saturday_hour,토요일근무시간,09.30-13.00,09.30-13.00,O,S_WORK_HOUR
+1193222,recjob_terms.saturday_work,토요일근무여부,N,N,O,S_WORK_FLAG
+1193222,recjob_terms.holiday_work,공휴일근무여부,Y,N,X,H_WORK_FLAG
+1193222,recjob_terms.night_work,야간근무여부,N,N,O,NIGHT_WORK_FLAG
+1193222,recjob_benefits.conference_attend,학회참석,Y,Y,O,ATTEND_FLAG
+1193222,recjob_org.org_id,기관ID,hokims96,hokims96,O,U_ID
+1193222,recjob_org.org_contact_name,담당자명,기호균,기호균,O,MGR_NAME
+1193222,recjob_contact.phone,연락처,,062-953-8273,X,MGR_TEL
+1193222,location.zipcode,우편번호,,62247,X,COMPANY_ZIPCODE
+1193222,location.address,주소,,"광주광역시 광산구 임방울대로 355 6층일부, 7층 (수완동)",X,COMPANY_ADDR

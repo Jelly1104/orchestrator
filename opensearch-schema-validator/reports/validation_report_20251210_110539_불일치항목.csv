@@ -1,0 +1,35 @@
+﻿Content ID,URL,필드(JSON),설명,DB값,JSON값,DB컬럼
+1173545,https://t2-new.medigate.net/recruit/1173545,listing_type_name,초빙유형명,NULL,봉직의,(derived)
+1173545,https://t2-new.medigate.net/recruit/1173545,service_type_name,서비스유형명,NULL,일반,(derived)
+1173545,https://t2-new.medigate.net/recruit/1173545,specialty.code_names,진료과명,NULL,"가정의학과,내과,일반의,영상의학과",(derived)
+1173545,https://t2-new.medigate.net/recruit/1173545,period.start_date,시작일,2025-12-06 00:00:00,2025-06-07T00:00:00Z,START_DATE
+1173545,https://t2-new.medigate.net/recruit/1173545,period.end_date,종료일,2025-12-12 00:00:00,2027-01-10T00:00:00Z,END_DATE
+1173545,https://t2-new.medigate.net/recruit/1173545,recjob_terms.holiday_work,공휴일근무여부,Y,N,H_WORK_FLAG
+1173545,https://t2-new.medigate.net/recruit/1173545,recjob_contact.phone,연락처,,031-298-7434,MGR_TEL
+1173545,https://t2-new.medigate.net/recruit/1173545,location.zipcode,우편번호,,18302,COMPANY_ZIPCODE
+1173545,https://t2-new.medigate.net/recruit/1173545,location.address,주소,,경기도 화성시 봉담읍 동화길 91 401~403호 (웅신아트프라자),COMPANY_ADDR
+1192177,https://t2-new.medigate.net/recruit/1192177,listing_type_name,초빙유형명,NULL,봉직의,(derived)
+1192177,https://t2-new.medigate.net/recruit/1192177,service_type_name,서비스유형명,NULL,플래티넘,(derived)
+1192177,https://t2-new.medigate.net/recruit/1192177,specialty.code_names,진료과명,NULL,"가정의학과,결핵과,내과,마취통증의학과,비뇨의학과,산부인과,직업환경의학과,성형외과,소아청소년과,신경과,신경외과,안과,응급의학과,이비인후과,일반의,외과,진단검사의학과,재활의학과,정신건...",(derived)
+1192177,https://t2-new.medigate.net/recruit/1192177,period.end_date,종료일,2025-11-11 00:00:00,2025-12-29T00:00:00Z,END_DATE
+1192177,https://t2-new.medigate.net/recruit/1192177,recjob_terms.holiday_work,공휴일근무여부,Y,N,H_WORK_FLAG
+1192177,https://t2-new.medigate.net/recruit/1192177,recjob_contact.phone,연락처,,042-719-7827,MGR_TEL
+1192177,https://t2-new.medigate.net/recruit/1192177,location.zipcode,우편번호,,35229,COMPANY_ZIPCODE
+1192177,https://t2-new.medigate.net/recruit/1192177,location.address,주소,,"대전광역시 서구 대덕대로 223, 4층 403호 (둔산동)",COMPANY_ADDR
+1192725,https://t2-new.medigate.net/recruit/1192725,title,제목,[net 2000+@] ★'삼성본튼튼의원'에서 부원장님을 모십니다 (추후 매달 금토일 오프예정)★,[net 2000+@] ★삼성본튼튼의원에서 부원장님을 모십니다★,TITLE
+1192725,https://t2-new.medigate.net/recruit/1192725,listing_type_name,초빙유형명,NULL,봉직의,(derived)
+1192725,https://t2-new.medigate.net/recruit/1192725,service_type_name,서비스유형명,NULL,프리미엄,(derived)
+1192725,https://t2-new.medigate.net/recruit/1192725,specialty.code_names,진료과명,NULL,"내과,신경과,응급의학과,일반의,외과",(derived)
+1192725,https://t2-new.medigate.net/recruit/1192725,period.end_date,종료일,2025-11-10 00:00:00,2025-12-10T00:00:00Z,END_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,recjob_terms.holiday_work,공휴일근무여부,Y,N,H_WORK_FLAG
+1192725,https://t2-new.medigate.net/recruit/1192725,recjob_contact.phone,연락처,NULL,032-553-7575,MGR_TEL
+1192725,https://t2-new.medigate.net/recruit/1192725,location.zipcode,우편번호,NULL,21096,COMPANY_ZIPCODE
+1192725,https://t2-new.medigate.net/recruit/1192725,location.address,주소,NULL,"인천광역시 계양구 봉오대로 613, 2층 201호 (효성동)",COMPANY_ADDR
+1193222,https://t2-new.medigate.net/recruit/1193222,listing_type_name,초빙유형명,NULL,봉직의,(derived)
+1193222,https://t2-new.medigate.net/recruit/1193222,service_type_name,서비스유형명,NULL,일반,(derived)
+1193222,https://t2-new.medigate.net/recruit/1193222,specialty.code_names,진료과명,NULL,"일반의,피부과",(derived)
+1193222,https://t2-new.medigate.net/recruit/1193222,period.end_date,종료일,2025-11-10 00:00:00,2025-12-10T00:00:00Z,END_DATE
+1193222,https://t2-new.medigate.net/recruit/1193222,recjob_terms.holiday_work,공휴일근무여부,Y,N,H_WORK_FLAG
+1193222,https://t2-new.medigate.net/recruit/1193222,recjob_contact.phone,연락처,,062-953-8273,MGR_TEL
+1193222,https://t2-new.medigate.net/recruit/1193222,location.zipcode,우편번호,,62247,COMPANY_ZIPCODE
+1193222,https://t2-new.medigate.net/recruit/1193222,location.address,주소,,"광주광역시 광산구 임방울대로 355 6층일부, 7층 (수완동)",COMPANY_ADDR

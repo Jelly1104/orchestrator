@@ -1,0 +1,100 @@
+// ===========================================
+// Lease (임대) ERD - dbdiagram.io 용
+// https://dbdiagram.io 에 붙여넣기
+// ===========================================
+
+// DB Tables
+Table CBIZ_LEASE {
+  board_idx int [pk, note: 'content_id']
+  title varchar [note: '제목']
+  lease_type varchar [note: '임대유형 코드']
+  com_name varchar [note: '중개업소명']
+  supply_area decimal [note: '공급면적(m²)']
+  private_area decimal [note: '전용면적(m²)']
+  secure_money int [note: '보증금(만원)']
+  month_price int [note: '월세(만원)']
+  mng_cost int [note: '관리비(만원)']
+  premium_price int [note: '권리금(만원)']
+  price int [note: '매매가(만원)']
+  rent_layer int [note: '현재층']
+  tot_over_layer int [note: '전체층(지상)']
+  tot_under_layer int [note: '지하층']
+  dealer_type varchar [note: '중개유형코드']
+  spc_code varchar [note: '진료과코드']
+  address varchar [note: '주소']
+  zipcode varchar [note: '우편번호']
+  xPos decimal [note: '경도 (longitude)']
+  yPos decimal [note: '위도 (latitude)']
+  sido_code varchar [note: '시도코드']
+  sgg_code varchar [note: '시군구코드']
+  usage_type varchar [note: '시설정보코드']
+  reg_date datetime [note: '등록일']
+  mod_date datetime [note: '수정일']
+}
+
+// Code Tables
+Table CODE_LEASE_TYPE {
+  code varchar [pk]
+  name varchar
+  note: 'LST001=임대, LST002=양도...'
+}
+
+Table CODE_DEALER_TYPE {
+  code varchar [pk]
+  name varchar
+  note: '1=직거래, 2=중개거래, 3=기타'
+}
+
+Table CODE_SPECIALTY {
+  code varchar [pk]
+  name varchar
+  note: 'SPC101=가정의학과...'
+}
+
+Table CODE_USAGE_TYPE {
+  code varchar [pk]
+  name varchar
+  note: 'UST001=장비양도, UST003=주차가능...'
+}
+
+Table CODE_MALL_TYPE {
+  code varchar [pk]
+  name varchar
+  note: 'MLT001=메디게이트몰, MLT005=개원파트너'
+}
+
+Table CODE_SIDO {
+  code varchar [pk]
+  name varchar
+  note: '01=강원, 02=경기, 09=서울...'
+}
+
+// OpenSearch Index
+Table OS_LEASE [headercolor: #3498db] {
+  content_id int [pk, note: '← board_idx']
+  title varchar [note: '← title']
+  listing_type varchar [note: '← lease_type']
+  listing_type_names varchar [note: '← CODE_LEASE_TYPE.name (파생)']
+  corporation_name varchar [note: '← com_name']
+  lease_property_area_supply decimal [note: '← supply_area']
+  lease_property_area_exclusive decimal [note: '← private_area']
+  lease_property_deposit int [note: '← secure_money']
+  lease_property_monthly_rent int [note: '← month_price']
+  lease_property_dealer_type varchar [note: '← dealer_type']
+  lease_property_dealer_type_name varchar [note: '← CODE_DEALER_TYPE.name (파생)']
+  specialty_codes array [note: '← spc_code (배열 변환)']
+  specialty_code_names varchar [note: '← CODE_SPECIALTY.name (파생)']
+  location_address varchar [note: '← address']
+  location_coordinates varchar [note: '← xPos,yPos 합성']
+  location_sido_code varchar [note: '← sido_code']
+  location_sgg_code varchar [note: '← sgg_code']
+  location_emd_code varchar [note: '← (추가 조회)']
+  period_created_at datetime [note: '← reg_date']
+  period_updated_at datetime [note: '← mod_date']
+}
+
+// Relationships
+Ref: CBIZ_LEASE.lease_type > CODE_LEASE_TYPE.code
+Ref: CBIZ_LEASE.dealer_type > CODE_DEALER_TYPE.code
+Ref: CBIZ_LEASE.spc_code > CODE_SPECIALTY.code
+Ref: CBIZ_LEASE.sido_code > CODE_SIDO.code

@@ -1,0 +1,132 @@
+=== 1. listing_type (초빙유형) - RECRUIT ===
+DB코드	JSON코드	변환값(name)
+INVITE_1	INVITE_1	봉직의
+INVITE_2	INVITE_2	대진의
+INVITE_3	INVITE_3	개원의
+INVITE_4	INVITE_4	공보의
+INVITE_6	INVITE_6	전문의
+INVITE_7	INVITE_7	전공의
+INVITE_8	INVITE_8	인턴
+INVITE_10	INVITE_10	군의관
+INVITE_11	INVITE_11	공중보건의
+INVITE_12	INVITE_12	산업의
+
+=== 2. service_type (서비스유형) ===
+DB코드	JSON코드	변환값(name)
+SERVICE_1	SERVICE_1	일반
+SERVICE_2	SERVICE_2	프리미엄
+SERVICE_3	SERVICE_3	VIP
+SERVICE_7	SERVICE_7	골드
+SERVICE_8	SERVICE_8	다이아몬드
+SERVICE_9	SERVICE_9	플래티넘
+
+=== 3. pay_type (급여유형) ===
+DB코드	JSON코드	변환값(name)	설명
+5	5	Net	세후 (퇴직금 별도, 본인 연말정산)
+6	6	Gross	세전 (4대보험/세금 공제 전)
+7	7	협의	면접 후 협의
+
+=== 4. pay_option (급여옵션) - 복수선택 가능 ===
+코드	의미
+1	퇴직금(퇴직연금) 별도지급
+2	본인 연말정산 가능
+3	중도 퇴사 시 원천징수 기준 세금 환급
+예시: PAY_OPTION = "2,3" → 본인 연말정산 가능 + 중도 퇴사 시 환급
+
+=== 5. specialty (진료과) ===
+DB코드	변환값(code_names)
+SPC101	가정의학과
+SPC102	결핵과
+SPC103	내과
+SPC104	마취통증의학과
+SPC105	비뇨의학과
+SPC106	산부인과
+SPC108	성형외과
+SPC109	소아청소년과
+SPC110	신경과
+SPC111	신경외과
+SPC113	안과
+SPC114	응급의학과
+SPC115	이비인후과
+SPC116	일반의
+SPC117	재활의학과
+SPC118	정신건강의학과
+SPC119	정형외과
+SPC120	직업환경의학과
+SPC121	외과
+SPC122	영상의학과
+SPC123	진단검사의학과
+SPC124	피부과
+SPC125	핵의학과
+SPC126	흉부외과
+SPC129	예방의학과
+SPC130	병리과
+
+=== 6. listing_type (매물유형) - LEASE ===
+DB코드	변환값(listing_type_names)
+LST001	임대
+LST002	양도
+LST003	분양
+LST005	매매
+LST007	개원컨설팅
+
+=== 7. dealer_type (거래유형) ===
+DB코드	변환값(dealer_type_name)
+1	직거래
+2	중개거래
+3	기타
+
+=== 8. mall_type (몰유형) ===
+DB코드	변환값(mall_type_name)
+MLT001	메디게이트몰
+MLT002	프리미엄몰
+MLT003	플래티넘몰
+MLT004	VIP몰
+MLT005	개원파트너
+
+=== 9. usage_type (시설정보) ===
+DB코드	변환값(usage_type_names)
+UST001	장비양도
+UST002	시설양도
+UST003	주차가능
+UST004	역세권(30m이내)
+UST005	에스컬레이터
+UST006	엘리베이터
+UST007	인테리어지원
+UST008	권리금없음
+UST009	중개수수료없음
+UST011	렌트프리
+
+=== 10. sido_code (시도코드) ===
+코드	시도명
+01	강원특별자치도
+02	경기도
+03	경상남도
+04	경상북도
+05	광주광역시
+06	대구광역시
+07	대전광역시
+08	부산광역시
+09	서울특별시
+10	세종특별자치시
+11	인천광역시
+12	울산광역시
+13	전라남도
+14	전라북도
+15	제주특별자치도
+16	충청남도
+17	충청북도
+
+=== 11. emd_code 구조 (8자리) ===
+예시: 11080630
+11	시도코드 (서울)
+080	시군구코드 (성북구)
+630	읍면동코드 (정릉2동)
+
+=== 12. location 필드 매핑 ===
+JSON필드	DB컬럼	비고
+location.coordinates	xPos, yPos	위도/경도 분리 저장 → 합성
+location.sido_code	sido_code	시도코드
+location.sgg_code	sgg_code	시군구코드
+location.emd_code	-	읍면동코드 (외부)
+location.emd_nm	-	읍면동명 (파생)

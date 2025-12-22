@@ -1,0 +1,396 @@
+﻿Content ID,URL,필드(JSON),설명,DB값,JSON값,DB컬럼
+352759,https://t2-new.medigate.net/lease/352759,title,제목,76.[성북구 정릉재래시장] 병원입지상권분석과  개원자리추천(유튜브 有),76.[성북구 정릉재래시장] 병원입지상권분석과 개원자리추천(유튜브 有),title
+352759,https://t2-new.medigate.net/lease/352759,lease_property.premium,권리금,,0,premium_price
+352759,https://t2-new.medigate.net/lease/352759,lease_property.price,매매가,,NULL,price
+352759,https://t2-new.medigate.net/lease/352759,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+352759,https://t2-new.medigate.net/lease/352759,specialty.codes,진료과코드,"SPC115,SPC120,SPC124",NULL,spc_code
+352759,https://t2-new.medigate.net/lease/352759,location.zipcode,우편번호,02710,NULL,zipcode
+352759,https://t2-new.medigate.net/lease/352759,location.coordinates,좌표,NULL,"37.6073767,127.0101198",(derived)
+352759,https://t2-new.medigate.net/lease/352759,lease_detail.usage_type_names,시설정보,,NULL,usage_type
+352996,https://t2-new.medigate.net/lease/352996,lease_property.premium,권리금,,0,premium_price
+352996,https://t2-new.medigate.net/lease/352996,lease_property.price,매매가,,NULL,price
+352996,https://t2-new.medigate.net/lease/352996,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+352996,https://t2-new.medigate.net/lease/352996,specialty.codes,진료과코드,"SPC103,SPC109,SPC115",NULL,spc_code
+352996,https://t2-new.medigate.net/lease/352996,location.zipcode,우편번호,51001,NULL,zipcode
+352996,https://t2-new.medigate.net/lease/352996,location.coordinates,좌표,NULL,"35.1957091,128.8152301",(derived)
+352996,https://t2-new.medigate.net/lease/352996,lease_detail.usage_type_names,시설정보,"UST003,UST006,UST008,UST009,UST011",NULL,usage_type
+353358,https://t2-new.medigate.net/lease/353358,lease_property.premium,권리금,,0,premium_price
+353358,https://t2-new.medigate.net/lease/353358,lease_property.price,매매가,,NULL,price
+353358,https://t2-new.medigate.net/lease/353358,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+353358,https://t2-new.medigate.net/lease/353358,specialty.codes,진료과코드,"SPC103,SPC104,SPC105,SPC106,SPC108,SPC109,SPC111,SPC115,SPC119,SPC120,SPC124",NULL,spc_code
+353358,https://t2-new.medigate.net/lease/353358,location.zipcode,우편번호,06952,NULL,zipcode
+353358,https://t2-new.medigate.net/lease/353358,location.coordinates,좌표,NULL,"37.5004606,126.9311535",(derived)
+353358,https://t2-new.medigate.net/lease/353358,lease_detail.usage_type_names,시설정보,"UST006,UST008,UST009",NULL,usage_type
+354815,https://t2-new.medigate.net/lease/354815,lease_property.premium,권리금,,0,premium_price
+354815,https://t2-new.medigate.net/lease/354815,lease_property.price,매매가,,NULL,price
+354815,https://t2-new.medigate.net/lease/354815,lease_property.floor_current,현재층,,0,rent_layer
+354815,https://t2-new.medigate.net/lease/354815,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+354815,https://t2-new.medigate.net/lease/354815,specialty.codes,진료과코드,"SPC103,SPC121,SPC113,SPC105",NULL,spc_code
+354815,https://t2-new.medigate.net/lease/354815,location.zipcode,우편번호,21573,NULL,zipcode
+354815,https://t2-new.medigate.net/lease/354815,location.coordinates,좌표,NULL,"37.4466414,126.7028248",(derived)
+354815,https://t2-new.medigate.net/lease/354815,lease_detail.usage_type_names,시설정보,"UST006,UST008,UST003,UST009",NULL,usage_type
+356193,https://t2-new.medigate.net/lease/356193,title,제목,"80.파주운정지구(신성프라자) 병원상권입지분석과 소아과,치과,이비인후과  개원입지추천(유튜브 有)","80.파주운정지구(신성프라자) 병원상권입지분석과 소아과,치과,이비인후과 개원입지추천(유튜브 有)",title
+356193,https://t2-new.medigate.net/lease/356193,lease_property.premium,권리금,,0,premium_price
+356193,https://t2-new.medigate.net/lease/356193,lease_property.price,매매가,,NULL,price
+356193,https://t2-new.medigate.net/lease/356193,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+356193,https://t2-new.medigate.net/lease/356193,specialty.codes,진료과코드,"SPC101,SPC109,SPC115",NULL,spc_code
+356193,https://t2-new.medigate.net/lease/356193,location.zipcode,우편번호,10865,NULL,zipcode
+356193,https://t2-new.medigate.net/lease/356193,location.coordinates,좌표,NULL,"37.7384823,126.7307325",(derived)
+356193,https://t2-new.medigate.net/lease/356193,lease_detail.usage_type_names,시설정보,"UST003,UST006,UST008,UST009",NULL,usage_type
+357527,https://t2-new.medigate.net/lease/357527,lease_property.premium,권리금,,0,premium_price
+357527,https://t2-new.medigate.net/lease/357527,lease_property.price,매매가,,NULL,price
+357527,https://t2-new.medigate.net/lease/357527,lease_property.floor_current,현재층,,0,rent_layer
+357527,https://t2-new.medigate.net/lease/357527,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+357527,https://t2-new.medigate.net/lease/357527,specialty.codes,진료과코드,"SPC101,SPC103,SPC115,SPC124",NULL,spc_code
+357527,https://t2-new.medigate.net/lease/357527,location.zipcode,우편번호,14500,NULL,zipcode
+357527,https://t2-new.medigate.net/lease/357527,location.coordinates,좌표,NULL,"37.5161304,126.7669014",(derived)
+357527,https://t2-new.medigate.net/lease/357527,lease_detail.usage_type_names,시설정보,"UST004,UST006,UST008,UST009,UST011",NULL,usage_type
+357529,https://t2-new.medigate.net/lease/357529,lease_property.premium,권리금,,0,premium_price
+357529,https://t2-new.medigate.net/lease/357529,lease_property.price,매매가,,NULL,price
+357529,https://t2-new.medigate.net/lease/357529,lease_property.floor_current,현재층,,0,rent_layer
+357529,https://t2-new.medigate.net/lease/357529,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+357529,https://t2-new.medigate.net/lease/357529,specialty.codes,진료과코드,"SPC101,SPC103,SPC109,SPC121",NULL,spc_code
+357529,https://t2-new.medigate.net/lease/357529,location.zipcode,우편번호,05537,NULL,zipcode
+357529,https://t2-new.medigate.net/lease/357529,location.coordinates,좌표,NULL,"37.5277498,127.1139059",(derived)
+357529,https://t2-new.medigate.net/lease/357529,lease_detail.usage_type_names,시설정보,"UST004,UST006,UST008,UST009,UST011",NULL,usage_type
+357530,https://t2-new.medigate.net/lease/357530,lease_property.premium,권리금,,0,premium_price
+357530,https://t2-new.medigate.net/lease/357530,lease_property.price,매매가,,NULL,price
+357530,https://t2-new.medigate.net/lease/357530,lease_property.floor_current,현재층,,0,rent_layer
+357530,https://t2-new.medigate.net/lease/357530,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+357530,https://t2-new.medigate.net/lease/357530,specialty.codes,진료과코드,"SPC103,SPC105,SPC106,SPC113,SPC124",NULL,spc_code
+357530,https://t2-new.medigate.net/lease/357530,location.zipcode,우편번호,12779,NULL,zipcode
+357530,https://t2-new.medigate.net/lease/357530,location.coordinates,좌표,NULL,"37.3870843,127.2367300",(derived)
+357530,https://t2-new.medigate.net/lease/357530,lease_detail.usage_type_names,시설정보,"UST006,UST008,UST009,UST011",NULL,usage_type
+360619,https://t2-new.medigate.net/lease/360619,title,제목,1만6천세대 중심(대구 20분거리) - 경북 왜관역세권앞  중심대로  1층 병원자리임대. 내과 이비인후과 피부과 안과,1만6천세대 중심(대구 20분거리) - 경북 왜관역세권앞 중심대로 1층 병원자리임대. 내과 이비인후과 피부과 안과,title
+360619,https://t2-new.medigate.net/lease/360619,lease_property.management_cost,관리비,,0,mng_cost
+360619,https://t2-new.medigate.net/lease/360619,lease_property.premium,권리금,,0,premium_price
+360619,https://t2-new.medigate.net/lease/360619,lease_property.price,매매가,,NULL,price
+360619,https://t2-new.medigate.net/lease/360619,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+360619,https://t2-new.medigate.net/lease/360619,specialty.codes,진료과코드,"SPC103,SPC105,SPC110,SPC113,SPC115,SPC120,SPC121,SPC124",NULL,spc_code
+360619,https://t2-new.medigate.net/lease/360619,location.zipcode,우편번호,39894,NULL,zipcode
+360619,https://t2-new.medigate.net/lease/360619,location.coordinates,좌표,NULL,"35.9916625,128.3990371",(derived)
+360619,https://t2-new.medigate.net/lease/360619,lease_detail.usage_type_names,시설정보,,NULL,usage_type
+361839,https://t2-new.medigate.net/lease/361839,lease_property.premium,권리금,,0,premium_price
+361839,https://t2-new.medigate.net/lease/361839,lease_property.price,매매가,,NULL,price
+361839,https://t2-new.medigate.net/lease/361839,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+361839,https://t2-new.medigate.net/lease/361839,specialty.codes,진료과코드,"SPC116,SPC101,SPC106,SPC110",NULL,spc_code
+361839,https://t2-new.medigate.net/lease/361839,location.zipcode,우편번호,10546,NULL,zipcode
+361839,https://t2-new.medigate.net/lease/361839,location.coordinates,좌표,NULL,"37.5951764,126.8923059",(derived)
+361839,https://t2-new.medigate.net/lease/361839,lease_detail.usage_type_names,시설정보,"UST008,UST009,UST011",NULL,usage_type
+361840,https://t2-new.medigate.net/lease/361840,lease_property.premium,권리금,,0,premium_price
+361840,https://t2-new.medigate.net/lease/361840,lease_property.price,매매가,,NULL,price
+361840,https://t2-new.medigate.net/lease/361840,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+361840,https://t2-new.medigate.net/lease/361840,specialty.codes,진료과코드,"SPC116,SPC101,SPC109",NULL,spc_code
+361840,https://t2-new.medigate.net/lease/361840,location.zipcode,우편번호,18294,NULL,zipcode
+361840,https://t2-new.medigate.net/lease/361840,location.coordinates,좌표,NULL,"37.2250263,126.9246741",(derived)
+361840,https://t2-new.medigate.net/lease/361840,lease_detail.usage_type_names,시설정보,"UST003,UST006,UST008,UST009,UST011",NULL,usage_type
+362406,https://t2-new.medigate.net/lease/362406,lease_property.premium,권리금,,0,premium_price
+362406,https://t2-new.medigate.net/lease/362406,lease_property.price,매매가,,NULL,price
+362406,https://t2-new.medigate.net/lease/362406,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+362406,https://t2-new.medigate.net/lease/362406,specialty.codes,진료과코드,"SPC103,SPC105,SPC108,SPC113,SPC115,SPC124",NULL,spc_code
+362406,https://t2-new.medigate.net/lease/362406,location.zipcode,우편번호,02586,NULL,zipcode
+362406,https://t2-new.medigate.net/lease/362406,location.coordinates,좌표,NULL,"37.5743329,127.0237359",(derived)
+362406,https://t2-new.medigate.net/lease/362406,lease_detail.usage_type_names,시설정보,"UST004,UST008,UST009",NULL,usage_type
+362608,https://t2-new.medigate.net/lease/362608,lease_property.premium,권리금,,0,premium_price
+362608,https://t2-new.medigate.net/lease/362608,lease_property.price,매매가,,NULL,price
+362608,https://t2-new.medigate.net/lease/362608,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+362608,https://t2-new.medigate.net/lease/362608,specialty.codes,진료과코드,"SPC101,SPC103,SPC115",NULL,spc_code
+362608,https://t2-new.medigate.net/lease/362608,location.zipcode,우편번호,08631,NULL,zipcode
+362608,https://t2-new.medigate.net/lease/362608,location.coordinates,좌표,NULL,"37.4488858,126.9032455",(derived)
+362608,https://t2-new.medigate.net/lease/362608,lease_detail.usage_type_names,시설정보,"UST004,UST008,UST009",NULL,usage_type
+364000,https://t2-new.medigate.net/lease/364000,title,제목,서울강동구   내과.  가정의학과..(지원),서울강동구 내과. 가정의학과..(지원),title
+364000,https://t2-new.medigate.net/lease/364000,lease_property.management_cost,관리비,,0,mng_cost
+364000,https://t2-new.medigate.net/lease/364000,lease_property.premium,권리금,,0,premium_price
+364000,https://t2-new.medigate.net/lease/364000,lease_property.price,매매가,,NULL,price
+364000,https://t2-new.medigate.net/lease/364000,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364000,https://t2-new.medigate.net/lease/364000,specialty.codes,진료과코드,"SPC101,SPC103",NULL,spc_code
+364000,https://t2-new.medigate.net/lease/364000,location.zipcode,우편번호,05410,NULL,zipcode
+364000,https://t2-new.medigate.net/lease/364000,location.coordinates,좌표,NULL,"37.5194242,127.1384273",(derived)
+364000,https://t2-new.medigate.net/lease/364000,lease_detail.usage_type_names,시설정보,"UST003,UST006,UST008,UST009,UST011",NULL,usage_type
+364004,https://t2-new.medigate.net/lease/364004,title,제목,요양병원 양도 (200베드)  현금 8억정도면...(순익5천),요양병원 양도 (200베드) 현금 8억정도면...(순익5천),title
+364004,https://t2-new.medigate.net/lease/364004,lease_property.price,매매가,,NULL,price
+364004,https://t2-new.medigate.net/lease/364004,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364004,https://t2-new.medigate.net/lease/364004,specialty.codes,진료과코드,"SPC116,SPC101,SPC103,SPC111,SPC119",NULL,spc_code
+364004,https://t2-new.medigate.net/lease/364004,location.zipcode,우편번호,34428,NULL,zipcode
+364004,https://t2-new.medigate.net/lease/364004,location.coordinates,좌표,NULL,"36.3557477,127.4290127",(derived)
+364004,https://t2-new.medigate.net/lease/364004,lease_detail.usage_type_names,시설정보,"UST001,UST002,UST007,UST008,UST009",NULL,usage_type
+364010,https://t2-new.medigate.net/lease/364010,title,제목,경기남부 4천여세대  완전독점.  내과. 가정의학과.(지원있슴),경기남부 4천여세대 완전독점. 내과. 가정의학과.(지원있슴),title
+364010,https://t2-new.medigate.net/lease/364010,lease_property.premium,권리금,,0,premium_price
+364010,https://t2-new.medigate.net/lease/364010,lease_property.price,매매가,,NULL,price
+364010,https://t2-new.medigate.net/lease/364010,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364010,https://t2-new.medigate.net/lease/364010,specialty.codes,진료과코드,"SPC101,SPC103",NULL,spc_code
+364010,https://t2-new.medigate.net/lease/364010,location.zipcode,우편번호,18334,NULL,zipcode
+364010,https://t2-new.medigate.net/lease/364010,location.coordinates,좌표,NULL,"37.1857701,126.9378213",(derived)
+364010,https://t2-new.medigate.net/lease/364010,lease_detail.usage_type_names,시설정보,"UST003,UST006,UST008,UST009,UST011",NULL,usage_type
+364019,https://t2-new.medigate.net/lease/364019,title,제목,40여년  진료중.   양도비용무..(자가건물),40여년 진료중. 양도비용무..(자가건물),title
+364019,https://t2-new.medigate.net/lease/364019,lease_property.management_cost,관리비,,0,mng_cost
+364019,https://t2-new.medigate.net/lease/364019,lease_property.premium,권리금,,0,premium_price
+364019,https://t2-new.medigate.net/lease/364019,lease_property.price,매매가,,NULL,price
+364019,https://t2-new.medigate.net/lease/364019,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364019,https://t2-new.medigate.net/lease/364019,specialty.codes,진료과코드,"SPC101,SPC111,SPC117,SPC119,SPC121",NULL,spc_code
+364019,https://t2-new.medigate.net/lease/364019,location.zipcode,우편번호,24010,NULL,zipcode
+364019,https://t2-new.medigate.net/lease/364019,location.coordinates,좌표,NULL,"38.2272325,127.2442291",(derived)
+364019,https://t2-new.medigate.net/lease/364019,lease_detail.usage_type_names,시설정보,"UST001,UST002,UST003,UST004,UST007,UST008,UST009,UST011",NULL,usage_type
+364022,https://t2-new.medigate.net/lease/364022,lease_property.premium,권리금,,0,premium_price
+364022,https://t2-new.medigate.net/lease/364022,lease_property.price,매매가,,NULL,price
+364022,https://t2-new.medigate.net/lease/364022,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364022,https://t2-new.medigate.net/lease/364022,specialty.codes,진료과코드,"SPC111,SPC119,SPC121",NULL,spc_code
+364022,https://t2-new.medigate.net/lease/364022,location.zipcode,우편번호,13617,NULL,zipcode
+364022,https://t2-new.medigate.net/lease/364022,location.coordinates,좌표,NULL,"37.3535029,127.1154112",(derived)
+364022,https://t2-new.medigate.net/lease/364022,lease_detail.usage_type_names,시설정보,"UST004,UST008,UST009,UST011",NULL,usage_type
+364025,https://t2-new.medigate.net/lease/364025,title,제목,서울 전철역앞  통증양도  조건좋음..,서울 전철역앞 통증양도 조건좋음..,title
+364025,https://t2-new.medigate.net/lease/364025,lease_property.price,매매가,,NULL,price
+364025,https://t2-new.medigate.net/lease/364025,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364025,https://t2-new.medigate.net/lease/364025,specialty.codes,진료과코드,"SPC105,SPC119,SPC121",NULL,spc_code
+364025,https://t2-new.medigate.net/lease/364025,location.zipcode,우편번호,02086,NULL,zipcode
+364025,https://t2-new.medigate.net/lease/364025,location.coordinates,좌표,NULL,"37.5992876,127.0927566",(derived)
+364025,https://t2-new.medigate.net/lease/364025,lease_detail.usage_type_names,시설정보,"UST001,UST002,UST003,UST004,UST007,UST008,UST009,UST011",NULL,usage_type
+364027,https://t2-new.medigate.net/lease/364027,title,제목,인천  오래된 정형외과양도.,인천 오래된 정형외과양도.,title
+364027,https://t2-new.medigate.net/lease/364027,lease_property.price,매매가,,NULL,price
+364027,https://t2-new.medigate.net/lease/364027,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364027,https://t2-new.medigate.net/lease/364027,specialty.codes,진료과코드,SPC121,NULL,spc_code
+364027,https://t2-new.medigate.net/lease/364027,location.zipcode,우편번호,14743,NULL,zipcode
+364027,https://t2-new.medigate.net/lease/364027,location.coordinates,좌표,NULL,"37.4803423,126.7559551",(derived)
+364027,https://t2-new.medigate.net/lease/364027,lease_detail.usage_type_names,시설정보,"UST001,UST002,UST007,UST008,UST009,UST011",NULL,usage_type
+364029,https://t2-new.medigate.net/lease/364029,lease_property.premium,권리금,,0,premium_price
+364029,https://t2-new.medigate.net/lease/364029,lease_property.price,매매가,,NULL,price
+364029,https://t2-new.medigate.net/lease/364029,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364029,https://t2-new.medigate.net/lease/364029,specialty.codes,진료과코드,"SPC101,SPC103,SPC115",NULL,spc_code
+364029,https://t2-new.medigate.net/lease/364029,location.zipcode,우편번호,08755,NULL,zipcode
+364029,https://t2-new.medigate.net/lease/364029,location.coordinates,좌표,NULL,"37.4850552,126.9339826",(derived)
+364029,https://t2-new.medigate.net/lease/364029,lease_detail.usage_type_names,시설정보,"UST003,UST004,UST006,UST008,UST009,UST011",NULL,usage_type
+364031,https://t2-new.medigate.net/lease/364031,title,제목,내과.  가정의학과.   전철역앞. 1층.,내과. 가정의학과. 전철역앞. 1층.,title
+364031,https://t2-new.medigate.net/lease/364031,lease_property.management_cost,관리비,,0,mng_cost
+364031,https://t2-new.medigate.net/lease/364031,lease_property.premium,권리금,,0,premium_price
+364031,https://t2-new.medigate.net/lease/364031,lease_property.price,매매가,,NULL,price
+364031,https://t2-new.medigate.net/lease/364031,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364031,https://t2-new.medigate.net/lease/364031,specialty.codes,진료과코드,"SPC101,SPC103,SPC114",NULL,spc_code
+364031,https://t2-new.medigate.net/lease/364031,location.zipcode,우편번호,21527,NULL,zipcode
+364031,https://t2-new.medigate.net/lease/364031,location.coordinates,좌표,NULL,"37.4600399,126.7399915",(derived)
+364031,https://t2-new.medigate.net/lease/364031,lease_detail.usage_type_names,시설정보,"UST004,UST007,UST008,UST011",NULL,usage_type
+364034,https://t2-new.medigate.net/lease/364034,title,제목,3만여세대의  안과자리..주차장좋고  가시성좋습니다.(피부과.),3만여세대의 안과자리..주차장좋고 가시성좋습니다.(피부과.),title
+364034,https://t2-new.medigate.net/lease/364034,lease_property.management_cost,관리비,,0,mng_cost
+364034,https://t2-new.medigate.net/lease/364034,lease_property.premium,권리금,,0,premium_price
+364034,https://t2-new.medigate.net/lease/364034,lease_property.price,매매가,,NULL,price
+364034,https://t2-new.medigate.net/lease/364034,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364034,https://t2-new.medigate.net/lease/364034,specialty.codes,진료과코드,"SPC113,SPC124",NULL,spc_code
+364034,https://t2-new.medigate.net/lease/364034,location.zipcode,우편번호,16815,NULL,zipcode
+364034,https://t2-new.medigate.net/lease/364034,location.coordinates,좌표,NULL,"37.3233263,127.0773717",(derived)
+364034,https://t2-new.medigate.net/lease/364034,lease_detail.usage_type_names,시설정보,"UST003,UST007,UST008,UST009,UST011",NULL,usage_type
+364035,https://t2-new.medigate.net/lease/364035,title,제목,내과좋은자리.  전?역앞.,내과좋은자리. 전?역앞.,title
+364035,https://t2-new.medigate.net/lease/364035,lease_property.premium,권리금,,0,premium_price
+364035,https://t2-new.medigate.net/lease/364035,lease_property.price,매매가,,NULL,price
+364035,https://t2-new.medigate.net/lease/364035,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364035,https://t2-new.medigate.net/lease/364035,specialty.codes,진료과코드,"SPC101,SPC103",NULL,spc_code
+364035,https://t2-new.medigate.net/lease/364035,location.zipcode,우편번호,10401,NULL,zipcode
+364035,https://t2-new.medigate.net/lease/364035,location.coordinates,좌표,NULL,"37.6613169,126.7717504",(derived)
+364035,https://t2-new.medigate.net/lease/364035,lease_detail.usage_type_names,시설정보,"UST003,UST004,UST007,UST008,UST009,UST011",NULL,usage_type
+364036,https://t2-new.medigate.net/lease/364036,title,제목,강남에  년33억신고..  (통증.위주,강남에 년33억신고.. (통증.위주,title
+364036,https://t2-new.medigate.net/lease/364036,lease_property.management_cost,관리비,,0,mng_cost
+364036,https://t2-new.medigate.net/lease/364036,lease_property.price,매매가,,NULL,price
+364036,https://t2-new.medigate.net/lease/364036,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364036,https://t2-new.medigate.net/lease/364036,specialty.codes,진료과코드,"SPC110,SPC111,SPC119,SPC121",NULL,spc_code
+364036,https://t2-new.medigate.net/lease/364036,location.zipcode,우편번호,06035,NULL,zipcode
+364036,https://t2-new.medigate.net/lease/364036,location.coordinates,좌표,NULL,"37.5182112,127.0231651",(derived)
+364036,https://t2-new.medigate.net/lease/364036,lease_detail.usage_type_names,시설정보,"UST001,UST002,UST004,UST007,UST008,UST009,UST011",NULL,usage_type
+364126,https://t2-new.medigate.net/lease/364126,title,제목,"평택 지제역 동삭동 2층 실104평  내과,정형외과 특별임대","평택 지제 동삭동 실104평 약 3만세대 중앙 2층코너 내과,정형 특별임대",title
+364126,https://t2-new.medigate.net/lease/364126,lease_property.premium,권리금,,0,premium_price
+364126,https://t2-new.medigate.net/lease/364126,lease_property.price,매매가,,NULL,price
+364126,https://t2-new.medigate.net/lease/364126,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364126,https://t2-new.medigate.net/lease/364126,specialty.codes,진료과코드,"SPC103,SPC104,SPC111,SPC119,SPC121,SPC105,SPC124,SPC120",NULL,spc_code
+364126,https://t2-new.medigate.net/lease/364126,location.zipcode,우편번호,18028,NULL,zipcode
+364126,https://t2-new.medigate.net/lease/364126,location.coordinates,좌표,NULL,"37.0206505,127.0861391",(derived)
+364126,https://t2-new.medigate.net/lease/364126,lease_detail.usage_type_names,시설정보,"UST006,UST008,UST009,UST011",NULL,usage_type
+364126,https://t2-new.medigate.net/lease/364126,period.updated_at,수정일,2025-12-08 15:06:27,2025-10-29T17:49:36Z,mod_date
+364132,https://t2-new.medigate.net/lease/364132,lease_property.management_cost,관리비,,0,mng_cost
+364132,https://t2-new.medigate.net/lease/364132,lease_property.premium,권리금,,0,premium_price
+364132,https://t2-new.medigate.net/lease/364132,lease_property.price,매매가,,NULL,price
+364132,https://t2-new.medigate.net/lease/364132,lease_property.floor_current,현재층,,0,rent_layer
+364132,https://t2-new.medigate.net/lease/364132,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364132,https://t2-new.medigate.net/lease/364132,specialty.codes,진료과코드,"SPC104,SPC113,SPC119,SPC121",NULL,spc_code
+364132,https://t2-new.medigate.net/lease/364132,location.zipcode,우편번호,22210,NULL,zipcode
+364132,https://t2-new.medigate.net/lease/364132,location.coordinates,좌표,NULL,"37.4450574,126.6653931",(derived)
+364132,https://t2-new.medigate.net/lease/364132,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364133,https://t2-new.medigate.net/lease/364133,lease_property.management_cost,관리비,,0,mng_cost
+364133,https://t2-new.medigate.net/lease/364133,lease_property.premium,권리금,,0,premium_price
+364133,https://t2-new.medigate.net/lease/364133,lease_property.price,매매가,,NULL,price
+364133,https://t2-new.medigate.net/lease/364133,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364133,https://t2-new.medigate.net/lease/364133,specialty.codes,진료과코드,SPC115,NULL,spc_code
+364133,https://t2-new.medigate.net/lease/364133,location.zipcode,우편번호,14055,NULL,zipcode
+364133,https://t2-new.medigate.net/lease/364133,location.coordinates,좌표,NULL,"37.4000812,126.9617839",(derived)
+364133,https://t2-new.medigate.net/lease/364133,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364134,https://t2-new.medigate.net/lease/364134,title,제목,"[상권분석] 양주 옥정동 전용 806평 의료시설, 상업지 비율이 적은 곳 - 병원 추천",[상권분석] 양주 옥정동 전용 806평 의료시설,title
+364134,https://t2-new.medigate.net/lease/364134,lease_property.area_supply,공급면적,1347,0,supply_area
+364134,https://t2-new.medigate.net/lease/364134,lease_property.area_exclusive,전용면적,889,1347.0,private_area
+364134,https://t2-new.medigate.net/lease/364134,lease_property.monthly_rent,월세,11,889,month_price
+364134,https://t2-new.medigate.net/lease/364134,lease_property.management_cost,관리비,,0,mng_cost
+364134,https://t2-new.medigate.net/lease/364134,lease_property.premium,권리금,,11,premium_price
+364134,https://t2-new.medigate.net/lease/364134,lease_property.price,매매가,,NULL,price
+364134,https://t2-new.medigate.net/lease/364134,lease_property.floor_current,현재층,5,0,rent_layer
+364134,https://t2-new.medigate.net/lease/364134,lease_property.floor_total,전체층,10,5,tot_over_layer
+364134,https://t2-new.medigate.net/lease/364134,lease_property.floor_underground,지하층,2,10,tot_under_layer
+364134,https://t2-new.medigate.net/lease/364134,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364134,https://t2-new.medigate.net/lease/364134,specialty.codes,진료과코드,"SPC111,SPC119,SPC121,SPC999",NULL,spc_code
+364134,https://t2-new.medigate.net/lease/364134,location.address,주소,경기 양주시 고암길 275 본 상권과는 관련이 없습니다,2,address
+364134,https://t2-new.medigate.net/lease/364134,location.zipcode,우편번호,11455,NULL,zipcode
+364134,https://t2-new.medigate.net/lease/364134,location.coordinates,좌표,NULL,경기 양주시 고암길 275 본 상권과는 관련이 없습니다,(derived)
+364134,https://t2-new.medigate.net/lease/364134,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364134,https://t2-new.medigate.net/lease/364134,period.created_at,등록일,2025-05-07 15:59:05,"신경외과,재활의학과,정형외과",reg_date
+364134,https://t2-new.medigate.net/lease/364134,period.updated_at,수정일,2025-10-29 17:03:44,2025-05-07T15:59:05Z,mod_date
+364135,https://t2-new.medigate.net/lease/364135,lease_property.management_cost,관리비,,0,mng_cost
+364135,https://t2-new.medigate.net/lease/364135,lease_property.premium,권리금,,0,premium_price
+364135,https://t2-new.medigate.net/lease/364135,lease_property.price,매매가,,NULL,price
+364135,https://t2-new.medigate.net/lease/364135,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364135,https://t2-new.medigate.net/lease/364135,specialty.codes,진료과코드,"SPC103,SPC109,SPC115,SPC121",NULL,spc_code
+364135,https://t2-new.medigate.net/lease/364135,location.zipcode,우편번호,21319,NULL,zipcode
+364135,https://t2-new.medigate.net/lease/364135,location.coordinates,좌표,NULL,"37.5228648,126.7453140",(derived)
+364135,https://t2-new.medigate.net/lease/364135,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364136,https://t2-new.medigate.net/lease/364136,lease_property.management_cost,관리비,,0,mng_cost
+364136,https://t2-new.medigate.net/lease/364136,lease_property.premium,권리금,,0,premium_price
+364136,https://t2-new.medigate.net/lease/364136,lease_property.price,매매가,,NULL,price
+364136,https://t2-new.medigate.net/lease/364136,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364136,https://t2-new.medigate.net/lease/364136,specialty.codes,진료과코드,SPC115,NULL,spc_code
+364136,https://t2-new.medigate.net/lease/364136,location.zipcode,우편번호,08511,NULL,zipcode
+364136,https://t2-new.medigate.net/lease/364136,location.coordinates,좌표,NULL,"37.4787220,126.8864272",(derived)
+364136,https://t2-new.medigate.net/lease/364136,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364137,https://t2-new.medigate.net/lease/364137,lease_property.management_cost,관리비,,0,mng_cost
+364137,https://t2-new.medigate.net/lease/364137,lease_property.premium,권리금,,0,premium_price
+364137,https://t2-new.medigate.net/lease/364137,lease_property.price,매매가,,NULL,price
+364137,https://t2-new.medigate.net/lease/364137,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364137,https://t2-new.medigate.net/lease/364137,specialty.codes,진료과코드,"SPC103,SPC109,SPC115,SPC121",NULL,spc_code
+364137,https://t2-new.medigate.net/lease/364137,location.zipcode,우편번호,18294,NULL,zipcode
+364137,https://t2-new.medigate.net/lease/364137,location.coordinates,좌표,NULL,"37.2249905,126.9243498",(derived)
+364137,https://t2-new.medigate.net/lease/364137,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364139,https://t2-new.medigate.net/lease/364139,title,제목,[상권분석] 경기 의왕 고천동  위치한 관공서+주거 혼합 상권 입지,[상권분석] 경기 의왕 고천동 위치한 관공서+주거 혼합 상권 입지,title
+364139,https://t2-new.medigate.net/lease/364139,lease_property.management_cost,관리비,,0,mng_cost
+364139,https://t2-new.medigate.net/lease/364139,lease_property.premium,권리금,,0,premium_price
+364139,https://t2-new.medigate.net/lease/364139,lease_property.price,매매가,,NULL,price
+364139,https://t2-new.medigate.net/lease/364139,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364139,https://t2-new.medigate.net/lease/364139,specialty.codes,진료과코드,"SPC103,SPC104,SPC109,SPC115,SPC121",NULL,spc_code
+364139,https://t2-new.medigate.net/lease/364139,location.zipcode,우편번호,16053,NULL,zipcode
+364139,https://t2-new.medigate.net/lease/364139,location.coordinates,좌표,NULL,"37.3587906,126.9668682",(derived)
+364139,https://t2-new.medigate.net/lease/364139,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364140,https://t2-new.medigate.net/lease/364140,lease_property.management_cost,관리비,,0,mng_cost
+364140,https://t2-new.medigate.net/lease/364140,lease_property.premium,권리금,,0,premium_price
+364140,https://t2-new.medigate.net/lease/364140,lease_property.price,매매가,,NULL,price
+364140,https://t2-new.medigate.net/lease/364140,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364140,https://t2-new.medigate.net/lease/364140,specialty.codes,진료과코드,"SPC103,SPC115",NULL,spc_code
+364140,https://t2-new.medigate.net/lease/364140,location.zipcode,우편번호,22680,NULL,zipcode
+364140,https://t2-new.medigate.net/lease/364140,location.coordinates,좌표,NULL,"37.5849881,126.6968758",(derived)
+364140,https://t2-new.medigate.net/lease/364140,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364141,https://t2-new.medigate.net/lease/364141,lease_property.management_cost,관리비,,0,mng_cost
+364141,https://t2-new.medigate.net/lease/364141,lease_property.premium,권리금,,0,premium_price
+364141,https://t2-new.medigate.net/lease/364141,lease_property.price,매매가,,NULL,price
+364141,https://t2-new.medigate.net/lease/364141,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364141,https://t2-new.medigate.net/lease/364141,specialty.codes,진료과코드,"SPC103,SPC104,SPC109,SPC115,SPC121",NULL,spc_code
+364141,https://t2-new.medigate.net/lease/364141,location.zipcode,우편번호,18105,NULL,zipcode
+364141,https://t2-new.medigate.net/lease/364141,location.coordinates,좌표,NULL,"37.1876589,127.0388487",(derived)
+364141,https://t2-new.medigate.net/lease/364141,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364142,https://t2-new.medigate.net/lease/364142,lease_property.management_cost,관리비,,0,mng_cost
+364142,https://t2-new.medigate.net/lease/364142,lease_property.premium,권리금,,0,premium_price
+364142,https://t2-new.medigate.net/lease/364142,lease_property.price,매매가,,NULL,price
+364142,https://t2-new.medigate.net/lease/364142,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364142,https://t2-new.medigate.net/lease/364142,specialty.codes,진료과코드,"SPC106,SPC115,SPC121",NULL,spc_code
+364142,https://t2-new.medigate.net/lease/364142,location.zipcode,우편번호,16397,NULL,zipcode
+364142,https://t2-new.medigate.net/lease/364142,location.coordinates,좌표,NULL,"37.2737260,126.9533283",(derived)
+364142,https://t2-new.medigate.net/lease/364142,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364143,https://t2-new.medigate.net/lease/364143,title,제목,"[상권분석] 경기도 화성  비봉지구, 항아리 신도시 중심 입지 - 이비인후과 추천","[상권분석] 경기도 화성 비봉지구, 항아리 신도시 중심 입지 - 이비인후과 추천",title
+364143,https://t2-new.medigate.net/lease/364143,lease_property.management_cost,관리비,,0,mng_cost
+364143,https://t2-new.medigate.net/lease/364143,lease_property.premium,권리금,,0,premium_price
+364143,https://t2-new.medigate.net/lease/364143,lease_property.price,매매가,,NULL,price
+364143,https://t2-new.medigate.net/lease/364143,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364143,https://t2-new.medigate.net/lease/364143,specialty.codes,진료과코드,SPC115,NULL,spc_code
+364143,https://t2-new.medigate.net/lease/364143,location.zipcode,우편번호,18294,NULL,zipcode
+364143,https://t2-new.medigate.net/lease/364143,location.coordinates,좌표,NULL,"37.2249905,126.9243498",(derived)
+364143,https://t2-new.medigate.net/lease/364143,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364144,https://t2-new.medigate.net/lease/364144,lease_property.management_cost,관리비,,0,mng_cost
+364144,https://t2-new.medigate.net/lease/364144,lease_property.premium,권리금,,0,premium_price
+364144,https://t2-new.medigate.net/lease/364144,lease_property.price,매매가,,NULL,price
+364144,https://t2-new.medigate.net/lease/364144,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364144,https://t2-new.medigate.net/lease/364144,specialty.codes,진료과코드,"SPC103,SPC104,SPC106,SPC109,SPC113,SPC115,SPC121,SPC124",NULL,spc_code
+364144,https://t2-new.medigate.net/lease/364144,location.zipcode,우편번호,22680,NULL,zipcode
+364144,https://t2-new.medigate.net/lease/364144,location.coordinates,좌표,NULL,"37.5849881,126.6968758",(derived)
+364144,https://t2-new.medigate.net/lease/364144,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364147,https://t2-new.medigate.net/lease/364147,title,제목,"[상권분석] 동대문구  신설동 역세권, 대로변 오거리에 위치한 정형외과 추천지","[상권분석] 동대문구 신설동 역세권, 대로변 오거리에 위치한 정형외과 추천지",title
+364147,https://t2-new.medigate.net/lease/364147,lease_property.management_cost,관리비,,0,mng_cost
+364147,https://t2-new.medigate.net/lease/364147,lease_property.premium,권리금,,0,premium_price
+364147,https://t2-new.medigate.net/lease/364147,lease_property.price,매매가,,NULL,price
+364147,https://t2-new.medigate.net/lease/364147,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364147,https://t2-new.medigate.net/lease/364147,specialty.codes,진료과코드,"SPC104,SPC111,SPC119,SPC121",NULL,spc_code
+364147,https://t2-new.medigate.net/lease/364147,location.zipcode,우편번호,02577,NULL,zipcode
+364147,https://t2-new.medigate.net/lease/364147,location.coordinates,좌표,NULL,"37.5781936,127.0310532",(derived)
+364147,https://t2-new.medigate.net/lease/364147,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364150,https://t2-new.medigate.net/lease/364150,lease_property.management_cost,관리비,,0,mng_cost
+364150,https://t2-new.medigate.net/lease/364150,lease_property.premium,권리금,,0,premium_price
+364150,https://t2-new.medigate.net/lease/364150,lease_property.price,매매가,,NULL,price
+364150,https://t2-new.medigate.net/lease/364150,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364150,https://t2-new.medigate.net/lease/364150,specialty.codes,진료과코드,"SPC103,SPC104,SPC111,SPC119,SPC121",NULL,spc_code
+364150,https://t2-new.medigate.net/lease/364150,location.zipcode,우편번호,18490,NULL,zipcode
+364150,https://t2-new.medigate.net/lease/364150,location.coordinates,좌표,NULL,"37.1821049,127.1234911",(derived)
+364150,https://t2-new.medigate.net/lease/364150,lease_detail.usage_type_names,시설정보,"UST004,UST006,UST008,UST009,UST011",NULL,usage_type
+364152,https://t2-new.medigate.net/lease/364152,lease_property.management_cost,관리비,,0,mng_cost
+364152,https://t2-new.medigate.net/lease/364152,lease_property.premium,권리금,,0,premium_price
+364152,https://t2-new.medigate.net/lease/364152,lease_property.price,매매가,,NULL,price
+364152,https://t2-new.medigate.net/lease/364152,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364152,https://t2-new.medigate.net/lease/364152,specialty.codes,진료과코드,"SPC104,SPC111,SPC119,SPC121",NULL,spc_code
+364152,https://t2-new.medigate.net/lease/364152,location.zipcode,우편번호,16474,NULL,zipcode
+364152,https://t2-new.medigate.net/lease/364152,location.coordinates,좌표,NULL,"37.2695156,127.0237324",(derived)
+364152,https://t2-new.medigate.net/lease/364152,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364431,https://t2-new.medigate.net/lease/364431,title,제목,"[파주 운정지구 상권분석] 정형외과,내과,이비인후과,소아과, 365의원 추천","🏥[파주 운정지구 상권분석] 다양한 매물 /신축,구축 / 정형외과,내과,이비인후과,소아과 365의원 추천",title
+364431,https://t2-new.medigate.net/lease/364431,lease_property.management_cost,관리비,,0,mng_cost
+364431,https://t2-new.medigate.net/lease/364431,lease_property.premium,권리금,,0,premium_price
+364431,https://t2-new.medigate.net/lease/364431,lease_property.price,매매가,,NULL,price
+364431,https://t2-new.medigate.net/lease/364431,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+364431,https://t2-new.medigate.net/lease/364431,specialty.codes,진료과코드,"SPC116,SPC101,SPC103,SPC104,SPC109,SPC115,SPC119,SPC121",NULL,spc_code
+364431,https://t2-new.medigate.net/lease/364431,location.zipcode,우편번호,10889,NULL,zipcode
+364431,https://t2-new.medigate.net/lease/364431,location.coordinates,좌표,NULL,"37.7165133,126.7283387",(derived)
+364431,https://t2-new.medigate.net/lease/364431,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+364431,https://t2-new.medigate.net/lease/364431,period.updated_at,수정일,2025-12-08 14:59:58,2025-10-30T10:50:42Z,mod_date
+366074,https://t2-new.medigate.net/lease/366074,lease_property.premium,권리금,,0,premium_price
+366074,https://t2-new.medigate.net/lease/366074,lease_property.price,매매가,,NULL,price
+366074,https://t2-new.medigate.net/lease/366074,lease_property.dealer_type,중개유형,1,NULL,dealer_type
+366074,https://t2-new.medigate.net/lease/366074,specialty.codes,진료과코드,"SPC101,SPC103,SPC105,SPC106,SPC110,SPC113,SPC117,SPC115,SPC120,SPC124",NULL,spc_code
+366074,https://t2-new.medigate.net/lease/366074,location.zipcode,우편번호,22865,NULL,zipcode
+366074,https://t2-new.medigate.net/lease/366074,location.coordinates,좌표,NULL,"37.5947223,126.7168326",(derived)
+366074,https://t2-new.medigate.net/lease/366074,lease_detail.usage_type_names,시설정보,"UST003,UST006,UST008,UST009,UST011",NULL,usage_type
+366140,https://t2-new.medigate.net/lease/366140,lease_property.management_cost,관리비,,0,mng_cost
+366140,https://t2-new.medigate.net/lease/366140,lease_property.premium,권리금,,0,premium_price
+366140,https://t2-new.medigate.net/lease/366140,lease_property.price,매매가,,NULL,price
+366140,https://t2-new.medigate.net/lease/366140,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+366140,https://t2-new.medigate.net/lease/366140,specialty.codes,진료과코드,"SPC104,SPC111,SPC119,SPC121",NULL,spc_code
+366140,https://t2-new.medigate.net/lease/366140,location.zipcode,우편번호,15847,NULL,zipcode
+366140,https://t2-new.medigate.net/lease/366140,location.coordinates,좌표,NULL,"37.3557747,126.9539537",(derived)
+366140,https://t2-new.medigate.net/lease/366140,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+366175,https://t2-new.medigate.net/lease/366175,title,제목,"대전가능하신분..  O,S  N,S  지원좋음  몸만....","대전가능하신분.. O,S N,S 지원좋음 몸만....",title
+366175,https://t2-new.medigate.net/lease/366175,lease_property.management_cost,관리비,,0,mng_cost
+366175,https://t2-new.medigate.net/lease/366175,lease_property.premium,권리금,,0,premium_price
+366175,https://t2-new.medigate.net/lease/366175,lease_property.price,매매가,,NULL,price
+366175,https://t2-new.medigate.net/lease/366175,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+366175,https://t2-new.medigate.net/lease/366175,specialty.codes,진료과코드,"SPC104,SPC111,SPC119,SPC121",NULL,spc_code
+366175,https://t2-new.medigate.net/lease/366175,location.zipcode,우편번호,34699,NULL,zipcode
+366175,https://t2-new.medigate.net/lease/366175,location.coordinates,좌표,NULL,"36.2898230,127.4644612",(derived)
+366175,https://t2-new.medigate.net/lease/366175,lease_detail.usage_type_names,시설정보,"UST001,UST003,UST006,UST008,UST009,UST011",NULL,usage_type
+366253,https://t2-new.medigate.net/lease/366253,title,제목,"[상권분석] 안양 석수동 100~200평 정형외과,내과,ENT 추천","[상권분석] 석수동 신축 사거리상권, 정형외과,마통,내과,소아과,이비인후과,산부인과 추천",title
+366253,https://t2-new.medigate.net/lease/366253,lease_property.management_cost,관리비,,0,mng_cost
+366253,https://t2-new.medigate.net/lease/366253,lease_property.premium,권리금,,0,premium_price
+366253,https://t2-new.medigate.net/lease/366253,lease_property.price,매매가,,NULL,price
+366253,https://t2-new.medigate.net/lease/366253,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+366253,https://t2-new.medigate.net/lease/366253,specialty.codes,진료과코드,SPC115,NULL,spc_code
+366253,https://t2-new.medigate.net/lease/366253,location.zipcode,우편번호,15865,NULL,zipcode
+366253,https://t2-new.medigate.net/lease/366253,location.coordinates,좌표,NULL,"37.3579430,126.9315862",(derived)
+366253,https://t2-new.medigate.net/lease/366253,lease_detail.usage_type_names,시설정보,"UST008,UST009",NULL,usage_type
+366253,https://t2-new.medigate.net/lease/366253,period.updated_at,수정일,2025-12-08 14:35:25,2025-12-04T13:36:11Z,mod_date
+366506,https://t2-new.medigate.net/lease/366506,lease_property.premium,권리금,,0,premium_price
+366506,https://t2-new.medigate.net/lease/366506,lease_property.price,매매가,,NULL,price
+366506,https://t2-new.medigate.net/lease/366506,lease_property.dealer_type,중개유형,2,NULL,dealer_type
+366506,https://t2-new.medigate.net/lease/366506,specialty.codes,진료과코드,"SPC101,SPC103,SPC115,SPC104,SPC121",NULL,spc_code
+366506,https://t2-new.medigate.net/lease/366506,location.zipcode,우편번호,14999,NULL,zipcode
+366506,https://t2-new.medigate.net/lease/366506,location.coordinates,좌표,NULL,"37.3656680,126.8055466",(derived)
+366506,https://t2-new.medigate.net/lease/366506,lease_detail.usage_type_names,시설정보,"UST003,UST004,UST006,UST008,UST009,UST011",NULL,usage_type
+366858,https://t2-new.medigate.net/lease/366858,lease_property.premium,권리금,,0,premium_price
+366858,https://t2-new.medigate.net/lease/366858,lease_property.price,매매가,,NULL,price
+366858,https://t2-new.medigate.net/lease/366858,lease_property.dealer_type,중개유형,1,NULL,dealer_type
+366858,https://t2-new.medigate.net/lease/366858,specialty.codes,진료과코드,"SPC116,SPC101,SPC102,SPC103,SPC104,SPC123,SPC130,SPC105,SPC106,SPC108,SPC109,SPC110,SPC111,SPC113,SP...",NULL,spc_code
+366858,https://t2-new.medigate.net/lease/366858,location.zipcode,우편번호,41228,NULL,zipcode
+366858,https://t2-new.medigate.net/lease/366858,location.coordinates,좌표,NULL,"35.8771955,128.6260425",(derived)
+366858,https://t2-new.medigate.net/lease/366858,lease_detail.usage_type_names,시설정보,"UST003,UST007,UST008,UST009,UST011",NULL,usage_type

@@ -1,0 +1,30 @@
+from fastapi import APIRouter, UploadFile, File, Form
+from app.schemas import SummarizeRequest, SummarizeResponse
+
+router = APIRouter()
+
+@router.post("/summarize", response_model=SummarizeResponse)
+async def summarize(
+    provider: str = Form("gpt5"),
+    model: str = Form("gpt-5-mini"),
+    system_prompt: str = Form(None),
+    output_mode: str = Form("내용 요약"),
+    text: str = Form(None),
+    image: UploadFile = File(None),
+):
+    # TODO: validate, call provider wrapper, return response
+    return {"summary": "여기에 요약 결과가 들어갑니다.", "provider": provider, "model": model}
+    
+    # 디버그 출력 (개발용)
+    print("=== summarize 호출 ===")
+    print("provider:", provider)
+    print("model:", model)
+    print("output_mode:", output_mode)
+    print("text:", text)
+    print("image filename:", getattr(image, "filename", None))
+    # 기존 동작
+    return {"summary": "여기에 요약 결과가 들어갑니다.", "provider": provider, "model": model}
+
+@router.get("/models")
+async def models():
+    return {"providers": [{"id":"gpt5","models":["gpt-5-mini"]}]}

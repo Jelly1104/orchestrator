@@ -1,0 +1,66 @@
+"use client";
+import React, { useState } from "react";
+import ModelSelector from "../components/ModelSelector";
+import SystemPromptEditor from "../components/SystemPromptEditor";
+import UploadInput from "../components/UploadInput";
+import ResultViewer from "../components/ResultViewer";
+import axios from "axios";
+
+export default function Page() {
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (formData: FormData) => {
+    setError(null);
+    setResult(null);
+    setLoading(true);
+    try {
+      // NEXT_PUBLIC_BACKEND_URL을 .env.local에 설정했으면 사용
+      const base = (process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(
+        /\/$/,
+        ""
+      );
+      const url = base ? `${base}/api/v1/summarize` : "/api/v1/summarize";
+      console.log("요청 URL:", url);
+      console.log("전송 FormData keys:", Array.from(formData.keys()));
+      const resp = await axios.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      console.log("응답 전체:", resp);
+      // 안전하게 summary 추출
+      const summary = resp?.data?.summary ?? JSON.stringify(resp?.data);
+      setResult(summary);
+    } catch (err: any) {
+      console.error("요약 요청 실패:", err);
+      // axios error 형식 처리
+      if (err.response) {
+        setError(
+          `서버 오류: ${err.response.status} ${JSON.stringify(
+            err.response.data
+          )}`
+        );
+      } else {
+        setError(String(err.message || err));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main style={{ padding: 24 }}>
+      <h1>claude 요약 데모 (gpt-5-mini)</h1>
+      <ModelSelector />
+      <SystemPromptEditor />
+      <UploadInput onSubmit={handleSubmit} />
+      {loading && <div>요약 중...</div>}
+      {error && (
+        <div style={{ color: "red" }}>
+          <strong>오류:</strong> {error}
+        </div>
+      )}
+      <ResultViewer result={result} />
+    </main>
+  );
+}

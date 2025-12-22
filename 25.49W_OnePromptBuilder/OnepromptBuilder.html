@@ -1,0 +1,919 @@
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>One-Prompt App Builder: 기획 제안서</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+      rel="stylesheet" />
+
+    <!-- Custom Config & Styling -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Noto Sans KR", "sans-serif"],
+            },
+            colors: {
+              primary: "#4F46E5", // Indigo 600
+              secondary: "#14B8A6", // Teal 500
+              bgbase: "#F9FAFB", // Slate 50
+              surface: "#FFFFFF",
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      /* Chart Container Strict Styling */
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        height: 300px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* Custom Scrollbar for Terminals */
+      .terminal-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+      .terminal-scroll::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      .terminal-scroll::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 4px;
+      }
+
+      /* Architecture Block Hover Effects */
+      .arch-block {
+        transition: all 0.3s ease;
+      }
+      .arch-block:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-color: #4f46e5;
+      }
+    </style>
+
+    <!-- Placeholder Comments Required -->
+    <!-- Chosen Palette: Warm Corporate (Stone/Slate Background with Indigo/Teal Accents) for a professional yet innovative AI product feel. -->
+    <!-- Application Structure Plan: 
+         1. Hero: Hook the user with the "One-Prompt" vision.
+         2. Value/Impact: Quantitative comparison (Chart.js) to justify the project.
+         3. Problem/Solution: Interactive cards to map Pain Points to our Solutions.
+         4. Architecture: Interactive diagram explaining the "Serverless MVP" structure.
+         5. Roadmap: Tabbed view for the 3-day schedule and MoSCoW scope.
+         6. Simulation: A hands-on mock terminal to demonstrate the user flow.
+         This structure moves from "Why" -> "What" -> "How" -> "When", guiding the stakeholder through the logic of the proposal. -->
+    <!-- Visualization & Content Choices:
+         - Value Comparison: Bar Chart to dramatically show Time/Cost reduction (Goal: Inform/Compare).
+         - Architecture: CSS Grid with hover states to explain components (Goal: Organize/Inform). No SVG used.
+         - Roadmap: Tabbed Interface for clean information density (Goal: Organize).
+         - Simulation: JS-driven text updates to mimic AI generation (Goal: Engagement/Wow Factor).
+         -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans leading-relaxed">
+    <!-- Navigation / Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
+            1
+          </div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">
+            One-Prompt Builder
+            <span
+              class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded ml-2"
+              >MVP Proposal</span
+            >
+          </h1>
+        </div>
+        <nav class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
+          <a href="#section-impact" class="hover:text-primary transition-colors"
+            >가치 제안</a
+          >
+          <a
+            href="#section-problem"
+            class="hover:text-primary transition-colors"
+            >문제 및 해결</a
+          >
+          <a href="#section-arch" class="hover:text-primary transition-colors"
+            >아키텍처</a
+          >
+          <a
+            href="#section-roadmap"
+            class="hover:text-primary transition-colors"
+            >실행 계획</a
+          >
+        </nav>
+        <button
+          onclick="scrollToSimulation()"
+          class="bg-primary hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+          데모 시뮬레이션
+        </button>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
+      <!-- 1. Hero Section -->
+      <section class="text-center py-10">
+        <span
+          class="text-primary font-semibold tracking-wider uppercase text-sm"
+          >AI-Native Product Strategy</span
+        >
+        <h2
+          class="text-4xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-6">
+          단 한 줄의 프롬프트,<br />
+          <span
+            class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600"
+            >실행 가능한 앱</span
+          >이 되다.
+        </h2>
+        <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
+          2주 걸리던 MVP 제작을 10분으로 단축합니다.<br />
+          기획서부터 코드까지, AI가 생성하고 생애주기까지 관리하는
+          <strong>Local-First 플랫폼</strong> 제안서입니다.
+        </p>
+        <div class="flex justify-center gap-4">
+          <div
+            class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 w-32">
+            <span class="text-3xl font-bold text-slate-900">3일</span>
+            <span class="text-xs text-slate-500">MVP 개발 기간</span>
+          </div>
+          <div
+            class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 w-32">
+            <span class="text-3xl font-bold text-slate-900">0원</span>
+            <span class="text-xs text-slate-500">인프라 비용</span>
+          </div>
+          <div
+            class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 w-32">
+            <span class="text-3xl font-bold text-slate-900">SaaS</span>
+            <span class="text-xs text-slate-500">비즈니스 모델</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Impact Visualization (Chart.js) -->
+      <section
+        id="section-impact"
+        class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div class="mb-6">
+          <h3 class="text-2xl font-bold text-slate-900">
+            왜 이 프로젝트인가? (Business Value)
+          </h3>
+          <p class="text-slate-600 mt-2">
+            기존 개발 방식 대비 압도적인 시간 및 비용 절감 효과를 제공합니다.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <!-- Textual Value Props -->
+          <div class="space-y-6">
+            <div class="flex items-start gap-4">
+              <div
+                class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-primary font-bold shrink-0">
+                1
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900">Time-to-Market 혁신</h4>
+                <p class="text-sm text-slate-600">
+                  평균 14일 소요되는 MVP 제작을 AI 자동화로 10분 내 완료하여
+                  시장 검증 속도 극대화.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div
+                class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-primary font-bold shrink-0">
+                2
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900">표준화된 산출물</h4>
+                <p class="text-sm text-slate-600">
+                  PRD, API 명세서, 코드가 자동으로 생성되어 유관부서 소통 비용
+                  절감.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div
+                class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-primary font-bold shrink-0">
+                3
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900">수익 모델 (BM)</h4>
+                <p class="text-sm text-slate-600">
+                  Freemium으로 유저 확보 후, Pro Plan($29/mo) 및 Enterprise
+                  API로 수익화.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+            <h4 class="text-center text-sm font-semibold text-slate-500 mb-4">
+              개발 소요 시간 비교 (일 단위)
+            </h4>
+            <div class="chart-container">
+              <canvas id="impactChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Problem & Solution (Interactive) -->
+      <section id="section-problem">
+        <div class="mb-8 flex justify-between items-end">
+          <div>
+            <h3 class="text-2xl font-bold text-slate-900">
+              문제 정의 및 해결책
+            </h3>
+            <p class="text-slate-600 mt-2">
+              사용자가 겪는 핵심 페인 포인트와 우리의 AI 솔루션입니다.
+            </p>
+          </div>
+          <!-- Filter Controls -->
+          <div class="flex bg-slate-100 p-1 rounded-lg">
+            <button
+              onclick="setGridFilter('all')"
+              id="btn-all"
+              class="px-4 py-1.5 text-sm font-medium rounded-md bg-white shadow text-primary transition-all">
+              전체
+            </button>
+            <button
+              onclick="setGridFilter('P1')"
+              id="btn-P1"
+              class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all">
+              진입장벽
+            </button>
+            <button
+              onclick="setGridFilter('P2')"
+              id="btn-P2"
+              class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all">
+              파편화
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="problem-grid"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Grid Items Injected via JS -->
+        </div>
+      </section>
+
+      <!-- 4. Architecture (Interactive Diagram) -->
+      <section
+        id="section-arch"
+        class="bg-slate-900 text-white rounded-2xl p-8 overflow-hidden relative">
+        <div class="absolute top-0 right-0 p-4 opacity-10">
+          <span class="text-9xl font-mono font-bold">ARCH</span>
+        </div>
+
+        <div class="mb-8 relative z-10">
+          <h3 class="text-2xl font-bold">시스템 아키텍처 (Serverless MVP)</h3>
+          <p class="text-slate-400 mt-2">
+            3일 완성을 위해 서버/DB 의존성을 제거한 Local-First 구조입니다.
+          </p>
+        </div>
+
+        <!-- Architecture Diagram Wrapper -->
+        <div
+          class="relative z-10 bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+          <!-- Client Side Layer -->
+          <div
+            class="border-2 border-dashed border-slate-600 rounded-lg p-6 mb-8 relative">
+            <span
+              class="absolute -top-3 left-4 bg-slate-800 px-2 text-xs font-mono text-slate-400"
+              >User Browser (Client-Side Only)</span
+            >
+
+            <div class="grid grid-cols-2 gap-8 mb-8">
+              <!-- Input Interface -->
+              <div
+                class="arch-block bg-slate-700 p-4 rounded-lg border border-slate-600 text-center cursor-help"
+                onmouseenter="showArchDetail('input')"
+                onmouseleave="hideArchDetail()">
+                <div class="text-indigo-400 text-lg mb-1">⌨️</div>
+                <h4 class="font-bold text-sm">Input Interface</h4>
+                <p class="text-xs text-slate-400">One-Line Prompt</p>
+              </div>
+              <!-- Dashboard -->
+              <div
+                class="arch-block bg-slate-700 p-4 rounded-lg border border-slate-600 text-center cursor-help"
+                onmouseenter="showArchDetail('dashboard')"
+                onmouseleave="hideArchDetail()">
+                <div class="text-indigo-400 text-lg mb-1">📊</div>
+                <h4 class="font-bold text-sm">Lifecycle Dash</h4>
+                <p class="text-xs text-slate-400">HTML Ref Module</p>
+              </div>
+            </div>
+
+            <div class="flex justify-center mb-2 text-slate-500 text-xs">
+              ⬇️ Interactions
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+              <!-- AI Logic -->
+              <div
+                class="arch-block bg-indigo-900/50 p-4 rounded-lg border border-indigo-500/50 text-center col-span-1 cursor-help"
+                onmouseenter="showArchDetail('ai-core')"
+                onmouseleave="hideArchDetail()">
+                <div class="text-indigo-300 text-lg mb-1">🧠</div>
+                <h4 class="font-bold text-sm text-indigo-100">AI Logic Core</h4>
+                <p class="text-xs text-indigo-300/70">Client JS Engine</p>
+              </div>
+              <!-- LocalStorage -->
+              <div
+                class="arch-block bg-teal-900/30 p-4 rounded-lg border border-teal-500/30 text-center col-span-1 cursor-help"
+                onmouseenter="showArchDetail('local-storage')"
+                onmouseleave="hideArchDetail()">
+                <div class="text-teal-300 text-lg mb-1">💾</div>
+                <h4 class="font-bold text-sm text-teal-100">LocalStorage</h4>
+                <p class="text-xs text-teal-300/70">No Database</p>
+              </div>
+              <!-- Preview -->
+              <div
+                class="arch-block bg-slate-700 p-4 rounded-lg border border-slate-600 text-center col-span-1 cursor-help"
+                onmouseenter="showArchDetail('preview')"
+                onmouseleave="hideArchDetail()">
+                <div class="text-indigo-400 text-lg mb-1">🖥️</div>
+                <h4 class="font-bold text-sm">Preview Engine</h4>
+                <p class="text-xs text-slate-400">Iframe Sandbox</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- API Layer -->
+          <div class="flex justify-center mb-2">
+            <span class="text-xs text-slate-500 px-2 bg-slate-900 rounded"
+              >Secure API Call (Streaming)</span
+            >
+          </div>
+          <div
+            class="border border-slate-700 bg-black rounded-lg p-4 text-center">
+            <span class="text-lg mr-2">🤖</span>
+            <span class="font-mono font-bold text-white"
+              >LLM API (OpenAI GPT-4o)</span
+            >
+          </div>
+
+          <!-- Detail Tooltip Area -->
+          <div
+            id="arch-detail-panel"
+            class="absolute bottom-4 right-4 left-4 bg-slate-800 border border-slate-600 p-3 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none">
+            <h5 id="detail-title" class="font-bold text-indigo-400 text-sm">
+              Component
+            </h5>
+            <p id="detail-desc" class="text-xs text-slate-300">
+              Hover over a component to see details.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Roadmap & Schedule -->
+      <section id="section-roadmap">
+        <h3 class="text-2xl font-bold text-slate-900 mb-6">
+          3일 개발 스프린트 계획
+        </h3>
+
+        <div
+          class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <!-- Tabs -->
+          <div class="flex border-b border-slate-200">
+            <button
+              onclick="switchTab('day1')"
+              id="tab-day1"
+              class="flex-1 py-4 text-center font-bold text-primary border-b-2 border-primary bg-indigo-50/50 transition-colors">
+              Day 1: UI & Logic
+            </button>
+            <button
+              onclick="switchTab('day2')"
+              id="tab-day2"
+              class="flex-1 py-4 text-center font-medium text-slate-500 hover:text-primary transition-colors">
+              Day 2: AI Integration
+            </button>
+            <button
+              onclick="switchTab('day3')"
+              id="tab-day3"
+              class="flex-1 py-4 text-center font-medium text-slate-500 hover:text-primary transition-colors">
+              Day 3: Preview & Polish
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="p-8 min-h-[300px]">
+            <!-- Day 1 -->
+            <div id="content-day1" class="schedule-content">
+              <h4 class="text-lg font-bold text-slate-800 mb-4">
+                목표: 기본 껍데기 및 데이터 매니저 구현
+              </h4>
+              <ul class="space-y-3">
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >1</span
+                  >
+                  <span class="text-slate-700"
+                    >React 프로젝트 세팅 (Vite 기반, Tailwind 설정)</span
+                  >
+                </li>
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >2</span
+                  >
+                  <span class="text-slate-700"
+                    >Lifecycle Dashboard UI 컴포넌트화 (첨부 HTML 이식)</span
+                  >
+                </li>
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >3</span
+                  >
+                  <span class="text-slate-700"
+                    >LocalStorage CRUD 유틸리티 (Save/Load Logic) 개발</span
+                  >
+                </li>
+              </ul>
+              <div class="mt-6 p-4 bg-slate-50 rounded border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 uppercase"
+                  >산출물</span
+                >
+                <div class="font-mono text-sm text-indigo-600 mt-1">
+                  Main UI Structure, Data Manager JS Module
+                </div>
+              </div>
+            </div>
+
+            <!-- Day 2 -->
+            <div id="content-day2" class="schedule-content hidden">
+              <h4 class="text-lg font-bold text-slate-800 mb-4">
+                목표: AI 뇌 이식 및 프롬프트 로직 구현
+              </h4>
+              <ul class="space-y-3">
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >1</span
+                  >
+                  <span class="text-slate-700"
+                    >OpenAI API 연동 및 System Prompt 튜닝 (Planner/Coder)</span
+                  >
+                </li>
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >2</span
+                  >
+                  <span class="text-slate-700"
+                    >스트리밍 응답(SSE) 처리 로직 구현 (체감 속도 향상)</span
+                  >
+                </li>
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >3</span
+                  >
+                  <span class="text-slate-700"
+                    >Prompt-to-Code 파이프라인 연결</span
+                  >
+                </li>
+              </ul>
+              <div class="mt-6 p-4 bg-slate-50 rounded border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 uppercase"
+                  >산출물</span
+                >
+                <div class="font-mono text-sm text-indigo-600 mt-1">
+                  AI Generation Module, Chat Interface
+                </div>
+              </div>
+            </div>
+
+            <!-- Day 3 -->
+            <div id="content-day3" class="schedule-content hidden">
+              <h4 class="text-lg font-bold text-slate-800 mb-4">
+                목표: 실행 환경 구축 및 최종 배포
+              </h4>
+              <ul class="space-y-3">
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >1</span
+                  >
+                  <span class="text-slate-700"
+                    >Iframe Sandbox 통신 구현 (postMessage로 코드 주입)</span
+                  >
+                </li>
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >2</span
+                  >
+                  <span class="text-slate-700"
+                    >전체 플로우(Input -> Gen -> Preview) 테스트 및 버그
+                    수정</span
+                  >
+                </li>
+                <li class="flex items-center gap-3">
+                  <span
+                    class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600"
+                    >3</span
+                  >
+                  <span class="text-slate-700"
+                    >Vercel/Netlify를 통한 정적 웹 호스팅 배포</span
+                  >
+                </li>
+              </ul>
+              <div class="mt-6 p-4 bg-slate-50 rounded border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 uppercase"
+                  >산출물</span
+                >
+                <div class="font-mono text-sm text-indigo-600 mt-1">
+                  Runnable App URL, Deployment Guide
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Simulation (The "Wow" Factor) -->
+      <section
+        id="section-simulation"
+        class="bg-indigo-900 rounded-2xl p-8 text-white shadow-xl">
+        <div class="text-center mb-8">
+          <span
+            class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase text-indigo-100"
+            >Interactive Demo</span
+          >
+          <h3 class="text-2xl font-bold mt-3">User Flow Simulator</h3>
+          <p class="text-indigo-200 mt-2">
+            실제 앱에서 경험하게 될 프로세스를 미리 확인해보세요.
+          </p>
+        </div>
+
+        <div
+          class="max-w-3xl mx-auto bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-2xl">
+          <!-- Terminal Header -->
+          <div
+            class="bg-slate-800 px-4 py-2 flex items-center gap-2 border-b border-slate-700">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <div class="ml-2 text-xs text-slate-400 font-mono">
+              one-prompt-builder — bash
+            </div>
+          </div>
+
+          <!-- Terminal Body -->
+          <div class="p-6 h-[320px] flex flex-col font-mono text-sm relative">
+            <!-- Output Area -->
+            <div
+              id="sim-output"
+              class="flex-1 overflow-y-auto terminal-scroll space-y-2 mb-4">
+              <div class="text-slate-400">
+                Welcome to One-Prompt App Builder v1.0.0
+              </div>
+              <div class="text-slate-400">
+                Type your idea below to start generation...
+              </div>
+              <br />
+            </div>
+
+            <!-- Input Area -->
+            <div
+              class="flex items-center gap-2 border-t border-slate-700 pt-4"
+              id="sim-input-area">
+              <span class="text-green-400 font-bold">❯</span>
+              <input
+                type="text"
+                id="sim-input"
+                class="bg-transparent border-none outline-none text-white w-full placeholder-slate-600"
+                placeholder="e.g., Make a todo app for freelancers"
+                autocomplete="off"
+                onkeypress="handleSimInput(event)" />
+              <button
+                onclick="runSimulation()"
+                class="text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded text-white transition-colors">
+                Generate
+              </button>
+            </div>
+
+            <!-- Progress Overlay (Hidden by default) -->
+            <div
+              id="sim-loading"
+              class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center hidden z-20 backdrop-blur-sm">
+              <div
+                class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <div id="sim-status" class="text-indigo-300 font-bold">
+                Analyzing Intent...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-6">
+          <p class="text-sm text-indigo-300">
+            이 시뮬레이션은 실제 AI 호출 없이 JS 로직으로 흐름을 보여줍니다.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-20 py-10">
+      <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
+        <p>&copy; 2025 AI Product Strategy Team. All rights reserved.</p>
+        <p class="mt-2">
+          Based on the "One-Prompt App Builder" Proposal Document.
+        </p>
+      </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+      // --- 1. Data Store ---
+      const problems = [
+        {
+          id: "P1",
+          title: "개발 진입 장벽",
+          desc: "아이디어는 있지만 코딩 지식이 없거나, 초기 MVP 제작에 2주 이상 소요됨.",
+          solution: "One-Prompt Engine으로 10분 내 코드 생성",
+        },
+        {
+          id: "P2",
+          title: "파편화된 워크플로우",
+          desc: "기획, 디자인, 개발, 배포가 분리되어 맥락이 끊김.",
+          solution: "단일 플랫폼에서 All-in-One 처리",
+        },
+        {
+          id: "P3",
+          title: "프롬프트의 어려움",
+          desc: "원하는 앱을 만들기 위한 구조화된 질문 작성이 어려움.",
+          solution: "Intent Analysis로 단순 문장도 찰떡같이 이해",
+        },
+        {
+          id: "P4",
+          title: "지속적 관리 부재",
+          desc: "생성 후 단계별 고도화(MVP->Alpha) 관리가 안됨.",
+          solution: "Lifecycle Orchestrator로 성장 관리",
+        },
+      ];
+
+      const archDetails = {
+        input: {
+          title: "Input Interface",
+          desc: "사용자의 자연어 프롬프트를 받는 진입점입니다. 복잡한 설정 없이 텍스트 한 줄로 시작합니다.",
+        },
+        dashboard: {
+          title: "Lifecycle Dashboard",
+          desc: "생성된 앱의 상태(MVP, Alpha 등)를 시각화하고 관리하는 모듈입니다. (HTML Reference 기반)",
+        },
+        "ai-core": {
+          title: "AI Logic Core",
+          desc: "클라이언트 사이드 JS 엔진입니다. LLM API와 통신하며 응답을 파싱하여 코드로 변환합니다.",
+        },
+        "local-storage": {
+          title: "LocalStorage",
+          desc: "서버 DB 대신 브라우저 저장소를 사용합니다. 로그인 없이 즉시 사용 가능하며 속도가 빠릅니다.",
+        },
+        preview: {
+          title: "Preview Engine",
+          desc: "생성된 HTML/JS 코드를 안전하게 실행하는 Iframe Sandbox입니다. 실시간 렌더링을 지원합니다.",
+        },
+      };
+
+      // --- 2. Chart Initialization ---
+      document.addEventListener("DOMContentLoaded", () => {
+        initChart();
+        renderProblems("all");
+      });
+
+      function initChart() {
+        const ctx = document.getElementById("impactChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: ["기존 개발 방식", "One-Prompt Builder"],
+            datasets: [
+              {
+                label: "소요 시간 (일)",
+                data: [14, 0.1], // 14 days vs ~0.1 days (mock)
+                backgroundColor: ["#CBD5E1", "#4F46E5"], // Slate-300 vs Indigo-600
+                borderRadius: 6,
+                barPercentage: 0.6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true, position: "bottom" },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.dataset.label || "";
+                    if (label) {
+                      label += ": ";
+                    }
+                    if (context.parsed.y < 1) {
+                      label += "약 10분";
+                    } else {
+                      label += context.parsed.y + "일";
+                    }
+                    return label;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: "일 (Days)" },
+              },
+            },
+          },
+        });
+      }
+
+      // --- 3. Problem Grid Logic ---
+      function renderProblems(filter) {
+        const grid = document.getElementById("problem-grid");
+        grid.innerHTML = "";
+
+        const filtered =
+          filter === "all" ? problems : problems.filter((p) => p.id === filter);
+
+        filtered.forEach((p) => {
+          const card = document.createElement("div");
+          card.className =
+            "bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group";
+          card.onclick = () => alert(`솔루션 상세: ${p.solution}`); // Simple interaction
+          card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-red-50 text-red-600 text-xs font-bold px-2 py-1 rounded">${p.id}</span>
+                        <span class="text-xs text-slate-400">Click for Solution</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">${p.title}</h4>
+                    <p class="text-sm text-slate-600 mb-4">${p.desc}</p>
+                    <div class="pt-4 border-t border-slate-100 mt-auto">
+                        <p class="text-sm font-semibold text-primary">💡 Solution</p>
+                        <p class="text-xs text-slate-500 mt-1">${p.solution}</p>
+                    </div>
+                `;
+          grid.appendChild(card);
+        });
+
+        // Update Button Styles
+        ["all", "P1", "P2"].forEach((id) => {
+          const btn = document.getElementById(`btn-${id}`);
+          if (id === filter || (filter === "all" && id === "all")) {
+            btn.className =
+              "px-4 py-1.5 text-sm font-medium rounded-md bg-white shadow text-primary transition-all";
+          } else if (id !== "all" && ["P3", "P4"].includes(filter)) {
+            // Keep P1/P2 unselected if P3/P4 (via manual call) - Simplified for this demo
+            btn.className =
+              "px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all";
+          } else {
+            btn.className =
+              "px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all";
+          }
+        });
+      }
+
+      function setGridFilter(filter) {
+        renderProblems(filter);
+      }
+
+      // --- 4. Architecture Interaction ---
+      function showArchDetail(key) {
+        const panel = document.getElementById("arch-detail-panel");
+        const title = document.getElementById("detail-title");
+        const desc = document.getElementById("detail-desc");
+
+        if (archDetails[key]) {
+          title.textContent = archDetails[key].title;
+          desc.textContent = archDetails[key].desc;
+          panel.classList.remove("opacity-0");
+        }
+      }
+
+      function hideArchDetail() {
+        const panel = document.getElementById("arch-detail-panel");
+        panel.classList.add("opacity-0");
+      }
+
+      // --- 5. Roadmap Tabs ---
+      function switchTab(day) {
+        // Hide all content
+        document
+          .querySelectorAll(".schedule-content")
+          .forEach((el) => el.classList.add("hidden"));
+        // Show selected
+        document.getElementById(`content-${day}`).classList.remove("hidden");
+
+        // Reset Tab Styles
+        ["day1", "day2", "day3"].forEach((d) => {
+          const btn = document.getElementById(`tab-${d}`);
+          if (d === day) {
+            btn.className =
+              "flex-1 py-4 text-center font-bold text-primary border-b-2 border-primary bg-indigo-50/50 transition-colors";
+          } else {
+            btn.className =
+              "flex-1 py-4 text-center font-medium text-slate-500 hover:text-primary transition-colors";
+          }
+        });
+      }
+
+      // --- 6. Simulation Logic ---
+      function scrollToSimulation() {
+        document
+          .getElementById("section-simulation")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      function handleSimInput(e) {
+        if (e.key === "Enter") runSimulation();
+      }
+
+      function runSimulation() {
+        const input = document.getElementById("sim-input");
+        const prompt = input.value.trim();
+        if (!prompt) return;
+
+        // Lock Input
+        input.disabled = true;
+
+        // Add user log
+        addLog(`User: ${prompt}`, "text-white font-bold");
+
+        // Show Loading
+        const loader = document.getElementById("sim-loading");
+        const status = document.getElementById("sim-status");
+        loader.classList.remove("hidden");
+
+        // Simulate Steps
+        const steps = [
+          { msg: "Analyzing Intent (NLP)...", delay: 800 },
+          { msg: "Drafting PRD & Specs...", delay: 1600 },
+          { msg: "Planning Components (React)...", delay: 2400 },
+          { msg: "Generating Code (Client-Side)...", delay: 3200 },
+          { msg: "Validating Syntax...", delay: 3800 },
+        ];
+
+        let totalDelay = 0;
+        steps.forEach((step) => {
+          totalDelay += step.delay;
+          setTimeout(() => {
+            status.textContent = step.msg;
+          }, step.delay);
+        });
+
+        // Finish
+        setTimeout(() => {
+          loader.classList.add("hidden");
+          addLog(
+            "System: App Generated Successfully! [Preview Loaded]",
+            "text-green-400"
+          );
+          addLog(
+            "------------------------------------------------",
+            "text-slate-600"
+          );
+          input.value = "";
+          input.disabled = false;
+          input.focus();
+        }, 4500);
+      }
+
+      function addLog(text, className) {
+        const output = document.getElementById("sim-output");
+        const div = document.createElement("div");
+        div.className = className || "text-slate-400";
+        div.textContent = `> ${text}`;
+        output.appendChild(div);
+        output.scrollTop = output.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

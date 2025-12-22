@@ -1,0 +1,82 @@
+// ===========================================
+// Recruit (봉직의) ERD - dbdiagram.io 용
+// https://dbdiagram.io 에 붙여넣기
+// ===========================================
+
+// DB Tables
+Table CBIZ_RECJOB {
+  BOARD_IDX int [pk, note: 'content_id']
+  TITLE varchar [note: '제목']
+  INVITE_TYPE varchar [note: '초빙유형 코드']
+  SERVICE_TYPE varchar [note: '서비스유형 코드']
+  START_DATE datetime [note: '시작일']
+  END_DATE datetime [note: '종료일']
+  REG_DATE datetime [note: '등록일']
+  MOD_DATE datetime [note: '수정일']
+  RECRUIT_NUM int [note: '모집인원']
+  CAREER_TYPE varchar [note: '경력유형']
+  REGULAR_FLAG char [note: '정규직여부']
+  PAY int [note: '급여']
+  PAY_TYPE varchar [note: '급여유형']
+  WORK_HOUR varchar [note: '근무시간']
+  S_WORK_HOUR varchar [note: '토요일근무시간']
+  S_WORK_FLAG char [note: '토요일근무여부']
+  H_WORK_FLAG char [note: '공휴일근무여부']
+  NIGHT_WORK_FLAG char [note: '야간근무여부']
+  U_ID varchar [note: '기관ID']
+  MGR_NAME varchar [note: '담당자명']
+  MGR_TEL varchar [note: '연락처']
+  COMPANY_ZIPCODE varchar [note: '우편번호']
+  COMPANY_ADDR varchar [note: '주소']
+  ATTEND_FLAG char [note: '학회참석']
+  LABOR_LAW_FLAG char [note: '근로기준법여부']
+}
+
+Table CBIZ_RECJOB_MAP {
+  BOARD_IDX int [ref: > CBIZ_RECJOB.BOARD_IDX]
+  MAP_TYPE varchar [note: 'SPC=진료과']
+  MAP_CODE varchar [note: '매핑코드']
+}
+
+// Code Tables (참조 테이블)
+Table CODE_INVITE_TYPE {
+  code varchar [pk]
+  name varchar
+  note: '초빙유형 코드'
+}
+
+Table CODE_SERVICE_TYPE {
+  code varchar [pk]
+  name varchar
+  note: '서비스유형 코드'
+}
+
+Table CODE_SPECIALTY {
+  code varchar [pk]
+  name varchar
+  note: '진료과 코드'
+}
+
+// OpenSearch Index
+Table OS_RECRUIT [headercolor: #3498db] {
+  content_id int [pk, note: '← BOARD_IDX']
+  title varchar [note: '← TITLE']
+  listing_type varchar [note: '← INVITE_TYPE']
+  listing_type_name varchar [note: '← CODE_INVITE_TYPE.name (파생)']
+  service_type varchar [note: '← SERVICE_TYPE']
+  service_type_name varchar [note: '← CODE_SERVICE_TYPE.name (파생)']
+  specialty_codes array [note: '← CBIZ_RECJOB_MAP (SPC)']
+  specialty_code_names varchar [note: '← CODE_SPECIALTY.name (파생)']
+  period_start_date datetime [note: '← START_DATE']
+  period_end_date datetime [note: '← END_DATE']
+  period_created_at datetime [note: '← REG_DATE']
+  period_updated_at datetime [note: '← MOD_DATE']
+  recjob_recruit_num int [note: '← RECRUIT_NUM']
+  recjob_terms_pay_amount int [note: '← PAY']
+  location_address varchar [note: '← COMPANY_ADDR']
+}
+
+// Relationships
+Ref: CBIZ_RECJOB.INVITE_TYPE > CODE_INVITE_TYPE.code
+Ref: CBIZ_RECJOB.SERVICE_TYPE > CODE_SERVICE_TYPE.code
+Ref: CBIZ_RECJOB_MAP.MAP_CODE > CODE_SPECIALTY.code

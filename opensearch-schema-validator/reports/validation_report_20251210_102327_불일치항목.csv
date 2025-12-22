@@ -1,0 +1,23 @@
+﻿Content ID,URL,필드(JSON),설명,DB값,JSON값,DB컬럼
+1192725,https://t2-new.medigate.net/recruit/1192725,listing_type_name,초빙유형명,NULL,봉직의,(derived)
+1192725,https://t2-new.medigate.net/recruit/1192725,service_type_name,서비스유형명,NULL,프리미엄,(derived)
+1192725,https://t2-new.medigate.net/recruit/1192725,specialty.code_names,진료과명,NULL,"내과,신경과,응급의학과,일반의,외과",(derived)
+1192725,https://t2-new.medigate.net/recruit/1192725,period.start_date,시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,START_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,period.end_date,종료일,2025-11-10 00:00:00,2025-12-10T00:00:00Z,END_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,period.created_at,등록일,2025-10-03 17:29:17,2025-10-03T17:29:17Z,REG_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,period.updated_at,수정일,2025-10-03 17:29:17,2025-10-03T17:29:17Z,MOD_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,recjob_apply.apply_start_date,지원시작일,2025-10-13 00:00:00,2025-10-13T00:00:00Z,START_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,recjob_apply.apply_end_date,지원종료일,2025-11-10 00:00:00,2025-11-10T00:00:00Z,END_DATE
+1192725,https://t2-new.medigate.net/recruit/1192725,recjob_terms.holiday_work,공휴일근무여부,Y,N,H_WORK_FLAG
+1192725,https://t2-new.medigate.net/recruit/1192725,recjob_contact.phone,연락처,NULL,032-553-7575,MGR_TEL
+1192725,https://t2-new.medigate.net/recruit/1192725,location.zipcode,우편번호,NULL,21096,COMPANY_ZIPCODE
+1192725,https://t2-new.medigate.net/recruit/1192725,location.address,주소,NULL,"인천광역시 계양구 봉오대로 613, 2층 201호 (효성동)",COMPANY_ADDR
+351985,https://new.medigate.net/lease/351985,title,제목,71.[암사역+재래시장] 병원입지의 길목  들어보셨나요?  길목은 이러한 곳을 말합니다.(이비인후과 추천입지)(유튜브 有),71.[암사역+재래시장] 병원입지의 길목,title
+351985,https://new.medigate.net/lease/351985,lease_property.management_cost,관리비,90,NULL,mng_cost
+351985,https://new.medigate.net/lease/351985,lease_property.premium,권리금,,0,premium_price
+351985,https://new.medigate.net/lease/351985,lease_property.price,매매가,,0,price
+351985,https://new.medigate.net/lease/351985,lease_property.floor_underground,지하층,2,NULL,tot_under_layer
+351985,https://new.medigate.net/lease/351985,location.zipcode,우편번호,05264,NULL,zipcode
+351985,https://new.medigate.net/lease/351985,lease_detail.usage_type_names,시설정보,"UST006,UST008,UST009,UST011",NULL,usage_type
+351985,https://new.medigate.net/lease/351985,period.created_at,등록일,2024-07-23 19:08:28,NULL,reg_date
+351985,https://new.medigate.net/lease/351985,period.updated_at,수정일,2025-03-20 16:18:21,NULL,mod_date

@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python virtual environments
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (keep .env.example)
+.env
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Specific large folders to ignore
+25.48W_tokentest/**/node_modules/
+25.49W_OnePromptBuilder/**/node_modules/
+25.49W_testBuilder/**/node_modules/
+
+# Repomix output (may contain secrets)
+repomix-output.xml
+**/repomix-output.xml
