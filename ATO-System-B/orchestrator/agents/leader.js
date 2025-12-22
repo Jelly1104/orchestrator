@@ -173,12 +173,13 @@ ${content}
 
   /**
    * 컨텍스트 문서 로드 (Planning Mode)
+   * Path Correction: SYSTEM_MANIFEST v4.0.0 준수 (2025-12-22)
    */
   async loadPlanningContext() {
     const docs = [
-      '.claude/global/DOMAIN_SCHEMA.md',
-      '.claude/global/DOCUMENT_PIPELINE.md',
-      '.claude/global/AI_Playbook.md'
+      '.claude/rules/DOMAIN_SCHEMA.md',        // Group A: Rules
+      '.claude/workflows/DOCUMENT_PIPELINE.md', // Group B: Workflows
+      '.claude/context/AI_Playbook.md'          // Group C: Context
     ];
 
     let context = '';
@@ -194,11 +195,12 @@ ${content}
 
   /**
    * 컨텍스트 문서 로드 (Review Mode)
+   * Path Correction: SYSTEM_MANIFEST v4.0.0 준수 (2025-12-22)
    */
   async loadReviewContext() {
     const docs = [
-      '.claude/global/QUALITY_GATES.md',
-      '.claude/global/CODE_STYLE.md'
+      '.claude/rules/VALIDATION_GUIDE.md',  // QUALITY_GATES.md → VALIDATION_GUIDE.md
+      '.claude/rules/CODE_STYLE.md'         // Group A: Rules
     ];
 
     let context = '';
