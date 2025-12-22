@@ -5,7 +5,13 @@
  * 접속: http://localhost:3000
  * WebSocket: ws://localhost:3000
  *
- * @version 1.4.0 - Phase 3 완료: HITL 재실행 Orchestrator 연동
+ * @version 1.6.0 - HITL 디렉토리 실시간 감시 + WebSocket 브로드캐스트
+ *
+ * 주요 기능:
+ * - 로그 디렉토리 감시 및 실시간 업데이트
+ * - HITL 디렉토리 감시 (.hitl/) → 승인 요청 WebSocket 푸시
+ * - Session Store 연동 (Pause/Resume)
+ * - HITL API (approve, reject, rerun)
  */
 
 import express from 'express';
@@ -15,6 +21,9 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import chokidar from 'chokidar';
+
+// ESM 모듈로 session-store 가져오기
+import { sessionStore, SessionStatus, HITLCheckpoint } from '../state/session-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -196,6 +205,99 @@ if (!fs.existsSync(hitlDir)) {
   fs.mkdirSync(hitlDir, { recursive: true });
 }
 
+// ============================================================
+// HITL 디렉토리 감시 (WebSocket 브로드캐스트)
+// ============================================================
+const hitlWatcher = chokidar.watch(hitlDir, {
+  persistent: true,
+  ignoreInitial: true,
+  awaitWriteFinish: {
+    stabilityThreshold: 300,
+    pollInterval: 100
+  }
+});
+
+hitlWatcher.on('add', (filePath) => {
+  const filename = path.basename(filePath);
+  // HITL 요청 파일 (.decision 제외)
+  if (filename.endsWith('.json') && !filename.includes('.decision')) {
+    console.log(`[HITL Watch] 새 승인 요청: ${filename}`);
+    try {
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      broadcast({
+        type: 'hitl_pending',
+        taskId: content.taskId || filename.replace('.json', ''),
+        checkpoint: content.checkpoint,
+        timestamp: new Date().toISOString(),
+        context: content.context || {}
+      });
+    } catch (e) {
+      console.error('[HITL Watch] 파일 파싱 에러:', e.message);
+    }
+  }
+});
+
+hitlWatcher.on('unlink', (filePath) => {
+  const filename = path.basename(filePath);
+  // HITL 요청 파일이 삭제됨 (승인/거부 완료)
+  if (filename.endsWith('.json') && !filename.includes('.decision')) {
+    console.log(`[HITL Watch] 승인 요청 처리됨: ${filename}`);
+    const taskId = filename.replace('.json', '');
+    broadcast({
+      type: 'hitl_resolved',
+      taskId,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 세션 목록 조회 (활성 세션)
+app.get('/api/sessions', (req, res) => {
+  try {
+    const sessions = sessionStore.getActiveSessions();
+    res.json(sessions);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 세션 상세 조회
+app.get('/api/sessions/:taskId', (req, res) => {
+  const { taskId } = req.params;
+  try {
+    const session = sessionStore.get(taskId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.json(session);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 체크포인트 상태 조회
+app.get('/api/tasks/:taskId/checkpoint', (req, res) => {
+  const { taskId } = req.params;
+  try {
+    const session = sessionStore.get(taskId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    res.json({
+      taskId,
+      status: session.status,
+      currentPhase: session.currentPhase,
+      currentCheckpoint: session.currentCheckpoint,
+      hitlContext: session.hitlContext || null,
+      retryCount: session.retryCount,
+      maxRetries: session.maxRetries
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // HITL 대기열 조회
 app.get('/api/hitl/queue', (req, res) => {
   const queue = [];
@@ -240,6 +342,13 @@ app.post('/api/tasks/:taskId/approve', (req, res) => {
     // 원본 파일 삭제 (처리 완료)
     fs.unlinkSync(hitlFile);
 
+    // Session Store 업데이트
+    try {
+      sessionStore.approve(taskId, comment);
+    } catch (sessionErr) {
+      console.warn(`[HITL] Session store update skipped: ${sessionErr.message}`);
+    }
+
     // 브로드캐스트
     broadcast({
       type: 'hitl_resolved',
@@ -280,6 +389,13 @@ app.post('/api/tasks/:taskId/reject', (req, res) => {
 
     // 원본 파일 삭제
     fs.unlinkSync(hitlFile);
+
+    // Session Store 업데이트
+    try {
+      sessionStore.reject(taskId, reason);
+    } catch (sessionErr) {
+      console.warn(`[HITL] Session store update skipped: ${sessionErr.message}`);
+    }
 
     // 브로드캐스트
     broadcast({
@@ -464,30 +580,6 @@ async function executeRerun(rerunData) {
     throw error;
   }
 }
-
-// HITL 대기 파일 감시
-const hitlWatcher = chokidar.watch(hitlDir, {
-  persistent: true,
-  ignoreInitial: true
-});
-
-hitlWatcher.on('add', (filePath) => {
-  const filename = path.basename(filePath);
-  if (filename.endsWith('.json') && !filename.includes('.decision')) {
-    try {
-      const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      broadcast({
-        type: 'hitl_pending',
-        taskId: content.taskId,
-        timestamp: new Date().toISOString(),
-        data: content
-      });
-      console.log(`[HITL] 새 승인 요청: ${content.taskId}`);
-    } catch (e) {
-      // skip
-    }
-  }
-});
 
 // ============================================================
 
@@ -718,6 +810,22 @@ const mainPageHTML = `<!DOCTYPE html>
     .badge.success { background: #10b981; color: #fff; }
     .badge.fail { background: #ef4444; color: #fff; }
     .badge.running { background: #f59e0b; color: #fff; animation: pulse 1s infinite; }
+    .badge.pending { background: #8b5cf6; color: #fff; }
+    .badge.paused { background: #f59e0b; color: #fff; }
+    .hitl-card { background: #16213e; border-radius: 8px; padding: 20px; margin-bottom: 16px; border: 1px solid #333; }
+    .hitl-card.pending { border-left: 4px solid #8b5cf6; }
+    .hitl-card h3 { color: #e94560; margin-bottom: 12px; }
+    .hitl-card .checkpoint { color: #8b5cf6; font-weight: 600; margin-bottom: 8px; }
+    .hitl-card .context { background: #0d1b2a; padding: 12px; border-radius: 4px; margin: 12px 0; font-family: monospace; font-size: 0.85rem; }
+    .hitl-actions { display: flex; gap: 12px; margin-top: 16px; }
+    .hitl-actions button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .hitl-actions .approve { background: #10b981; color: #fff; }
+    .hitl-actions .reject { background: #ef4444; color: #fff; }
+    .hitl-actions .approve:hover { background: #059669; }
+    .hitl-actions .reject:hover { background: #dc2626; }
+    .hitl-comment { width: 100%; padding: 10px; border: 1px solid #333; border-radius: 4px; background: #0d1b2a; color: #eee; margin-top: 12px; resize: vertical; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #888; }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     pre { background: #0d1b2a; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.5; }
     code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
@@ -749,6 +857,7 @@ const mainPageHTML = `<!DOCTYPE html>
         <h1>🎯 Orchestrator 결과 뷰어</h1>
         <div class="tabs">
           <button class="tab active" data-tab="logs">실행 로그</button>
+          <button class="tab" data-tab="hitl">HITL 승인</button>
           <button class="tab" data-tab="files">생성 파일</button>
           <button class="tab" data-tab="docs">설계 문서</button>
         </div>
@@ -797,6 +906,11 @@ const mainPageHTML = `<!DOCTYPE html>
         if (currentTab === 'logs') {
           renderSidebar();
         }
+      } else if (msg.type === 'hitl_pending' || msg.type === 'hitl_resolved') {
+        if (currentTab === 'hitl') {
+          renderSidebar();
+          renderHITLContent();
+        }
       }
     }
 
@@ -840,6 +954,19 @@ const mainPageHTML = `<!DOCTYPE html>
             '<div class="title">' + file.name + '</div>' +
             '<div class="meta">' + file.path + '</div></div>';
         }).join('');
+      } else if (currentTab === 'hitl') {
+        const queue = await fetchJSON('/api/hitl/queue');
+        if (queue.length === 0) {
+          sidebar.innerHTML = '<div class="list-item" style="background:#0f3460;cursor:default;"><div class="meta">대기 중인 승인 요청 없음</div></div>';
+        } else {
+          sidebar.innerHTML = queue.map(function(item) {
+            return '<div class="list-item" data-hitl="' + item.taskId + '">' +
+              '<div class="title">' + (item.taskId || 'Unknown').substring(0, 20) + '...' +
+              '<span class="badge pending">대기</span></div>' +
+              '<div class="meta">' + (item.checkpoint || 'HITL') + '</div></div>';
+          }).join('');
+        }
+        renderHITLContent();
       } else if (currentTab === 'docs') {
         const logs = await fetchJSON('/api/logs');
         if (logs.length > 0) {
@@ -853,15 +980,119 @@ const mainPageHTML = `<!DOCTYPE html>
         }
       }
 
-      sidebar.querySelectorAll('.list-item[data-id], .list-item[data-path], .list-item[data-doc]').forEach(function(item) {
+      sidebar.querySelectorAll('.list-item[data-id], .list-item[data-path], .list-item[data-doc], .list-item[data-hitl]').forEach(function(item) {
         item.addEventListener('click', function() {
           sidebar.querySelectorAll('.list-item').forEach(function(i) { i.classList.remove('active'); });
           item.classList.add('active');
           if (item.dataset.id) showLog(item.dataset.id);
           if (item.dataset.path) showFile(item.dataset.path);
           if (item.dataset.doc) showDoc(item.dataset.doc);
+          if (item.dataset.hitl) showHITLDetail(item.dataset.hitl);
         });
       });
+    }
+
+    // HITL 콘텐츠 렌더링
+    async function renderHITLContent() {
+      const content = document.getElementById('content');
+      const queue = await fetchJSON('/api/hitl/queue');
+
+      if (queue.length === 0) {
+        content.innerHTML = '<div class="empty-state">' +
+          '<div class="icon">✅</div>' +
+          '<h3>대기 중인 승인 요청이 없습니다</h3>' +
+          '<p>HITL 체크포인트에 도달하면 여기에 승인 요청이 표시됩니다.</p>' +
+          '</div>';
+        return;
+      }
+
+      content.innerHTML = queue.map(function(item) {
+        return '<div class="hitl-card pending" id="hitl-' + item.taskId + '">' +
+          '<h3>📋 ' + item.taskId + '</h3>' +
+          '<div class="checkpoint">체크포인트: ' + (item.checkpoint || 'HITL_REVIEW') + '</div>' +
+          '<div class="meta">요청 시각: ' + new Date(item.timestamp || item.createdAt).toLocaleString('ko-KR') + '</div>' +
+          '<div class="context">' + escapeHtml(JSON.stringify(item.context || {}, null, 2)) + '</div>' +
+          '<textarea class="hitl-comment" id="comment-' + item.taskId + '" placeholder="승인/거부 사유를 입력하세요..."></textarea>' +
+          '<div class="hitl-actions">' +
+          '<button class="approve" onclick="approveHITL(\\'' + item.taskId + '\\')">✅ 승인</button>' +
+          '<button class="reject" onclick="rejectHITL(\\'' + item.taskId + '\\')">❌ 거부</button>' +
+          '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    // HITL 상세 보기
+    async function showHITLDetail(taskId) {
+      const content = document.getElementById('content');
+      try {
+        const session = await fetchJSON('/api/sessions/' + taskId);
+        content.innerHTML = '<div class="hitl-card pending">' +
+          '<h3>📋 세션 상세: ' + taskId + '</h3>' +
+          '<div class="checkpoint">상태: ' + session.status + '</div>' +
+          '<div class="checkpoint">체크포인트: ' + (session.currentCheckpoint || 'N/A') + '</div>' +
+          '<div class="meta">Phase: ' + (session.currentPhase || 'N/A') + '</div>' +
+          '<div class="meta">재시도: ' + session.retryCount + '/' + session.maxRetries + '</div>' +
+          '<div class="context">' + escapeHtml(JSON.stringify(session.hitlContext || {}, null, 2)) + '</div>' +
+          (session.status === 'PAUSED_HITL' ?
+            '<textarea class="hitl-comment" id="comment-' + taskId + '" placeholder="승인/거부 사유를 입력하세요..."></textarea>' +
+            '<div class="hitl-actions">' +
+            '<button class="approve" onclick="approveHITL(\\'' + taskId + '\\')">✅ 승인</button>' +
+            '<button class="reject" onclick="rejectHITL(\\'' + taskId + '\\')">❌ 거부</button>' +
+            '</div>' : '') +
+          '<div class="file-header" style="margin-top:20px;"><h2>히스토리</h2></div>' +
+          '<pre><code>' + JSON.stringify(session.history || [], null, 2) + '</code></pre>' +
+          '</div>';
+      } catch (e) {
+        content.innerHTML = '<div class="empty-state"><div class="icon">❌</div><p>세션을 찾을 수 없습니다.</p></div>';
+      }
+    }
+
+    // HITL 승인
+    async function approveHITL(taskId) {
+      const comment = document.getElementById('comment-' + taskId)?.value || '';
+      try {
+        const res = await fetch('/api/tasks/' + taskId + '/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comment: comment })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('승인 완료: ' + taskId);
+          renderSidebar();
+          renderHITLContent();
+        } else {
+          alert('승인 실패: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('오류: ' + e.message);
+      }
+    }
+
+    // HITL 거부
+    async function rejectHITL(taskId) {
+      const reason = document.getElementById('comment-' + taskId)?.value || '';
+      if (!reason) {
+        alert('거부 사유를 입력해주세요.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/tasks/' + taskId + '/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('거부 완료: ' + taskId);
+          renderSidebar();
+          renderHITLContent();
+        } else {
+          alert('거부 실패: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('오류: ' + e.message);
+      }
     }
 
     async function showLog(taskId) {
@@ -926,14 +1157,22 @@ app.get('/', (req, res) => {
 
 server.listen(PORT, () => {
   console.log('');
-  console.log('╔════════════════════════════════════════════════════════╗');
-  console.log('║  🎯 Orchestrator 결과 뷰어 v1.3.0                       ║');
-  console.log('╠════════════════════════════════════════════════════════╣');
-  console.log('║  HTTP:      http://localhost:' + PORT + '                     ║');
-  console.log('║  WebSocket: ws://localhost:' + PORT + '                       ║');
-  console.log('║  HITL API:  /api/tasks/:taskId/{approve,reject,rerun}  ║');
-  console.log('║  종료: Ctrl+C                                           ║');
-  console.log('╚════════════════════════════════════════════════════════╝');
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║  🎯 Orchestrator 결과 뷰어 v1.5.0                           ║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  console.log('║  HTTP:      http://localhost:' + PORT + '                         ║');
+  console.log('║  WebSocket: ws://localhost:' + PORT + '                           ║');
+  console.log('╠════════════════════════════════════════════════════════════╣');
+  console.log('║  Session API:                                              ║');
+  console.log('║    GET  /api/sessions              - 활성 세션 목록        ║');
+  console.log('║    GET  /api/sessions/:taskId      - 세션 상세             ║');
+  console.log('║    GET  /api/tasks/:taskId/checkpoint - 체크포인트 상태    ║');
+  console.log('║  HITL API:                                                 ║');
+  console.log('║    POST /api/tasks/:taskId/approve - HITL 승인             ║');
+  console.log('║    POST /api/tasks/:taskId/reject  - HITL 거부             ║');
+  console.log('║    POST /api/tasks/:taskId/rerun   - 재실행                ║');
+  console.log('║  종료: Ctrl+C                                              ║');
+  console.log('╚════════════════════════════════════════════════════════════╝');
   console.log('');
   console.log('[Watch] 로그 디렉토리 감시 중:', logsDir);
   console.log('[Watch] HITL 디렉토리 감시 중:', hitlDir);

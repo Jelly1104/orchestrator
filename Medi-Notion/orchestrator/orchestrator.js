@@ -16,10 +16,18 @@
  * - Path Traversal 방지
  * - API 키 보호
  * - Rate Limiting
+ *
+ * HITL 지원 (v3.4.0):
+ * - Session Store 연동
+ * - Pause/Resume 메커니즘
+ * - HITL 체크포인트 (5종)
+ *
+ * @version 3.4.0
  */
 
 import fs from 'fs';
 import path from 'path';
+import { createRequire } from 'module';
 import { LeaderAgent } from './agents/leader.js';
 import { SubAgent } from './agents/subagent.js';
 import { CodeAgent } from './agents/code-agent.js';
@@ -34,6 +42,10 @@ import { getKillSwitch } from './security/kill-switch.js';
 import { getRateLimiter } from './security/rate-limiter.js';
 import { getSecurityMonitor, EVENT_TYPES } from './security/security-monitor.js';
 import { getAuditLogger } from './utils/audit-logger.js';
+
+// Phase 0: Session Store 연동 (Pause/Resume 지원)
+const require = createRequire(import.meta.url);
+const { sessionStore, SessionStatus, HITLCheckpoint } = require('./state/session-store.js');
 
 // ========== 보안 상수 (하드코딩 - 사용자 설정 무시) ==========
 const SECURITY_LIMITS = {
@@ -222,6 +234,199 @@ export class Orchestrator {
       .replace(/"apiKey"\s*:\s*"[^"]+"/g, '"apiKey": "***"');
   }
 
+  // ========== Phase 0: Session Store 연동 (Pause/Resume) ==========
+
+  /**
+   * 세션 생성 및 초기화
+   * @param {string} taskId - 태스크 ID
+   * @param {string} prdPath - PRD 파일 경로 또는 내용
+   * @param {Object} metadata - 추가 메타데이터
+   * @returns {Object} - 생성된 세션
+   */
+  createSession(taskId, prdPath, metadata = {}) {
+    return sessionStore.create(taskId, prdPath, {
+      ...metadata,
+      projectRoot: this.projectRoot,
+      maxRetries: this.maxRetries,
+      autoApprove: this.autoApprove
+    });
+  }
+
+  /**
+   * 세션 상태 조회
+   * @param {string} taskId - 태스크 ID
+   * @returns {Object|null} - 세션 정보
+   */
+  getSession(taskId) {
+    return sessionStore.get(taskId);
+  }
+
+  /**
+   * HITL 체크포인트에서 일시 정지
+   * @param {string} taskId - 태스크 ID
+   * @param {string} checkpoint - 체크포인트 유형
+   * @param {Object} context - 체크포인트 컨텍스트 (검토 대상 등)
+   * @returns {Object} - 업데이트된 세션
+   */
+  pauseForHITL(taskId, checkpoint, context = {}) {
+    console.log(`\n⏸️  HITL 체크포인트 도달: ${checkpoint}`);
+    console.log(`   → 사용자 승인 대기 중... (taskId: ${taskId})`);
+
+    return sessionStore.pauseForHITL(taskId, checkpoint, context);
+  }
+
+  /**
+   * HITL 승인 대기 (폴링 방식)
+   * @param {string} taskId - 태스크 ID
+   * @param {number} timeout - 타임아웃 (ms), 0이면 무한 대기
+   * @param {number} pollInterval - 폴링 간격 (ms)
+   * @returns {Promise<Object>} - 승인 결과
+   */
+  async waitForApproval(taskId, timeout = 0, pollInterval = 2000) {
+    const startTime = Date.now();
+
+    return new Promise((resolve, reject) => {
+      const checkApproval = () => {
+        const session = sessionStore.get(taskId);
+
+        if (!session) {
+          return reject(new Error(`Session not found: ${taskId}`));
+        }
+
+        // 승인됨
+        if (session.status === SessionStatus.APPROVED) {
+          console.log(`\n✅ HITL 승인됨: ${taskId}`);
+          return resolve({ approved: true, session });
+        }
+
+        // 거부됨
+        if (session.status === SessionStatus.REJECTED) {
+          console.log(`\n❌ HITL 거부됨: ${taskId}`);
+          console.log(`   사유: ${session.hitlContext?.rejectionReason || 'N/A'}`);
+          return resolve({ approved: false, rejected: true, session });
+        }
+
+        // 타임아웃 체크
+        if (timeout > 0 && (Date.now() - startTime) > timeout) {
+          return reject(new Error(`HITL approval timeout: ${timeout}ms`));
+        }
+
+        // 다음 폴링
+        setTimeout(checkApproval, pollInterval);
+      };
+
+      checkApproval();
+    });
+  }
+
+  /**
+   * 세션 재개 (Pause 후 Resume)
+   * @param {string} taskId - 태스크 ID
+   * @returns {Object} - 재개된 세션
+   */
+  resumeSession(taskId) {
+    const session = sessionStore.get(taskId);
+
+    if (!session) {
+      throw new Error(`Session not found: ${taskId}`);
+    }
+
+    if (session.status !== SessionStatus.APPROVED) {
+      throw new Error(`Cannot resume: session status is ${session.status}`);
+    }
+
+    console.log(`\n▶️  세션 재개: ${taskId}`);
+    console.log(`   Phase: ${session.currentPhase}`);
+    console.log(`   Checkpoint: ${session.currentCheckpoint}`);
+
+    // 상태를 RUNNING으로 변경
+    return sessionStore.updateStatus(taskId, SessionStatus.RUNNING);
+  }
+
+  /**
+   * 세션 완료 처리
+   * @param {string} taskId - 태스크 ID
+   * @param {Object} result - 실행 결과
+   */
+  completeSession(taskId, result = {}) {
+    return sessionStore.complete(taskId, result);
+  }
+
+  /**
+   * 세션 실패 처리
+   * @param {string} taskId - 태스크 ID
+   * @param {Error|string} error - 오류 정보
+   */
+  failSession(taskId, error) {
+    return sessionStore.fail(taskId, error);
+  }
+
+  /**
+   * HITL 체크포인트가 필요한지 확인
+   * @param {string} phase - 현재 phase
+   * @param {Object} context - 컨텍스트 정보
+   * @returns {string|null} - 필요한 체크포인트 또는 null
+   */
+  checkHITLRequired(phase, context = {}) {
+    // 자동 승인 모드면 HITL 스킵
+    if (this.autoApprove) {
+      return null;
+    }
+
+    // AGENT_ARCHITECTURE.md 기반 HITL 체크포인트
+    switch (phase) {
+      case 'planning':
+        // 1. PRD 보완 필요 시
+        if (context.gapCheck?.missing?.length > 0) {
+          return HITLCheckpoint.PRD_REVIEW;
+        }
+        break;
+
+      case 'query':
+        // 2. 위험 쿼리 검토
+        if (context.isDangerous) {
+          return HITLCheckpoint.QUERY_REVIEW;
+        }
+        break;
+
+      case 'design':
+        // 3. 설계 승인 필요 시
+        if (context.requiresApproval) {
+          return HITLCheckpoint.DESIGN_APPROVAL;
+        }
+        break;
+
+      case 'review_fail':
+        // 4. 3회 FAIL 시 수동 수정
+        if (context.retryCount >= 3) {
+          return HITLCheckpoint.MANUAL_FIX;
+        }
+        break;
+
+      case 'deploy':
+        // 5. 배포 승인
+        return HITLCheckpoint.DEPLOY_APPROVAL;
+    }
+
+    return null;
+  }
+
+  /**
+   * 대기 중인 HITL 요청 목록 조회
+   * @returns {Array} - 대기 중인 HITL 요청 목록
+   */
+  getPendingHITLRequests() {
+    return sessionStore.getPendingHITLRequests();
+  }
+
+  /**
+   * 활성 세션 목록 조회
+   * @returns {Array} - 활성 세션 목록
+   */
+  getActiveSessions() {
+    return sessionStore.getActiveSessions();
+  }
+
   /**
    * 오케스트레이션 실행
    * @param {string} taskDescription - 작업 설명
@@ -260,6 +465,13 @@ export class Orchestrator {
     console.log(`🔄 자동 승인: ${this.autoApprove ? 'ON' : 'OFF'}`);
     console.log(`🔁 최대 재시도: ${this.maxRetries}회\n`);
 
+    // ========== Phase 0: 세션 생성 ==========
+    const session = this.createSession(taskId, prdContent || sanitizedDescription, {
+      pipeline: options.pipeline || 'auto',
+      mode: options.mode || null
+    });
+    sessionStore.updatePhase(taskId, 'initialized');
+
     let retryCount = 0;
     let currentFiles = {};
     let sdd = '';
@@ -275,6 +487,34 @@ export class Orchestrator {
 
       console.log(`   - PRD 유형: ${prdType}`);
       console.log(`   - 파이프라인: ${pipeline}`);
+
+      // ========== HITL: PRD_REVIEW 체크포인트 ==========
+      // PRD Gap Check 결과가 불완전할 경우 사람의 검토 필요
+      if (prdClassification?.gapCheck?.missing?.length > 0) {
+        const prdCheckpoint = this.checkHITLRequired('planning', {
+          gapCheck: prdClassification.gapCheck
+        });
+
+        if (prdCheckpoint) {
+          sessionStore.updatePhase(taskId, 'prd_review');
+          await this.pauseForHITL(taskId, prdCheckpoint, {
+            missing: prdClassification.gapCheck.missing,
+            prdType,
+            pipeline,
+            message: 'PRD에 필수 항목이 누락되었습니다. 검토 후 승인하거나 PRD를 보완해주세요.'
+          });
+
+          // 승인 대기
+          const approval = await this.waitForApproval(taskId);
+          if (!approval.approved) {
+            throw new Error(`PRD Review 거부됨: ${approval.session?.hitlContext?.rejectionReason || '사유 없음'}`);
+          }
+
+          // 승인 후 재개
+          this.resumeSession(taskId);
+          console.log('✅ PRD Review 승인됨 - 계속 진행');
+        }
+      }
 
       // ========== 유형별 파이프라인 분기 ==========
       if (pipeline === 'analysis' || prdType === 'QUANTITATIVE') {
@@ -326,6 +566,40 @@ export class Orchestrator {
       }
 
       metrics.endPhase('planning', 'success');
+
+      // ========== HITL: DESIGN_APPROVAL 체크포인트 ==========
+      // 설계 문서 생성 완료 후 사람의 승인 필요
+      const designCheckpoint = this.checkHITLRequired('design', {
+        requiresApproval: true,
+        hasIA: !!planResult.ia,
+        hasSDD: !!planResult.sdd,
+        hasWireframe: !!planResult.wireframe
+      });
+
+      if (designCheckpoint) {
+        sessionStore.updatePhase(taskId, 'design_approval');
+        await this.pauseForHITL(taskId, designCheckpoint, {
+          files: {
+            ia: planResult.ia ? 'IA.md 생성됨' : null,
+            wireframe: planResult.wireframe ? 'Wireframe.md 생성됨' : null,
+            sdd: planResult.sdd ? 'SDD.md 생성됨' : null,
+            handoff: planResult.handoff ? 'HANDOFF.md 생성됨' : null
+          },
+          gapCheck: planResult.gapCheck,
+          message: '설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.',
+          docsPath: `docs/${taskId}/`
+        });
+
+        // 승인 대기
+        const designApproval = await this.waitForApproval(taskId);
+        if (!designApproval.approved) {
+          throw new Error(`설계 승인 거부됨: ${designApproval.session?.hitlContext?.rejectionReason || '사유 없음'}`);
+        }
+
+        // 승인 후 재개
+        this.resumeSession(taskId);
+        console.log('✅ Design Approval 승인됨 - 구현 단계로 진행');
+      }
 
       // ========== Design Only 모드: SubAgent로 설계 문서 보완 ==========
       if (isDesignOnly) {
@@ -524,6 +798,32 @@ export class Orchestrator {
             console.log(`\n🔄 Review FAIL - 재시도 예정 (${retryCount}/${this.maxRetries})`);
             console.log('📝 피드백 요약:');
             console.log(result.feedback.substring(0, 500) + (result.feedback.length > 500 ? '...' : ''));
+
+            // ========== HITL: MANUAL_FIX 체크포인트 (3회 연속 FAIL) ==========
+            const manualFixCheckpoint = this.checkHITLRequired('review_fail', {
+              retryCount
+            });
+
+            if (manualFixCheckpoint) {
+              sessionStore.updatePhase(taskId, 'manual_fix');
+              await this.pauseForHITL(taskId, manualFixCheckpoint, {
+                retryCount,
+                maxRetries: this.maxRetries,
+                feedback: result.feedback,
+                currentFiles: Object.keys(currentFiles),
+                message: `${retryCount}회 연속 Review 실패. 직접 수정하거나 방향을 조정해주세요.`
+              });
+
+              // 승인 대기 (사용자가 수정 후 재개)
+              const manualApproval = await this.waitForApproval(taskId);
+              if (!manualApproval.approved) {
+                throw new Error(`수동 수정 거부됨: ${manualApproval.session?.hitlContext?.rejectionReason || '작업 중단'}`);
+              }
+
+              // 승인 후 재개
+              this.resumeSession(taskId);
+              console.log('✅ Manual Fix 승인됨 - 재시도 진행');
+            }
           } else {
             console.log('\n❌ 최대 재시도 횟수 초과 - 사용자 개입 필요');
             metrics.addError('review', `최대 재시도 횟수(${this.maxRetries}회) 초과`);
@@ -557,6 +857,13 @@ export class Orchestrator {
         metrics: report
       };
 
+      // 세션 완료 처리
+      if (finalResult.success) {
+        this.completeSession(taskId, finalResult);
+      } else {
+        this.failSession(taskId, 'Review failed after max retries');
+      }
+
       // 실행 완료 보고서 출력 (v3.3.0)
       this.printCompletionReport(finalResult);
 
@@ -566,6 +873,9 @@ export class Orchestrator {
       console.error('\n❌ Orchestrator 에러:', error.message);
       metrics.addError('orchestrator', error.message);
       metrics.printReport();
+
+      // 세션 실패 처리
+      this.failSession(taskId, error);
 
       return {
         success: false,

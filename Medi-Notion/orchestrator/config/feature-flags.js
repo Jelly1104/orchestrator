@@ -4,27 +4,27 @@
  * 스캐폴딩 전략에 따라 각 기능을 점진적으로 활성화합니다.
  * @see DOCUMENT_MANAGER_ARCHITECTURE.md 섹션 11.2
  *
- * @version 1.0.0
+ * @version 1.1.0 - Phase A/B/C 활성화 (v3.4.0)
  */
 
 export const FEATURES = {
-  // ===== Phase A: Security Layer =====
-  SECURITY_INPUT_VALIDATION: false,    // 입력 검증 활성화
-  SECURITY_PATH_VALIDATION: false,     // 경로 검증 활성화
-  SECURITY_SANDBOX: false,             // 샌드박스 강제
-  SECURITY_RATE_LIMIT: false,          // 요청 빈도 제한
+  // ===== Phase A: Security Layer ===== (v3.4.0 활성화)
+  SECURITY_INPUT_VALIDATION: true,     // 입력 검증 활성화
+  SECURITY_PATH_VALIDATION: true,      // 경로 검증 활성화
+  SECURITY_SANDBOX: true,              // 샌드박스 강제
+  SECURITY_RATE_LIMIT: true,           // 요청 빈도 제한
 
-  // ===== Phase B: Integrity Layer =====
+  // ===== Phase B: Integrity Layer ===== (v3.4.0 활성화)
   INTEGRITY_RULEBOOK_CHECK: true,      // 룰북 해시 검증 (기존)
   INTEGRITY_MEMORY_LOCK: true,         // 원자적 잠금 (구현됨)
-  INTEGRITY_DOC_SANITIZE: false,       // 문서 새니타이징
-  INTEGRITY_CHANGELOG_VALIDATE: false, // CHANGELOG 입력 검증
+  INTEGRITY_DOC_SANITIZE: true,        // 문서 새니타이징
+  INTEGRITY_CHANGELOG_VALIDATE: true,  // CHANGELOG 입력 검증
 
-  // ===== Phase C: Monitoring Layer =====
-  MONITORING_OUTPUT_SANITIZER: false,  // 출력 경로 검증
-  MONITORING_KILL_SWITCH: false,       // 긴급 중단
-  MONITORING_SHADOW_CHECKER: false,    // Leader→Sub 이중 검증
-  MONITORING_SECURITY_MONITOR: false,  // 통합 모니터
+  // ===== Phase C: Monitoring Layer ===== (v3.4.0 활성화)
+  MONITORING_OUTPUT_SANITIZER: true,   // 출력 경로 검증
+  MONITORING_KILL_SWITCH: true,        // 긴급 중단
+  MONITORING_SHADOW_CHECKER: true,     // Leader→Sub 이중 검증
+  MONITORING_SECURITY_MONITOR: true,   // 통합 모니터
 
   // ===== Phase D: Agent Integration =====
   AGENT_DOC_MANAGE: false,             // DocManageAgent 활성화
