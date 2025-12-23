@@ -18,7 +18,8 @@ const __dirname = path.dirname(__filename);
 export class DesignAgent {
   constructor(config = {}) {
     this.projectRoot = config.projectRoot || process.cwd();
-    this.outputDir = config.outputDir || path.join(this.projectRoot, 'docs', 'visual');
+    // 케이스별 visuals 폴더를 사용하도록 변경
+    this.baseCasesDir = path.join(this.projectRoot, 'docs', 'cases');
     this.skillLoader = new SkillLoader(path.join(__dirname, '..'));
     this.skill = null;
 
@@ -31,11 +32,25 @@ export class DesignAgent {
   }
 
   /**
+   * taskId에서 순수 케이스명 추출 (날짜/타임스탬프 제거)
+   */
+  extractCaseId(taskId) {
+    return taskId.replace(/-(\d{8}|\d{13,})$/, '');
+  }
+
+  /**
+   * 케이스별 visuals 출력 디렉토리 반환
+   */
+  getOutputDir(taskId) {
+    const caseId = this.extractCaseId(taskId);
+    return path.join(this.baseCasesDir, caseId, 'visuals');
+  }
+
+  /**
    * 초기화
    */
   async initialize() {
     this.skill = await this.skillLoader.loadSkill('design-agent');
-    await fs.mkdir(this.outputDir, { recursive: true });
     console.log('[DesignAgent] Initialized');
     return this;
   }
@@ -49,10 +64,15 @@ export class DesignAgent {
    * @returns {Promise<Object>} 생성된 HTML 파일 정보
    */
   async visualize(input) {
-    const { documents, options = {} } = input;
+    const { documents, options = {}, taskId } = input;
     const opts = { ...this.defaultOptions, ...options };
 
+    // 케이스별 visuals 디렉토리 생성
+    const outputDir = taskId ? this.getOutputDir(taskId) : path.join(this.baseCasesDir, '_shared', 'visuals');
+    await fs.mkdir(outputDir, { recursive: true });
+
     console.log('[DesignAgent] Starting visualization');
+    console.log(`  Output: ${outputDir}`);
     console.log(`  Theme: ${opts.theme}`);
     console.log(`  Interactive: ${opts.interactive}`);
 
@@ -64,19 +84,19 @@ export class DesignAgent {
     try {
       // 1. IA 시각화
       if (documents.ia) {
-        const iaResult = await this._visualizeIA(documents.ia, opts);
+        const iaResult = await this._visualizeIA(documents.ia, opts, outputDir);
         results.files.push(iaResult);
       }
 
       // 2. Wireframe 시각화
       if (documents.wireframe) {
-        const wfResult = await this._visualizeWireframe(documents.wireframe, opts);
+        const wfResult = await this._visualizeWireframe(documents.wireframe, opts, outputDir);
         results.files.push(wfResult);
       }
 
       // 3. SDD 시각화
       if (documents.sdd) {
-        const sddResult = await this._visualizeSDD(documents.sdd, opts);
+        const sddResult = await this._visualizeSDD(documents.sdd, opts, outputDir);
         results.files.push(sddResult);
       }
 
@@ -92,11 +112,11 @@ export class DesignAgent {
   /**
    * IA 문서 시각화
    */
-  async _visualizeIA(iaContent, options) {
+  async _visualizeIA(iaContent, options, outputDir) {
     const mermaidBlocks = this._extractMermaid(iaContent);
     const html = this._generateIAHtml(iaContent, mermaidBlocks, options);
 
-    const filePath = path.join(this.outputDir, 'IA_VISUAL.html');
+    const filePath = path.join(outputDir, 'IA_VISUAL.html');
     await fs.writeFile(filePath, html, 'utf-8');
 
     return { type: 'ia', path: filePath, mermaidCount: mermaidBlocks.length };
@@ -105,11 +125,11 @@ export class DesignAgent {
   /**
    * Wireframe 시각화
    */
-  async _visualizeWireframe(wireframeContent, options) {
+  async _visualizeWireframe(wireframeContent, options, outputDir) {
     const asciiBlocks = this._extractAscii(wireframeContent);
     const html = this._generateWireframeHtml(wireframeContent, asciiBlocks, options);
 
-    const filePath = path.join(this.outputDir, 'WIREFRAME_PREVIEW.html');
+    const filePath = path.join(outputDir, 'WIREFRAME_PREVIEW.html');
     await fs.writeFile(filePath, html, 'utf-8');
 
     return { type: 'wireframe', path: filePath, screenCount: asciiBlocks.length };
@@ -118,12 +138,12 @@ export class DesignAgent {
   /**
    * SDD 시각화
    */
-  async _visualizeSDD(sddContent, options) {
+  async _visualizeSDD(sddContent, options, outputDir) {
     const mermaidBlocks = this._extractMermaid(sddContent);
     const apiBlocks = this._extractApiSpecs(sddContent);
     const html = this._generateSDDHtml(sddContent, mermaidBlocks, apiBlocks, options);
 
-    const filePath = path.join(this.outputDir, 'SDD_DIAGRAM.html');
+    const filePath = path.join(outputDir, 'SDD_DIAGRAM.html');
     await fs.writeFile(filePath, html, 'utf-8');
 
     return { type: 'sdd', path: filePath, diagramCount: mermaidBlocks.length, apiCount: apiBlocks.length };

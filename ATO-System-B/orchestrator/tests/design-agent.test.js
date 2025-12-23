@@ -24,7 +24,7 @@ describe('DesignAgent', () => {
   beforeEach(() => {
     agent = new DesignAgent({
       projectRoot: '/test/project',
-      outputDir: '/test/project/docs/visual'
+      outputDir: '/test/project/docs/cases'
     });
     vi.clearAllMocks();
   });
@@ -38,7 +38,13 @@ describe('DesignAgent', () => {
 
     it('should accept custom config', () => {
       expect(agent.projectRoot).toBe('/test/project');
-      expect(agent.outputDir).toBe('/test/project/docs/visual');
+      expect(agent.outputDir).toBe('/test/project/docs/cases');
+    });
+
+    it('should extract caseId from taskId', () => {
+      expect(agent.extractCaseId('case5-dormancy-20251223')).toBe('case5-dormancy');
+      expect(agent.extractCaseId('case5-dormancy-1766037994472')).toBe('case5-dormancy');
+      expect(agent.extractCaseId('task-1766037994472')).toBe('task');
     });
   });
 

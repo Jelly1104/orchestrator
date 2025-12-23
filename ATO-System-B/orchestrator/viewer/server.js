@@ -633,9 +633,15 @@ app.get('/api/running', (req, res) => {
   }
 });
 
-// API: 문서 목록
+// 유틸: taskId에서 순수 caseId 추출 (날짜/타임스탬프 제거)
+function extractCaseId(taskId) {
+  return taskId.replace(/-(\d{8}|\d{13,})$/, '');
+}
+
+// API: 문서 목록 (Flatten 구조: docs/cases/{caseId}/)
 app.get('/api/docs/:taskId', (req, res) => {
-  const docsDir = path.join(projectRoot, 'docs', req.params.taskId);
+  const caseId = extractCaseId(req.params.taskId);
+  const docsDir = path.join(projectRoot, 'docs', 'cases', caseId);
   if (!fs.existsSync(docsDir)) {
     return res.json([]);
   }
@@ -652,7 +658,8 @@ app.get('/api/docs/:taskId', (req, res) => {
 
 // API: 문서 내용
 app.get('/api/docs/:taskId/:filename', (req, res) => {
-  const filePath = path.join(projectRoot, 'docs', req.params.taskId, req.params.filename);
+  const caseId = extractCaseId(req.params.taskId);
+  const filePath = path.join(projectRoot, 'docs', 'cases', caseId, req.params.filename);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Doc not found' });
   }

@@ -76,16 +76,21 @@ keywords: [
 - 예: `case5-dormancy-1766037994472` → `case5-dormancy`
 - fallback: `task-1766113510884` → `task-510884`
 
-**산출물 경로 규칙** (SYSTEM_MANIFEST v4.0.0 준수):
+**산출물 경로 규칙** (SYSTEM_MANIFEST v4.1.0 준수, Flatten 구조 2025-12-23):
 
 ```
-docs/{task-id}/                    # 설계 문서 (IA, SDD, Wireframe)
+docs/cases/{caseId}/               # 케이스 설계 문서 (PRD, IA, SDD, Wireframe, HANDOFF)
+docs/cases/{caseId}/visuals/       # 시각화 산출물 (HTML)
 workspace/analysis/{task-id}/      # 분석 결과 (SQL, JSON, 리포트)
 workspace/features/{feature}/      # 피처별 산출물
 backend/src/{feature}/             # 백엔드 구현 코드
 frontend/src/{feature}/            # 프론트엔드 구현 코드
-orchestrator/logs/{task-id}.json   # 실행 로그
+workspace/logs/{task-id}.json      # 실행 로그
 ```
+
+**caseId 추출 규칙**:
+- `case5-dormancy-20251223` → `case5-dormancy` (날짜 8자리 제거)
+- `case5-dormancy-1766037994472` → `case5-dormancy` (타임스탬프 13자리 제거)
 
 **금지 패턴**:
 

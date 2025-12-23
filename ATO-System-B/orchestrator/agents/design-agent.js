@@ -46,7 +46,7 @@ export class DesignAgent {
   constructor(config = {}) {
     this.projectRoot = config.projectRoot || process.cwd();
     this.maxTokens = config.maxTokens || 16384;
-    this.outputDir = config.outputDir || path.join(this.projectRoot, 'docs');
+    this.outputDir = config.outputDir || path.join(this.projectRoot, 'docs', 'cases');
 
     // Multi-LLM Provider 설정
     this.providerName = config.provider || 'anthropic';
@@ -55,6 +55,13 @@ export class DesignAgent {
     this.useFallback = config.useFallback !== false;
 
     this._initProvider();
+  }
+
+  /**
+   * taskId에서 순수 케이스명 추출 (날짜/타임스탬프 제거)
+   */
+  extractCaseId(taskId) {
+    return taskId.replace(/-(\d{8}|\d{13,})$/, '');
   }
 
   /**
@@ -125,8 +132,9 @@ export class DesignAgent {
       timestamp: new Date().toISOString(),
     };
 
-    // 출력 디렉토리 생성
-    const taskDir = path.join(this.outputDir, taskId);
+    // 출력 디렉토리 생성 (순수 케이스명 사용)
+    const caseId = this.extractCaseId(taskId);
+    const taskDir = path.join(this.outputDir, caseId);
     if (!fs.existsSync(taskDir)) {
       fs.mkdirSync(taskDir, { recursive: true });
     }
@@ -420,7 +428,8 @@ ${(prd.successCriteria || prd.성공지표 || ['모든 산출물 생성 완료']
   async generateHTMLPreview(design, taskId) {
     console.log('[DesignAgent] HTML 프리뷰 생성...');
 
-    const taskDir = path.join(this.outputDir, taskId);
+    const caseId = this.extractCaseId(taskId);
+    const taskDir = path.join(this.outputDir, caseId);
     const previewPath = path.join(taskDir, 'preview.html');
 
     const html = `<!DOCTYPE html>
@@ -428,7 +437,7 @@ ${(prd.successCriteria || prd.성공지표 || ['모든 산출물 생성 완료']
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>설계 프리뷰 - ${taskId}</title>
+  <title>설계 프리뷰 - ${caseId}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; }

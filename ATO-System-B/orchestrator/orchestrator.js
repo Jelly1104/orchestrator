@@ -144,6 +144,16 @@ export class Orchestrator {
   // ========== 보안: 입력 검증 ==========
 
   /**
+   * taskId에서 순수 케이스명 추출 (날짜/타임스탬프 제거)
+   * @param {string} taskId - 태스크 ID (예: case5-dormancy-20251222, case5-dormancy-1766037994472)
+   * @returns {string} - 순수 케이스명 (예: case5-dormancy)
+   */
+  extractCaseId(taskId) {
+    // 날짜(8자리) 또는 타임스탬프(13자리 이상) 접미사 제거
+    return taskId.replace(/-(\d{8}|\d{13,})$/, '');
+  }
+
+  /**
    * taskId 검증 (Path Traversal 방지)
    */
   validateTaskId(taskId) {
@@ -701,7 +711,7 @@ export class Orchestrator {
           },
           gapCheck: planResult.gapCheck,
           message: '설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.',
-          docsPath: `docs/${taskId}/`
+          docsPath: `docs/cases/${this.extractCaseId(taskId)}/`
         });
 
         // Graceful Exit: 프로세스 종료 후 재실행 시 Resume 로직에서 처리
@@ -779,7 +789,8 @@ export class Orchestrator {
 
         // 파일 저장
         if (this.saveFiles) {
-          const docsDir = path.join(this.projectRoot, 'orchestrator', 'docs', taskId);
+          const caseId = this.extractCaseId(taskId);
+          const docsDir = path.join(this.projectRoot, 'docs', 'cases', caseId);
           if (!fs.existsSync(docsDir)) {
             fs.mkdirSync(docsDir, { recursive: true });
           }
@@ -1433,7 +1444,8 @@ export class Orchestrator {
 
       // 파일 저장
       if (this.saveFiles) {
-        const docsDir = path.join(this.projectRoot, 'docs', taskId);
+        const caseId = this.extractCaseId(taskId);
+        const docsDir = path.join(this.projectRoot, 'docs', 'cases', caseId);
         if (!fs.existsSync(docsDir)) {
           fs.mkdirSync(docsDir, { recursive: true });
         }
@@ -1609,23 +1621,24 @@ export class Orchestrator {
   async savePlanningDocs(taskId, planResult) {
     // 보안: taskId 재검증 (Path Traversal 방지)
     const validatedTaskId = this.validateTaskId(taskId);
-    const docsDir = this.validateFilePath(path.join('docs', validatedTaskId));
+    const caseId = this.extractCaseId(validatedTaskId);
+    const docsDir = this.validateFilePath(path.join('docs', 'cases', caseId));
 
     if (!fs.existsSync(docsDir)) {
       fs.mkdirSync(docsDir, { recursive: true });
     }
 
     if (planResult.ia) {
-      fs.writeFileSync(this.validateFilePath(path.join('docs', validatedTaskId, 'IA.md')), planResult.ia);
+      fs.writeFileSync(this.validateFilePath(path.join('docs', 'cases', caseId, 'IA.md')), planResult.ia);
     }
     if (planResult.wireframe) {
-      fs.writeFileSync(this.validateFilePath(path.join('docs', validatedTaskId, 'Wireframe.md')), planResult.wireframe);
+      fs.writeFileSync(this.validateFilePath(path.join('docs', 'cases', caseId, 'Wireframe.md')), planResult.wireframe);
     }
     if (planResult.sdd) {
-      fs.writeFileSync(this.validateFilePath(path.join('docs', validatedTaskId, 'SDD.md')), planResult.sdd);
+      fs.writeFileSync(this.validateFilePath(path.join('docs', 'cases', caseId, 'SDD.md')), planResult.sdd);
     }
     if (planResult.handoff) {
-      fs.writeFileSync(this.validateFilePath(path.join('docs', validatedTaskId, 'HANDOFF.md')), planResult.handoff);
+      fs.writeFileSync(this.validateFilePath(path.join('docs', 'cases', caseId, 'HANDOFF.md')), planResult.handoff);
     }
 
     console.log(`   📁 문서 저장: ${docsDir}`);
@@ -1682,11 +1695,12 @@ export class Orchestrator {
     console.log(`${'─'.repeat(40)}`);
 
     const taskId = result.taskId;
+    const caseId = this.extractCaseId(taskId);
     const projectRoot = this.projectRoot;
 
     // 설계 문서
     if (result.planning || result.files) {
-      const docsDir = path.join('docs', taskId);
+      const docsDir = path.join('docs', 'cases', caseId);
       console.log(`\n📝 설계 문서:`);
       console.log(`   ${path.join(projectRoot, docsDir)}/`);
 
@@ -1795,10 +1809,10 @@ export class Orchestrator {
         console.log(`   3. 필요시 Design 파이프라인으로 후속 작업`);
       } else if (result.pipeline === 'mixed') {
         console.log(`   1. 분석 결과 검토: workspace/analysis/`);
-        console.log(`   2. 설계 문서 검토: docs/${taskId}/`);
+        console.log(`   2. 설계 문서 검토: docs/cases/${caseId}/`);
         console.log(`   3. 개발팀 HANDOFF.md 전달`);
       } else {
-        console.log(`   1. 설계 문서 검토: docs/${taskId}/`);
+        console.log(`   1. 설계 문서 검토: docs/cases/${caseId}/`);
         console.log(`   2. 피드백 반영 후 개발팀 전달`);
         console.log(`   3. 구현 진행 (HANDOFF.md 참조)`);
       }
@@ -1988,7 +2002,8 @@ export class Orchestrator {
     const context = session.hitlContext?.context || {};
 
     // 저장된 설계 문서 로드
-    const docsDir = path.join(this.projectRoot, 'docs', taskId);
+    const caseId = this.extractCaseId(taskId);
+    const docsDir = path.join(this.projectRoot, 'docs', 'cases', caseId);
     const planResult = {
       ia: this._loadDocIfExists(path.join(docsDir, 'IA.md')),
       wireframe: this._loadDocIfExists(path.join(docsDir, 'Wireframe.md')),
@@ -2064,7 +2079,7 @@ export class Orchestrator {
             handoff: planResult.handoff ? 'HANDOFF.md 생성됨' : null
           },
           message: '설계 문서가 생성되었습니다. 검토 후 승인하거나 수정을 요청해주세요.',
-          docsPath: `docs/${taskId}/`
+          docsPath: `docs/cases/${this.extractCaseId(taskId)}/`
         });
 
         // Graceful Exit

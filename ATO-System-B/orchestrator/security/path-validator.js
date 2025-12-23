@@ -36,7 +36,7 @@ const INTERNAL_SYSTEM_PATHS = [
   'workspace/logs/',
   'workspace/sessions/',
   'workspace/features/',
-  'workspace/docs/',
+  'docs/cases/',
 ];
 
 // 금지된 경로 패턴

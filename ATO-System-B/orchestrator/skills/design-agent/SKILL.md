@@ -191,7 +191,7 @@ Mermaid 노드 클릭 시 상세 정보 표시를 위해:
    - 외부 의존성은 CDN + 로컬 fallback 포함
    ↓
 6. **Output**:
-   - docs/visual/*.html 저장
+   - docs/cases/{caseId}/visuals/*.html 저장
    - 더블클릭만으로 완벽 동작하는 독립 파일
 ```
 
@@ -234,7 +234,7 @@ const visualResult = await designAgent.visualize({
   options: { theme: 'light', interactive: true }
 });
 
-// 결과: docs/visual/*.html 생성
+// 결과: docs/cases/{caseId}/visuals/*.html 생성
 ```
 
 ---

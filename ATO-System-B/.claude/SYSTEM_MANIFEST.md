@@ -47,17 +47,26 @@ Orchestrator는 작업 모드에 따라 아래 경로에서 문서를 로드합�
 - **Coding Mode:** Group A (Rules) + Workflows/TDD_WORKFLOW.md
 - **Review Mode:** Group A (Rules/VALIDATION) + Workflows/PRD_GUIDE.md
 
-## 4. Workspace Paths (산출물 저장소)
+## 4. Workspace Paths (런타임 산출물)
 
-Skill-Centric Refactoring (2025-12-22) 이후 모든 산출물은 `workspace/`에 저장됩니다.
+Skill-Centric Refactoring (2025-12-22) 이후 런타임 산출물은 `workspace/`에 저장됩니다.
 
 | Path | Description |
 | :--- | :---------- |
 | `workspace/logs/` | 실행 로그, HITL 승인 로그 |
 | `workspace/sessions/` | 세션 데이터 |
-| `workspace/analysis/` | 분석 결과물 |
+| `workspace/analysis/` | 분석 결과물 (SQL, JSON, 리포트) |
 | `workspace/features/` | 피처별 산출물 (dr-insight 등) |
-| `workspace/docs/` | PRD, SDD, Design Docs |
+
+## 4.1 Docs Paths (설계 문서 저장소)
+
+케이스별 설계 산출물은 `docs/cases/`에 저장됩니다. (Flatten 구조, 2025-12-23)
+
+| Path | Description |
+| :--- | :---------- |
+| `docs/cases/{caseId}/` | 케이스별 설계 산출물 (PRD, IA, Wireframe, SDD, HANDOFF) |
+| `docs/cases/{caseId}/visuals/` | 시각화 산출물 (HTML) |
+| `docs/architecture/` | 시스템 아키텍처 설계 문서 |
 
 ## 5. Skill Registry (v1.0.0)
 
