@@ -70,7 +70,9 @@ jobs:
             orchestrator/orchestrator.js \
             orchestrator/index.js \
             orchestrator/package.json \
-            .claude/global
+            .claude/rules \
+            .claude/workflows \
+            .claude/context
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
