@@ -24,12 +24,11 @@
       "syncEnabled": true
     },
     "SYSTEM_MANIFEST.md": {
-      "notionPageId": null,
+      "notionPageId": "2cc87960-3bef-817d-a183-f78583310bb9",
       "localPath": ".claude/SYSTEM_MANIFEST.md",
       "category": "00. Constitution",
       "mutability": "immutable",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "DOMAIN_SCHEMA.md": {
       "notionPageId": "2cb87960-3bef-801f-adad-cf86815a7ce7",
@@ -88,36 +87,32 @@
       "syncEnabled": true
     },
     "INCIDENT_PLAYBOOK.md": {
-      "notionPageId": null,
+      "notionPageId": "2d187960-3bef-8101-ba8c-f79839a2c64c",
       "localPath": ".claude/workflows/INCIDENT_PLAYBOOK.md",
       "category": "01. Guides",
       "mutability": "controlled",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "DOCUMENT_PIPELINE.md": {
-      "notionPageId": null,
+      "notionPageId": "2d187960-3bef-811b-973c-c211dae78a5c",
       "localPath": ".claude/workflows/DOCUMENT_PIPELINE.md",
       "category": "01. Guides",
       "mutability": "controlled",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "DB_ACCESS_POLICY.md": {
-      "notionPageId": null,
+      "notionPageId": "2d187960-3bef-81a1-b06f-de1e985b6e6d",
       "localPath": ".claude/rules/DB_ACCESS_POLICY.md",
       "category": "01. Guides",
       "mutability": "controlled",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "PROJECT_STACK.md": {
-      "notionPageId": null,
+      "notionPageId": "2d187960-3bef-81b5-b356-eb136b1f049e",
       "localPath": ".claude/rules/PROJECT_STACK.md",
       "category": "01. Guides",
       "mutability": "controlled",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "AI_CONTEXT.md": {
       "notionPageId": "2cc87960-3bef-817d-a183-f78583310bb9",
@@ -127,75 +122,67 @@
       "syncEnabled": true
     },
     "AI_Playbook.md": {
-      "notionPageId": null,
+      "notionPageId": "2d187960-3bef-817e-8956-ff662fdfda18",
       "localPath": ".claude/context/AI_Playbook.md",
       "category": "03. Context",
       "mutability": "mutable",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "design-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-810d-baa1-de8bec918fd5",
       "localPath": "orchestrator/skills/design-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Builders",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "code-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-8174-95a4-cbaed0cec36b",
       "localPath": "orchestrator/skills/code-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Builders",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "query-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-817d-88e0-cdb3592f25a3",
       "localPath": "orchestrator/skills/query-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Analysts",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "profile-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-817f-b149-d338a9e1b38b",
       "localPath": "orchestrator/skills/profile-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Analysts",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "review-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-81b0-99b9-c12595319da3",
       "localPath": "orchestrator/skills/review-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Guardians",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "doc-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-81ca-9107-f6e5d81cb486",
       "localPath": "orchestrator/skills/doc-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Utilities",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "viewer-agent/SKILL.md": {
-      "notionPageId": null,
+      "notionPageId": "2ce87960-3bef-81e9-9bda-ed4a648a036d",
       "localPath": "orchestrator/skills/viewer-agent/SKILL.md",
       "category": "04. Skills",
       "skillGroup": "Utilities",
       "mutability": "versioned",
-      "syncEnabled": true,
-      "note": "Notion 페이지 ID 검색 필요"
+      "syncEnabled": true
     },
     "QUALITY_GATES.md": {
       "notionPageId": "2cc87960-3bef-8172-9d9b-d0e2e702eff4",
