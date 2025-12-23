@@ -3,7 +3,7 @@
  *
  * 역할: 로컬 문서 ↔ Notion 동기화
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import fs from 'fs';
@@ -30,7 +30,7 @@ const __dirname = path.dirname(__filename);
 class DocAgent {
   constructor(options = {}) {
     this.name = 'doc-agent';
-    this.version = '1.0.0';
+    this.version = '2.0.0'; // SKILL.md와 동기화
     this.options = options;
     this.mapping = loadMapping();
   }
