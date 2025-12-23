@@ -1,9 +1,9 @@
 # INCIDENT_PLAYBOOK.md
 
-> **버전**: 1.0.2
-> **최종 수정**: 2025-12-22
-> **물리적 경로**: `.claude/workflows/INCIDENT_PLAYBOOK.md`
-> **상위 문서**: `.claude/CLAUDE.md` > **목적**: Orchestrator 장애 대응 절차
+> **버전**: 1.2.4
+> **최종 수정**: 2025-12-23
+> **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
+> **물리적 경로**: `.claude/workflows/INCIDENT_PLAYBOOK.md` > **상위 문서**: `.claude/CLAUDE.md` > **목적**: Orchestrator 장애 대응 절차
 
 ---
 
@@ -103,6 +103,9 @@ Error: Rate limit exceeded
 - Google AI: https://status.cloud.google.com
 
 ### 2.4 P1: Agent 무한 루프
+
+> **HITL 참조**: Agent 3회 연속 Review FAIL 시 **Human-in-the-Loop 수동 수정** 체크포인트가 트리거됩니다.
+> 상세 정의는 `AGENT_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
 
 **증상**:
 
@@ -319,12 +322,12 @@ P0 → 전체 팀 + CTO (즉시 회의)
 
 ## 8. 관련 문서
 
-| 문서명                      | 물리적 경로                                 | 역할                                       |
-| --------------------------- | ------------------------------------------- | ------------------------------------------ |
-| **CLAUDE.md**               | `.claude/CLAUDE.md`                         | [Root] 최상위 헌법 및 안전 수칙            |
-| **ERROR_HANDLING_GUIDE.md** | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | [Workflows] 에러 유형별 자동 대응 절차     |
-| **AGENT_ARCHITECTURE.md**   | `.claude/workflows/AGENT_ARCHITECTURE.md`   | [Workflows] 에이전트 구조 및 복구 메커니즘 |
-| **DB_ACCESS_POLICY.md**     | `.claude/rules/DB_ACCESS_POLICY.md`         | [Rules] DB 접근 권한 및 제약 사항          |
+| 문서명                      | 물리적 경로                                 | 역할                                                      |
+| --------------------------- | ------------------------------------------- | --------------------------------------------------------- |
+| **CLAUDE.md**               | `.claude/CLAUDE.md`                         | [Root] 최상위 헌법 및 안전 수칙                           |
+| **ERROR_HANDLING_GUIDE.md** | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | [Workflows] 에러 유형별 자동 대응 절차                    |
+| **AGENT_ARCHITECTURE.md**   | `.claude/workflows/AGENT_ARCHITECTURE.md`   | [Workflows] 에이전트 구조, **HITL 체크포인트** 섹션       |
+| **DB_ACCESS_POLICY.md**     | `.claude/rules/DB_ACCESS_POLICY.md`         | [Rules] DB 접근 권한 및 제약 사항                         |
 
 ---
 

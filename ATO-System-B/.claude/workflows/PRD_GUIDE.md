@@ -1,7 +1,8 @@
 # PRD 통합 가이드 v2.0
 
-> **문서 버전**: 2.0.2
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 2.0.5
+> **최종 업데이트**: 2025-12-23
+> **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
 > **물리적 경로**: `.claude/workflows/PRD_GUIDE.md`
 > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: PRD_TEMPLATE_V2.md, PRD_TYPE_PIPELINE.md, PRD_REFERENCE_MAP.md
@@ -209,6 +210,9 @@ Step 5: 산출물 생성
 
 ### 3.2 정성적 PRD 파이프라인
 
+> **HITL 참조**: 설계 초안 생성 후 **Human-in-the-Loop 설계 승인** 체크포인트가 트리거됩니다.
+> 5개 HITL 체크포인트 전체 정의는 `AGENT_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
+
 ```
 [입력] PRD + 레퍼런스 + 기존 컨텍스트
 
@@ -222,7 +226,7 @@ Step 2: 레퍼런스 기반 설계
   - 휴리스틱 적용 (UX 원칙 등)
   - 초안 생성
 
-Step 3: 사용자 확인 [Human-in-the-Loop]
+Step 3: 사용자 확인 [Human-in-the-Loop] ← HITL 체크포인트
   - "이 방향이 맞을까요?"
   - 피드백 수집
   - 수정 반영
@@ -380,10 +384,14 @@ deliverables:
 
 ## 8. 관련 문서
 
-| 문서                  | 물리적 경로                         | 역할                                    |
-| --------------------- | ----------------------------------- | --------------------------------------- |
-| `DOMAIN_SCHEMA.md`    | `.claude/rules/DOMAIN_SCHEMA.md`    | 테이블/컬럼 정의 (정량적 PRD 필수 참조) |
-| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준                        |
+| 문서 | 물리적 경로 | 역할 |
+|------|------------|------|
+| `CLAUDE.md` | `.claude/CLAUDE.md` | 프로젝트 헌법 |
+| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md` | **HITL 체크포인트** 섹션 |
+| `DOMAIN_SCHEMA.md` | `.claude/rules/DOMAIN_SCHEMA.md` | 테이블/컬럼 정의 (정량적 PRD 필수 참조) |
+| `DB_ACCESS_POLICY.md` | `.claude/rules/DB_ACCESS_POLICY.md` | DB 접근 권한 정책 |
+| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준 |
+| `PROJECT_STACK.md` | `.claude/project/PROJECT_STACK.md` | 기술 스택 정의 |
 
 ---
 

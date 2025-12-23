@@ -1,7 +1,8 @@
 # 분석 Agent 가이드 v2.0
 
-> **문서 버전**: 2.0.1
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 2.0.4
+> **최종 업데이트**: 2025-12-23
+> **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
 > **물리적 경로**: `.claude/rules/ANALYSIS_GUIDE.md` > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: ANALYSIS_AGENT_SPEC.md, DB_ACCESS_POLICY.md
 
@@ -91,6 +92,11 @@ Step 6: 산출물 생성
 
 ## 3. DB 접근 정책
 
+> **역할 분리**: 이 섹션은 AnalysisAgent 특화 가이드를 다룹니다.
+> - 계정 생성, 권한 부여 SQL → `DB_ACCESS_POLICY.md` 섹션 2 참조
+> - 쿼리 제한 (행 수, 타임아웃) → `DB_ACCESS_POLICY.md` 섹션 3 참조
+> - 위반 시 자동 차단 → `DB_ACCESS_POLICY.md` 섹션 7 참조
+
 ### 3.1 스토리지 선택 기준
 
 ```
@@ -112,20 +118,12 @@ Step 6: 산출물 생성
 
 ### 3.2 MySQL 계정 분리
 
-| 계정                  | 용도                    | 권한                           |
-| --------------------- | ----------------------- | ------------------------------ |
-| **medigate_readonly** | AI 에이전트 기본 계정   | SELECT                         |
-| **medigate_write**    | Leader 승인 후에만 사용 | SELECT, INSERT, UPDATE, DELETE |
+> **참조**: 계정 생성 및 권한 부여 SQL은 `DB_ACCESS_POLICY.md` 섹션 2를 참조하세요.
 
-```sql
--- 읽기 전용 계정 생성 (AI 에이전트용)
-CREATE USER 'medigate_readonly'@'%' IDENTIFIED BY '[READONLY_PASSWORD]';
-GRANT SELECT ON medigate.* TO 'medigate_readonly'@'%';
-
--- 쓰기 계정 (프로덕션 배포용)
-CREATE USER 'medigate_write'@'%' IDENTIFIED BY '[WRITE_PASSWORD]';
-GRANT SELECT, INSERT, UPDATE, DELETE ON medigate.* TO 'medigate_write'@'%';
-```
+| 계정            | 용도                    | 권한                           |
+| --------------- | ----------------------- | ------------------------------ |
+| **ai_readonly** | AI 에이전트 기본 계정   | SELECT                         |
+| **ai_write**    | Leader 승인 후에만 사용 | SELECT, INSERT, UPDATE, DELETE |
 
 ---
 
@@ -134,7 +132,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON medigate.* TO 'medigate_write'@'%';
 **개발 환경 (.env.development)**:
 
 ```env
-DB_USER=medigate_readonly
+DB_USER=ai_readonly
 DB_PASSWORD=[READONLY_PASSWORD]
 DB_HOST=localhost
 DB_NAME=medigate
@@ -144,7 +142,7 @@ DB_NAME=medigate
 
 ```env
 # CI/CD 파이프라인에서만 쓰기 권한 사용
-DB_USER=medigate_write
+DB_USER=ai_write
 DB_PASSWORD=[WRITE_PASSWORD]
 DB_HOST=[PRODUCTION_HOST]
 DB_NAME=medigate
@@ -154,11 +152,11 @@ DB_NAME=medigate
 
 ### 3.4 에이전트 접근 규칙
 
-| Agent         | 사용 계정                | 허용   | 금지                   |
-| ------------- | ------------------------ | ------ | ---------------------- |
-| SubAgent      | medigate_readonly        | SELECT | INSERT, UPDATE, DELETE |
-| AnalysisAgent | medigate_readonly        | SELECT | INSERT, UPDATE, DELETE |
-| Leader        | medigate_readonly (기본) | SELECT | 쓰기는 승인 후         |
+| Agent         | 사용 계정            | 허용   | 금지                   |
+| ------------- | -------------------- | ------ | ---------------------- |
+| SubAgent      | ai_readonly          | SELECT | INSERT, UPDATE, DELETE |
+| AnalysisAgent | ai_readonly          | SELECT | INSERT, UPDATE, DELETE |
+| Leader        | ai_readonly (기본)   | SELECT | 쓰기는 승인 후         |
 
 ---
 
@@ -267,15 +265,18 @@ logger.info({
 
 ## 5. 오류 처리
 
+> **HITL 참조**: SQL 결과 이상(0행, 타임아웃, 스키마 불일치) 발생 시 **Human-in-the-Loop 쿼리 검토** 체크포인트가 트리거됩니다.
+> 상세 정의는 `AGENT_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
+
 ### 5.1 오류 유형별 처리
 
-| 오류 유형     | 예시                    | 처리 방법                             |
-| ------------- | ----------------------- | ------------------------------------- |
-| 스키마 불일치 | 존재하지 않는 컬럼      | 사용자 확인 요청 → DOMAIN_SCHEMA 갱신 |
-| SQL 문법 오류 | JOIN 조건 누락          | 자동 수정 재시도 (최대 3회)           |
-| 타임아웃      | 대용량 Full Scan        | LIMIT 추가, WHERE 조건 강화           |
-| 빈 결과       | 조건에 맞는 데이터 없음 | 조건 완화 제안 또는 사용자 확인       |
-| 권한 오류     | SELECT 권한 없음        | 사용자에게 DB 권한 확인 요청          |
+| 오류 유형     | 예시                    | 처리 방법                             | HITL 트리거 |
+| ------------- | ----------------------- | ------------------------------------- | ----------- |
+| 스키마 불일치 | 존재하지 않는 컬럼      | 사용자 확인 요청 → DOMAIN_SCHEMA 갱신 | ✅ Yes      |
+| SQL 문법 오류 | JOIN 조건 누락          | 자동 수정 재시도 (최대 3회)           | 3회 실패 시 |
+| 타임아웃      | 대용량 Full Scan        | LIMIT 추가, WHERE 조건 강화           | ✅ Yes      |
+| 빈 결과       | 조건에 맞는 데이터 없음 | 조건 완화 제안 또는 사용자 확인       | ✅ Yes      |
+| 권한 오류     | SELECT 권한 없음        | 사용자에게 DB 권한 확인 요청          | ✅ Yes      |
 
 ---
 
@@ -349,11 +350,13 @@ Phase B: 설계/제안 (LeaderAgent)
 
 ## 8. 관련 문서
 
-| 문서                  | 물리적 경로                         | 역할                               |
-| --------------------- | ----------------------------------- | ---------------------------------- |
-| `DOMAIN_SCHEMA.md`    | `.claude/rules/DOMAIN_SCHEMA.md`    | 테이블/컬럼 정의, 스키마 검증 기준 |
-| `PRD_GUIDE.md`        | `.claude/workflows/PRD_GUIDE.md`    | PRD 유형/파이프라인 정의           |
-| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준                   |
+| 문서                  | 물리적 경로                         | 역할                                    |
+| --------------------- | ----------------------------------- | --------------------------------------- |
+| `DOMAIN_SCHEMA.md`    | `.claude/rules/DOMAIN_SCHEMA.md`    | 테이블/컬럼 정의, 스키마 검증 기준      |
+| `DB_ACCESS_POLICY.md` | `.claude/rules/DB_ACCESS_POLICY.md` | DB 접근 권한, 계정 설정, 감사 로깅      |
+| `PRD_GUIDE.md`        | `.claude/workflows/PRD_GUIDE.md`    | PRD 유형/파이프라인 정의                |
+| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준                        |
+| `CODE_STYLE.md`       | `.claude/rules/CODE_STYLE.md`       | SQL 코딩 스타일                         |
 
 ---
 

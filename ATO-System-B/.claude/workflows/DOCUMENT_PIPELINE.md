@@ -1,7 +1,8 @@
 # DOCUMENT_PIPELINE.md
 
-> **문서 버전**: 1.2.2
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 1.2.4
+> **최종 업데이트**: 2025-12-23
+> **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
 > **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md`
 > **상위 문서**: `CLAUDE.md` > **대상**: 리더 에이전트
 
@@ -95,6 +96,9 @@ Code → PRD 수정     ❌ 금지
 
 ### 3️⃣ SDD (Software Design Document) - 🚨 가장 중요
 
+> **HITL 참조**: SDD 생성 완료 후 **Human-in-the-Loop 설계 승인** 체크포인트가 트리거됩니다.
+> 상세 정의는 `AGENT_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
+
 **입력:** `PRD`, `User Flow`, `DOMAIN_SCHEMA.md`
 **출력:** 기술 설계 문서 (구현의 진실 공급원)
 
@@ -177,11 +181,12 @@ paths:
 
 ## 📚 관련 문서
 
-| 문서               | 역할                             |
-| ------------------ | -------------------------------- | ------------------------------------------ |
-| `DOMAIN_SCHEMA.md` | `.claude/rules/DOMAIN_SCHEMA.md` | **SDD 작성 시 필수 참조** (DB 구조 확인)   |
-| `TDD_WORKFLOW.md`  | `.claude/rules/TDD_WORKFLOW.md`  | **TDD Spec 작성 시 필수 참조** (규칙/절차) |
-| `AI_Playbook.md`   | `.claude/context/AI_Playbook.md` | PRD 작성 시 필수 참조 (비즈니스 목표)      |
+| 문서                    | 물리적 경로                                 | 역할                                        |
+| ----------------------- | ------------------------------------------- | ------------------------------------------- |
+| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md`   | **HITL 체크포인트** 섹션                    |
+| `DOMAIN_SCHEMA.md`      | `.claude/rules/DOMAIN_SCHEMA.md`            | **SDD 작성 시 필수 참조** (DB 구조 확인)    |
+| `TDD_WORKFLOW.md`       | `.claude/rules/TDD_WORKFLOW.md`             | **TDD Spec 작성 시 필수 참조** (규칙/절차)  |
+| `AI_Playbook.md`        | `.claude/context/AI_Playbook.md`            | PRD 작성 시 필수 참조 (비즈니스 목표)       |
 
 ---
 
