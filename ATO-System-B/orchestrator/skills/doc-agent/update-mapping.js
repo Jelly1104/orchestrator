@@ -67,6 +67,11 @@ function updateMapping(pageIds) {
     process.exit(1);
   }
 
+  // [Safe Sync 원칙 3] Safety Snapshot - 변경 전 백업 생성
+  const backupPath = MAPPING_PATH.replace('.json', '.backup.json');
+  fs.copyFileSync(MAPPING_PATH, backupPath);
+  console.log(`📦 백업 생성됨: ${backupPath}`);
+
   const mapping = JSON.parse(fs.readFileSync(MAPPING_PATH, 'utf-8'));
   let updated = 0;
 

@@ -188,7 +188,9 @@ async function syncToNotion(target, options = {}) {
     const localDoc = readLocalDoc(docName, mapping);
 
     if (localDoc.error) {
-      results.errors.push({ name: docName, error: localDoc.error });
+      // [Safe Sync 원칙 2] 로컬 파일 누락 시 Notion 페이지 보존, 스킵 처리
+      console.warn(`⚠️  [SKIP] 로컬 파일 누락: ${docName} (Notion 페이지는 보존됨)`);
+      results.skipped.push({ name: docName, reason: 'local_file_missing', error: localDoc.error });
       continue;
     }
 
