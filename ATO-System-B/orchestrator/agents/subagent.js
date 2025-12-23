@@ -249,8 +249,8 @@ ${content}
         continue;
       }
 
-      // .claude/global 수정 방지
-      if (filePath.includes('.claude/global')) {
+      // .claude/rules, .claude/workflows, .claude/context 수정 방지 (Constitution 보호)
+      if (filePath.includes('.claude/rules') || filePath.includes('.claude/workflows') || filePath.includes('.claude/context')) {
         console.warn(`[SECURITY] Attempted modification of protected path rejected: ${filePath}`);
         continue;
       }
@@ -281,10 +281,10 @@ ${content}
    */
   async loadCodingContext() {
     const docs = [
-      '.claude/global/DOMAIN_SCHEMA.md',
-      '.claude/global/TDD_WORKFLOW.md',
-      '.claude/global/CODE_STYLE.md',
-      '.claude/project/PROJECT_STACK.md'
+      '.claude/rules/DOMAIN_SCHEMA.md',
+      '.claude/rules/TDD_WORKFLOW.md',
+      '.claude/rules/CODE_STYLE.md',
+      '.claude/rules/PROJECT_STACK.md'
     ];
 
     let context = '';
@@ -342,7 +342,7 @@ ${clinerules}
 ${context}
 
 ## 절대 금지 사항
-- .claude/global/* 수정 금지
+- .claude/rules/*, .claude/workflows/*, .claude/context/* 수정 금지 (Constitution)
 - INSERT/UPDATE/DELETE 금지 (SELECT만 허용)
 - 새로운 외부 라이브러리 임의 추가 금지
 

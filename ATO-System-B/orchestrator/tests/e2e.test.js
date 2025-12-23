@@ -53,7 +53,7 @@ Coding
 
 ## Input
 - docs/task-test/SDD.md
-- .claude/global/DOMAIN_SCHEMA.md
+- .claude/rules/DOMAIN_SCHEMA.md
 
 ## Output
 - src/features/login/index.ts
@@ -256,16 +256,16 @@ describe('E2E: Security Scenarios', () => {
   });
 
   describe('Output Validation', () => {
-    it('should reject protected file paths', () => {
+    it('should reject protected file paths (Constitution)', () => {
       const protectedFiles = {
-        '.claude/global/DOMAIN_SCHEMA.md': 'modified content'
+        '.claude/rules/DOMAIN_SCHEMA.md': 'modified content'
       };
 
       // This should be filtered by SubAgent output validation
       const validator = orchestrator.getOutputValidator();
       if (validator) {
         const result = validator(protectedFiles);
-        expect(Object.keys(result)).not.toContain('.claude/global/DOMAIN_SCHEMA.md');
+        expect(Object.keys(result)).not.toContain('.claude/rules/DOMAIN_SCHEMA.md');
       }
     });
   });

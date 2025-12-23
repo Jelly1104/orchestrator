@@ -9,7 +9,12 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const STATE_FILE = path.join(ROOT, '.claude/state/handoff-status.json');
-const GLOBAL_DIR = path.join(ROOT, '.claude/global');
+// Constitution 보호 경로 (v4.0.0)
+const PROTECTED_DIRS = [
+  path.join(ROOT, '.claude/rules'),
+  path.join(ROOT, '.claude/workflows'),
+  path.join(ROOT, '.claude/context')
+];
 
 // 색상 코드
 const RED = '\x1b[31m';
@@ -35,8 +40,9 @@ function checkGlobalFilesModified(files) {
   const violations = [];
 
   for (const file of files) {
-    if (file.startsWith('.claude/global/')) {
-      violations.push(`🔴 VIOLATION: .claude/global/ 파일 수정 금지 - ${file}`);
+    // Constitution 보호 경로 체크 (v4.0.0)
+    if (file.startsWith('.claude/rules/') || file.startsWith('.claude/workflows/') || file.startsWith('.claude/context/')) {
+      violations.push(`🔴 VIOLATION: Constitution 문서 수정 금지 - ${file}`);
     }
     if (file === 'CLAUDE.md') {
       violations.push(`🔴 VIOLATION: CLAUDE.md 수정 금지`);

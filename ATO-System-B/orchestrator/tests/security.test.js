@@ -146,8 +146,8 @@ async function runSecurityTests() {
     assert.strictEqual(Object.keys(result).length, 0);
   })) passed++; else failed++;
 
-  if (test('validateOutput: .claude/global 보호', () => {
-    const files = { '.claude/global/DOMAIN_SCHEMA.md': 'modified' };
+  if (test('validateOutput: Constitution 보호 (.claude/rules)', () => {
+    const files = { '.claude/rules/DOMAIN_SCHEMA.md': 'modified' };
     const result = subagent.validateOutput(files);
     assert.strictEqual(Object.keys(result).length, 0);
   })) passed++; else failed++;

@@ -1,8 +1,8 @@
 /**
  * RulebookValidator - 룰북 무결성 검증
  *
- * 보안 기능 (v3.2.0 P2):
- * - .claude/global/* 파일 해시 체크
+ * 보안 기능 (v3.2.0 P2, Constitution 체계 v4.0.0):
+ * - .claude/rules/*, .claude/workflows/*, .claude/context/* 파일 해시 체크
  * - 무결성 위반 감지
  * - 변조 방지
  */
@@ -11,21 +11,23 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-// 보호 대상 파일 목록
+// 보호 대상 파일 목록 (Constitution 체계 v4.0.0)
 const PROTECTED_FILES = [
-  // 핵심 룰북
-  '.claude/global/CLAUDE.md',
-  '.claude/global/DOMAIN_SCHEMA.md',
-  '.claude/global/DOCUMENT_PIPELINE.md',
-  '.claude/global/AI_Playbook.md',
-  '.claude/global/QUALITY_GATES.md',
-  '.claude/global/CODE_STYLE.md',
-  '.claude/global/TDD_WORKFLOW.md',
-  // 아키텍처 문서
-  '.claude/global/AGENT_ARCHITECTURE.md',
-  '.claude/global/DOCUMENT_MANAGER_ARCHITECTURE.md',
-  // Skill 파일 (절대불변)
-  '.claude/global/skills/doc-manage/skill.md',
+  // 00. Constitution (절대 불변)
+  'CLAUDE.md',
+  '.claude/SYSTEM_MANIFEST.md',
+  '.claude/rules/DOMAIN_SCHEMA.md',
+  // 01. Rules (통제된 변경)
+  '.claude/rules/CODE_STYLE.md',
+  '.claude/rules/TDD_WORKFLOW.md',
+  '.claude/rules/VALIDATION_GUIDE.md',
+  '.claude/rules/ANALYSIS_GUIDE.md',
+  // 02. Workflows
+  '.claude/workflows/AGENT_ARCHITECTURE.md',
+  '.claude/workflows/DOCUMENT_PIPELINE.md',
+  '.claude/workflows/PRD_GUIDE.md',
+  // 03. Context
+  '.claude/context/AI_Playbook.md',
   // 기타
   '.clinerules',
 ];

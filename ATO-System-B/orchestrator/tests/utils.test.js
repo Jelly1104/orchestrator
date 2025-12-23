@@ -138,9 +138,9 @@ describe('RulebookValidator', () => {
       expect(Object.keys(result)).toHaveLength(0);
     });
 
-    it('should protect .claude/global directory', () => {
+    it('should protect Constitution directories (.claude/rules, .claude/workflows, .claude/context)', () => {
       const files = {
-        '.claude/global/DOMAIN_SCHEMA.md': 'modified'
+        '.claude/rules/DOMAIN_SCHEMA.md': 'modified'
       };
       const result = validator.validateOutput(files);
 

@@ -17,19 +17,19 @@ import crypto from 'crypto';
 import { getAuditLogger } from './audit-logger.js';
 import { isEnabled } from '../config/feature-flags.js';
 
-// 문서 등급 정의
+// 문서 등급 정의 (Constitution 체계 v4.0.0)
 const DOC_GRADES = {
-  IMMUTABLE: 'IMMUTABLE',     // 🔴 절대불변 (.claude/global/*)
+  IMMUTABLE: 'IMMUTABLE',     // 🔴 절대불변 (.claude/rules/*, .claude/workflows/*, .claude/context/*)
   MUTABLE: 'MUTABLE',         // 🟢 수정가능 (.claude/project/*)
-  FEATURE: 'FEATURE',         // 🔵 피쳐 (.claude/features/*)
+  FEATURE: 'FEATURE',         // 🔵 피쳐 (workspace/features/*)
   UNKNOWN: 'UNKNOWN',         // 분류 불가
 };
 
-// 경로 패턴
+// 경로 패턴 (Constitution 체계 v4.0.0)
 const PATH_PATTERNS = {
-  IMMUTABLE: /^\.claude\/global\//,
+  IMMUTABLE: /^\.claude\/(rules|workflows|context)\//,
   MUTABLE: /^\.claude\/project\//,
-  FEATURE: /^\.claude\/features\//,
+  FEATURE: /^workspace\/features\//,
 };
 
 // CHANGELOG 결과 타입

@@ -43,7 +43,7 @@ console.log('✅ PRD 분류 정상 (QUALITATIVE/design)');
 // Step 2: Orchestrator 초기화
 console.log('\n[Step 2] Orchestrator 초기화...');
 
-// projectRoot는 .claude/global/ 문서가 있는 실제 프로젝트 루트를 사용
+// projectRoot는 .claude/rules/, .claude/workflows/ 문서가 있는 실제 프로젝트 루트를 사용
 const projectRoot = __dirname;
 const outputDir = path.join(__dirname, 'test-output', 'design');
 
@@ -52,14 +52,14 @@ if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
-// .claude/global 디렉토리 존재 확인
-const claudeDir = path.join(projectRoot, '.claude', 'global');
-if (fs.existsSync(claudeDir)) {
-  console.log('  .claude/global 디렉토리 확인됨');
-  const globalFiles = fs.readdirSync(claudeDir);
-  console.log(`  문서 수: ${globalFiles.length}개`);
+// Constitution 디렉토리 존재 확인 (v4.0.0)
+const rulesDir = path.join(projectRoot, '.claude', 'rules');
+if (fs.existsSync(rulesDir)) {
+  console.log('  .claude/rules 디렉토리 확인됨');
+  const rulesFiles = fs.readdirSync(rulesDir);
+  console.log(`  문서 수: ${rulesFiles.length}개`);
 } else {
-  console.warn('  ⚠️ .claude/global 디렉토리 없음 - 컨텍스트 문서 누락 가능');
+  console.warn('  ⚠️ .claude/rules 디렉토리 없음 - 컨텍스트 문서 누락 가능');
 }
 
 const orchestrator = new Orchestrator({

@@ -119,10 +119,10 @@ jobs:
         run: |
           files=(
             "CLAUDE.md"
-            ".claude/global/AGENT_ARCHITECTURE.md"
-            ".claude/global/DOMAIN_SCHEMA.md"
-            ".claude/global/INCIDENT_PLAYBOOK.md"
-            ".claude/global/DB_ACCESS_POLICY.md"
+            ".claude/workflows/AGENT_ARCHITECTURE.md"
+            ".claude/rules/DOMAIN_SCHEMA.md"
+            ".claude/workflows/INCIDENT_PLAYBOOK.md"
+            ".claude/rules/DB_ACCESS_POLICY.md"
           )
           for file in "${files[@]}"; do
             if [ ! -f "$file" ]; then

@@ -21,9 +21,13 @@
 ### 1.2 대상 문서
 
 ```yaml
-동기화 대상:
-  - CLAUDE.md (프로젝트 루트)
-  - .claude/global/*.md (읽기 전용 룰북)
+동기화 대상 (Constitution 체계 v4.0.0):
+  - CLAUDE.md (프로젝트 루트 - 00. Constitution)
+  - .claude/SYSTEM_MANIFEST.md (00. Constitution)
+  - .claude/rules/*.md (01. Rules - 읽기 전용)
+  - .claude/workflows/*.md (02. Workflows - 읽기 전용)
+  - .claude/context/*.md (03. Context - 읽기 전용)
+  - orchestrator/skills/*/SKILL.md (04. Skills)
   - .claude/project/*.md (프로젝트 설정)
   - docs/**/*.md (설계 문서)
 
@@ -31,6 +35,7 @@
   - node_modules/
   - orchestrator/logs/
   - test-output/
+  - .claude/archive/
 ```
 
 ---

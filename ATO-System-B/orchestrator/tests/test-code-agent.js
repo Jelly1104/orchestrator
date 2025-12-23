@@ -219,7 +219,7 @@ async function testSecurityValidation() {
     const maliciousFiles = {
       '../../../etc/passwd': 'malicious content',
       '/etc/shadow': 'malicious content',
-      '.claude/global/DOMAIN_SCHEMA.md': 'overwrite attempt',
+      '.claude/rules/DOMAIN_SCHEMA.md': 'overwrite attempt',
       'src/valid/file.ts': 'valid content'
     };
 
@@ -237,16 +237,16 @@ async function testSecurityValidation() {
 
     const blockedTraversal = !('../../../etc/passwd' in validated);
     const blockedAbsolute = !('/etc/shadow' in validated);
-    const blockedClaude = !('.claude/global/DOMAIN_SCHEMA.md' in validated);
+    const blockedConstitution = !('.claude/rules/DOMAIN_SCHEMA.md' in validated);
     const allowedValid = 'src/valid/file.ts' in validated;
 
     console.log(`\n보안 검증:`);
     console.log(`  - Path Traversal 차단: ${blockedTraversal ? '✅' : '❌'}`);
     console.log(`  - 절대 경로 차단: ${blockedAbsolute ? '✅' : '❌'}`);
-    console.log(`  - .claude/global 보호: ${blockedClaude ? '✅' : '❌'}`);
+    console.log(`  - Constitution 보호: ${blockedConstitution ? '✅' : '❌'}`);
     console.log(`  - 유효 경로 허용: ${allowedValid ? '✅' : '❌'}`);
 
-    const passed = blockedTraversal && blockedAbsolute && blockedClaude && allowedValid;
+    const passed = blockedTraversal && blockedAbsolute && blockedConstitution && allowedValid;
     console.log(`\n결과: ${passed ? '✅ PASSED' : '❌ FAILED'}`);
 
     return passed;
