@@ -1603,133 +1603,65 @@ export class Orchestrator {
 
   /**
    * 분석 결과를 PRD에 추가하여 풍부화
-   * [Fix v4.3.4] LLM 인사이트 주입, 요약 우선 전략
+   * [Fix v4.3.5] 컨텍스트 다이어트 - LLM 요약만 주입 (상세 통계 제거)
+   *
+   * PO 지시: "분석 결과는 보조 참고자료일 뿐, PRD가 법이다"
+   * - Executive Summary만 유지
+   * - Key Findings (상위 3개만)
+   * - Recommendations (상위 2개만)
+   * - 상세 통계, 패턴, 쿼리 결과 제거
    */
   enrichPRDWithAnalysis(originalPrd, analysisResult) {
     let enriched = originalPrd;
 
-    // 분석 컨텍스트 섹션 추가
-    enriched += `\n\n---\n## 분석 결과 컨텍스트 (자동 생성)\n\n`;
+    // [Fix v4.3.5] 분석 컨텍스트는 "보조 참고자료"임을 명시
+    enriched += `\n\n---\n## 📊 분석 결과 참고 (보조 자료 - PRD가 우선입니다)\n\n`;
+    enriched += `> ⚠️ **주의**: 아래 분석 결과는 **참고용**입니다. 설계는 반드시 **PRD의 요구사항**을 기반으로 하세요.\n\n`;
 
-    // [Fix v4.3.3] 분석 결과 유효성 체크
-    const hasInsights = analysisResult.insights?.insights?.length > 0;
-    const hasPatterns = analysisResult.insights?.patterns?.length > 0;
-    const hasRecommendations = analysisResult.insights?.recommendations?.length > 0;
+    // 분석 결과 유효성 체크
     const hasLLMInsights = analysisResult.insights?.llmInsights && !analysisResult.insights.llmInsights.error;
-    const hasSummary = analysisResult.summary &&
-                       (analysisResult.summary.totalRows > 0 || analysisResult.summary.queriesTotal > 0);
     const hasMockData = analysisResult.data?.some(d => d.mock === true);
 
-    // 데이터가 전혀 없는 경우 명시적으로 표시
-    if (!hasInsights && !hasPatterns && !hasRecommendations && !hasSummary && !hasLLMInsights) {
-      enriched += `### ⚠️ 분석 결과 없음\n\n`;
-      enriched += `Phase A(Analysis)에서 유의미한 데이터를 수집하지 못했습니다.\n\n`;
-
+    // 데이터가 전혀 없는 경우
+    if (!hasLLMInsights) {
       if (hasMockData) {
-        enriched += `**원인**: DB 연결 실패로 Mock 모드에서 실행됨\n`;
-        enriched += `**영향**: 실제 데이터 기반 설계가 불가능합니다. 일반적인 설계 원칙에 따라 진행하세요.\n\n`;
+        enriched += `분석 결과 없음 (DB 연결 실패). PRD 기반으로 설계를 진행하세요.\n\n`;
       } else {
-        enriched += `**원인**: 쿼리 실행 결과가 비어있음\n`;
-        enriched += `**영향**: 데이터 기반 최적화 없이 PRD 요구사항만으로 설계를 진행합니다.\n\n`;
+        enriched += `분석 결과 없음. PRD 기반으로 설계를 진행하세요.\n\n`;
       }
-
-      enriched += `---\n\n`;
-      enriched += `> 💡 **Leader Agent 지침**: 분석 데이터가 없으므로 PRD의 요구사항과 도메인 지식을 기반으로 설계하세요.\n\n`;
-
       return enriched;
     }
 
-    // [New v4.3.4] LLM 비즈니스 인사이트 우선 주입 (Option C 핵심)
-    if (hasLLMInsights) {
-      const llm = analysisResult.insights.llmInsights;
+    // [Fix v4.3.5] LLM 인사이트만 간략히 주입 (다이어트)
+    const llm = analysisResult.insights.llmInsights;
 
-      enriched += `### 📊 경영진 요약 (Executive Summary)\n\n`;
-      enriched += `${llm.executiveSummary || '(요약 없음)'}\n\n`;
+    // 1. Executive Summary (필수)
+    enriched += `**요약**: ${llm.executiveSummary || '(요약 없음)'}\n\n`;
 
-      // 핵심 발견사항
-      if (llm.keyFindings && llm.keyFindings.length > 0) {
-        enriched += `### 🎯 핵심 발견사항\n\n`;
-        for (const finding of llm.keyFindings) {
-          const actionIcon = finding.actionable ? '✅' : '📌';
-          enriched += `${actionIcon} **${finding.finding}**\n`;
-          enriched += `   - 비즈니스 영향: ${finding.businessImpact}\n`;
-        }
-        enriched += `\n`;
-      }
-
-      // 트렌드
-      if (llm.trends && llm.trends.length > 0) {
-        enriched += `### 📈 데이터 트렌드\n\n`;
-        for (const trend of llm.trends) {
-          const arrow = trend.direction === '증가' ? '↑' : (trend.direction === '감소' ? '↓' : '→');
-          enriched += `- ${trend.metric}: ${arrow} ${trend.magnitude || ''}\n`;
-        }
-        enriched += `\n`;
-      }
-
-      // LLM 권장사항
-      if (llm.recommendations && llm.recommendations.length > 0) {
-        enriched += `### 💡 AI 권장사항\n\n`;
-        for (const rec of llm.recommendations) {
-          enriched += `- [${rec.priority}] **${rec.action}**\n`;
-          enriched += `  - 예상 ROI: ${rec.expectedROI}\n`;
-        }
-        enriched += `\n`;
-      }
-
-      // 데이터 품질
-      if (llm.dataQuality) {
-        enriched += `### 📋 데이터 품질 평가\n\n`;
-        enriched += `- 완전성: ${llm.dataQuality.completeness || 0}%\n`;
-        if (llm.dataQuality.concerns && llm.dataQuality.concerns.length > 0) {
-          enriched += `- 우려사항: ${llm.dataQuality.concerns.join(', ')}\n`;
-        }
-        enriched += `\n`;
-      }
-    }
-
-    // 쿼리 결과 요약 (간략화)
-    if (analysisResult.summary) {
-      enriched += `### 데이터 분석 요약\n`;
-      enriched += `- 실행된 쿼리: ${analysisResult.summary.successCount || 0}/${analysisResult.summary.totalQueries || 0}\n`;
-      enriched += `- 총 데이터 행: ${analysisResult.summary.totalRows || 0}\n`;
-
-      if (hasMockData) {
-        enriched += `- ⚠️ **Mock 모드**: DB 연결 실패로 실제 데이터 없음\n`;
+    // 2. Key Findings (상위 3개만)
+    if (llm.keyFindings && llm.keyFindings.length > 0) {
+      enriched += `**핵심 발견사항**:\n`;
+      const topFindings = llm.keyFindings.slice(0, 3);
+      for (const finding of topFindings) {
+        enriched += `- ${finding.finding}\n`;
       }
       enriched += `\n`;
     }
 
-    // 코드 레벨 통계 인사이트 (상위 5개만)
-    if (hasInsights) {
-      enriched += `### 상세 통계\n`;
-      const topInsights = analysisResult.insights.insights.slice(0, 5);
-      for (const insight of topInsights) {
-        enriched += `- **${insight.finding}**: ${insight.implication}\n`;
-      }
-      if (analysisResult.insights.insights.length > 5) {
-        enriched += `- _(외 ${analysisResult.insights.insights.length - 5}개 생략)_\n`;
+    // 3. Recommendations (상위 2개만)
+    if (llm.recommendations && llm.recommendations.length > 0) {
+      enriched += `**권장사항**:\n`;
+      const topRecs = llm.recommendations.slice(0, 2);
+      for (const rec of topRecs) {
+        enriched += `- [${rec.priority}] ${rec.action}\n`;
       }
       enriched += `\n`;
     }
 
-    // 패턴 (상위 3개만)
-    if (hasPatterns) {
-      enriched += `### 식별된 패턴\n`;
-      const topPatterns = analysisResult.insights.patterns.slice(0, 3);
-      for (const pattern of topPatterns) {
-        enriched += `- **${pattern.name}** (${pattern.significance}): ${pattern.description}\n`;
-      }
-      enriched += `\n`;
-    }
+    // [제거됨] 상세 통계, 패턴, 쿼리 결과, 트렌드, 데이터 품질
+    // → 토큰 절약 + PRD 집중도 향상
 
-    // 제안사항
-    if (hasRecommendations) {
-      enriched += `### 기술 제안사항\n`;
-      for (const rec of analysisResult.insights.recommendations) {
-        enriched += `- [${rec.priority}] ${rec.action} - ${rec.expectedImpact}\n`;
-      }
-    }
+    enriched += `---\n`;
 
     return enriched;
   }
