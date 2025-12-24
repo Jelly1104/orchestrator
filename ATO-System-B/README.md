@@ -84,20 +84,21 @@ DB_NAME=ato_system                   # 데이터베이스명
 
 ## Orchestrator 워크플로우
 
-### 입출력 구조
+### Case-Centric 입출력 구조 (v4.3.0)
 
 ```
 입력 (Input)
-├── .claude/project/PRD.md           # 현재 작업할 PRD
-└── .claude/project/PROJECT_STACK.md # 프로젝트 기술 스택
+├── .claude/project/PRD.md           # 현재 작업할 PRD (입력 슬롯)
+└── .claude/project/PROJECT_STACK.md # 프로젝트 기술 스택 (전역)
 
-산출물 (Output)
-├── docs/cases/<caseId>/             # 설계 문서
-│   ├── IA.md                        # 정보 구조
-│   ├── Wireframe.md                 # 화면 설계
-│   ├── SDD.md                       # 기술 설계
-│   └── HANDOFF.md                   # 개발 인수인계
-└── workspace/analysis/              # 런타임 분석 결과
+산출물 (Output) - Case-Centric 통합
+└── docs/cases/<caseId>/
+    ├── PRD.md                       # 실행 시점 스냅샷 (자동 복사)
+    ├── IA.md                        # 정보 구조
+    ├── Wireframe.md                 # 화면 설계
+    ├── SDD.md                       # 기술 설계
+    ├── HANDOFF.md                   # 개발 인수인계
+    └── analysis/                    # 분석 결과 (SQL, JSON, 리포트)
 ```
 
 ### 사용 흐름
@@ -106,16 +107,33 @@ DB_NAME=ato_system                   # 데이터베이스명
 # Step 1: PRD 작성 (또는 복사)
 cp docs/cases/case1-notice-list/PRD.md .claude/project/PRD.md
 
-# Step 2: PROJECT_STACK 확인/수정
+# Step 2: PROJECT_STACK 확인 (필요시 수정)
 vi .claude/project/PROJECT_STACK.md
 
 # Step 3: Orchestrator 실행
 cd orchestrator
 node index.js --prd ../.claude/project/PRD.md "작업 설명"
 
-# Step 4: 결과 확인
-# - 설계 문서 → docs/cases/<caseId>/
-# - 분석 결과 → workspace/analysis/
+# Step 4: HITL 체크포인트 응답
+# 실행 완료 후 "계속하시겠습니까? (Y/N/S):" 프롬프트에 응답
+
+# Step 5: 결과 확인
+# - 모든 산출물 → docs/cases/<caseId>/
+```
+
+### HITL Blocking Prompt
+
+실행 완료 후 CLI가 사용자 승인을 대기합니다:
+
+```
+────────────────────────────────────────────────────────────
+👤 HITL 체크포인트: 실행 완료 - 결과 검토
+────────────────────────────────────────────────────────────
+   [Y] 승인 - 다음 단계 진행
+   [N] 거부 - 피드백 입력 후 재실행 (Not Implemented)
+   [S] 중단 - 작업 종료
+
+계속하시겠습니까? (Y/N/S): _
 ```
 
 ### CLI 옵션

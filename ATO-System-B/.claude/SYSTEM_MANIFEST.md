@@ -1,7 +1,7 @@
 # SYSTEM_MANIFEST.md (System B Control Tower)
 
-**Version**: 4.2.1
-**Last Updated**: 2025-12-23
+**Version**: 4.3.0
+**Last Updated**: 2025-12-24
 **Role**: Orchestrator's Configuration Map & Human Guide
 
 ## 1. System Identity
@@ -108,26 +108,40 @@ Orchestrator는 PRD 분석 결과에 따라 자동으로 적절한 모드를 선
 | review-agent | v1.1.0 | Ready |
 | viewer-agent | v1.4.0 | Ready |
 
-## 6. Workspace Paths (런타임 산출물)
+## 6. Workspace Paths (런타임 임시 저장소)
 
-Skill-Centric Refactoring (2025-12-22) 이후 런타임 산출물은 `workspace/`에 저장됩니다.
+> ⚠️ **Deprecated (v4.3.0)**: `workspace/analysis/`는 `docs/cases/{caseId}/analysis/`로 통합되었습니다.
+
+| Path | Description | Status |
+| :--- | :---------- | :----- |
+| `workspace/logs/` | 실행 로그, HITL 승인 로그 | Active |
+| `workspace/sessions/` | 세션 데이터 | Active |
+| `workspace/analysis/` | ~~분석 결과물~~ | **Deprecated** → `docs/cases/{caseId}/analysis/` |
+| `workspace/features/` | 피처별 산출물 (dr-insight 등) | Active |
+
+## 7. Docs Paths (Case-Centric 통합 저장소)
+
+**Case-Centric 전략 (v4.3.0)**: 모든 산출물은 `docs/cases/{caseId}/`에 통합 저장됩니다.
 
 | Path | Description |
 | :--- | :---------- |
-| `workspace/logs/` | 실행 로그, HITL 승인 로그 |
-| `workspace/sessions/` | 세션 데이터 |
-| `workspace/analysis/` | 분석 결과물 (SQL, JSON, 리포트) |
-| `workspace/features/` | 피처별 산출물 (dr-insight 등) |
-
-## 7. Docs Paths (설계 문서 저장소)
-
-케이스별 설계 산출물은 `docs/cases/`에 저장됩니다. (Flatten 구조, 2025-12-23)
-
-| Path | Description |
-| :--- | :---------- |
-| `docs/cases/{caseId}/` | 케이스별 설계 산출물 (PRD, IA, Wireframe, SDD, HANDOFF) |
+| `docs/cases/{caseId}/` | **통합 산출물 폴더** (PRD 스냅샷 포함) |
+| `docs/cases/{caseId}/PRD.md` | 실행 시점 PRD 스냅샷 (`.claude/project/PRD.md`에서 복사) |
+| `docs/cases/{caseId}/analysis/` | **[New]** 데이터 분석 결과 (SQL, JSON, 리포트) |
 | `docs/cases/{caseId}/visuals/` | 시각화 산출물 (HTML) |
 | `docs/architecture/` | 시스템 아키텍처 설계 문서 |
+
+### 7.1 PRD 스냅샷 전략
+
+```
+입력 (Input Slot)              실행 시 복사              산출물 (Archive)
+.claude/project/PRD.md  ──────────────────────>  docs/cases/{caseId}/PRD.md
+                               (Snapshot)
+```
+
+- **입력**: 사용자가 `.claude/project/PRD.md`에 작성
+- **실행**: Orchestrator 시작 시 `docs/cases/{caseId}/PRD.md`로 복사
+- **참조**: 모든 Agent는 `docs/cases/{caseId}/PRD.md`를 SSOT로 사용
 
 ## 8. Service Paths (코드 저장소)
 

@@ -34,6 +34,8 @@ import fs from "fs";
 
 import path from "path";
 
+import readline from "readline";
+
 import { fileURLToPath } from "url";
 
 import dotenv from "dotenv";
@@ -51,6 +53,87 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 // 프로젝트 루트 (orchestrator 폴더의 부모)
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
+
+/**
+ * PRD 스냅샷 전략 (v4.3.0)
+ * .claude/project/PRD.md → docs/cases/{caseId}/PRD.md 복사
+ */
+function snapshotPRD(projectRoot, caseId, prdSourcePath) {
+  const targetDir = path.join(projectRoot, "docs/cases", caseId);
+  const targetPath = path.join(targetDir, "PRD.md");
+
+  // 디렉토리 생성
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  // PRD 복사
+  fs.copyFileSync(prdSourcePath, targetPath);
+  console.log(`📸 [Snapshot] PRD copied: docs/cases/${caseId}/PRD.md`);
+
+  return targetPath;
+}
+
+/**
+ * PRD에서 Case ID 추출
+ * Case ID 형식: case6-orchestrator-validation-20251223
+ */
+function extractCaseIdFromPRD(prdContent) {
+  // Case ID: case6-orchestrator-validation-20251223 형식 찾기
+  const caseIdMatch = prdContent.match(/Case ID[:\s]*([a-zA-Z0-9_-]+)/i);
+  if (caseIdMatch) {
+    return caseIdMatch[1];
+  }
+
+  // PRD 제목에서 추출 시도
+  const titleMatch = prdContent.match(/# PRD[:\s]*(.+)/);
+  if (titleMatch) {
+    // 제목을 케밥 케이스로 변환
+    return titleMatch[1]
+      .toLowerCase()
+      .replace(/[^a-z0-9가-힣]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .substring(0, 50);
+  }
+
+  return null;
+}
+
+/**
+ * HITL Blocking Prompt (v4.3.0)
+ * Phase 완료 후 사용자 승인 대기
+ */
+async function triggerHITLCheckpoint(taskId, currentPhase) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  console.log(`\n${"─".repeat(60)}`);
+  console.log(`👤 HITL 체크포인트: ${currentPhase}`);
+  console.log(`${"─".repeat(60)}`);
+  console.log(`   [Y] 승인 - 다음 단계 진행`);
+  console.log(`   [N] 거부 - 피드백 입력 후 재실행 (Not Implemented)`);
+  console.log(`   [S] 중단 - 작업 종료`);
+
+  return new Promise((resolve) => {
+    rl.question(`\n계속하시겠습니까? (Y/N/S): `, (answer) => {
+      rl.close();
+      const action = answer.trim().toUpperCase();
+
+      if (action === "Y") {
+        console.log("🚀 승인 확인. 다음 Phase로 진입합니다...\n");
+        resolve(true);
+      } else if (action === "S") {
+        console.log("🛑 사용자에 의해 작업이 중단되었습니다.");
+        resolve(false);
+      } else {
+        console.log(
+          "⚠️ [N] 또는 유효하지 않은 입력입니다. 현재 상태를 저장하고 종료합니다."
+        );
+        resolve(false);
+      }
+    });
+  });
+}
 
 /**
 
@@ -261,6 +344,17 @@ async function main() {
     if (fs.existsSync(prdFullPath)) {
       prdContent = fs.readFileSync(prdFullPath, "utf-8");
 
+      // [New v4.3.0] PRD에서 Case ID 추출 및 스냅샷
+      const extractedCaseId = extractCaseIdFromPRD(prdContent);
+      const caseId =
+        options.taskId || extractedCaseId || `task-${Date.now()}`;
+
+      // PRD 스냅샷 (Case-Centric 전략)
+      const snapshotPath = snapshotPRD(PROJECT_ROOT, caseId, prdFullPath);
+
+      // Task ID를 Case ID로 설정 (Orchestrator에 전달)
+      options.taskId = caseId;
+
       // [New] 작업 설명이 비어있으면 PRD 기반으로 자동 생성
 
       if (!options.taskDescription) {
@@ -272,6 +366,7 @@ async function main() {
       }
 
       console.log(`📄 PRD 로드: ${options.prdPath}`);
+      console.log(`📁 Case ID: ${caseId}`);
     } else {
       console.error(`❌ PRD 파일을 찾을 수 없습니다: ${prdFullPath}`);
 
@@ -360,6 +455,20 @@ async function main() {
       console.log("\n⚠️ 사용자 개입 필요:");
 
       console.log(result.review.feedback.substring(0, 500));
+    }
+
+    // [New v4.3.0] HITL Blocking Prompt
+    if (result.success) {
+      const continueNext = await triggerHITLCheckpoint(
+        result.taskId,
+        "실행 완료 - 결과 검토"
+      );
+      if (!continueNext) {
+        console.log("\n📋 산출물 위치:");
+        console.log(`   - 설계 문서: docs/cases/${result.taskId}/`);
+        console.log(`   - 분석 결과: docs/cases/${result.taskId}/analysis/`);
+        process.exit(0);
+      }
     }
 
     process.exit(result.success ? 0 : 1);
