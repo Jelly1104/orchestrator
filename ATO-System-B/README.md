@@ -82,27 +82,47 @@ DB_PASSWORD=your_password            # DB 비밀번호
 DB_NAME=ato_system                   # 데이터베이스명
 ```
 
-## Orchestrator 사용법
+## Orchestrator 워크플로우
 
-### PRD 작성
+### 입출력 구조
 
-```bash
-# PRD 템플릿 위치
-docs/cases/<기능명>/PRD.md
+```
+입력 (Input)
+├── .claude/project/PRD.md           # 현재 작업할 PRD
+└── .claude/project/PROJECT_STACK.md # 프로젝트 기술 스택
 
-# PRD 가이드 참조
-.claude/workflows/PRD_GUIDE.md
+산출물 (Output)
+├── docs/cases/<caseId>/             # 설계 문서
+│   ├── IA.md                        # 정보 구조
+│   ├── Wireframe.md                 # 화면 설계
+│   ├── SDD.md                       # 기술 설계
+│   └── HANDOFF.md                   # 개발 인수인계
+└── workspace/analysis/              # 런타임 분석 결과
 ```
 
-### PRD 기반 실행
+### 사용 흐름
+
+```bash
+# Step 1: PRD 작성 (또는 복사)
+cp docs/cases/case1-notice-list/PRD.md .claude/project/PRD.md
+
+# Step 2: PROJECT_STACK 확인/수정
+vi .claude/project/PROJECT_STACK.md
+
+# Step 3: Orchestrator 실행
+cd orchestrator
+node index.js --prd ../.claude/project/PRD.md "작업 설명"
+
+# Step 4: 결과 확인
+# - 설계 문서 → docs/cases/<caseId>/
+# - 분석 결과 → workspace/analysis/
+```
+
+### CLI 옵션
 
 ```bash
 cd orchestrator
 
-# 기본 실행
-node index.js --prd ../docs/cases/case1-notice-list/PRD.md "공지사항 목록 구현"
-
-# 옵션
 node index.js --prd <PRD경로> "작업 설명"     # PRD 파일 지정
 node index.js --task-id <id> "작업 설명"      # 작업 ID 지정
 node index.js --no-save "작업 설명"           # dry-run (저장 안함)
@@ -117,6 +137,11 @@ node index.js --help                          # 도움말
 cd orchestrator && npm run viewer
 # 브라우저: http://localhost:3001
 ```
+
+### PRD 가이드
+
+- 템플릿: `.claude/workflows/PRD_GUIDE.md`
+- 예시: `docs/cases/*/PRD.md`
 
 ---
 
