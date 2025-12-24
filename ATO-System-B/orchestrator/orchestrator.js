@@ -1603,7 +1603,7 @@ export class Orchestrator {
 
   /**
    * 분석 결과를 PRD에 추가하여 풍부화
-   * [Fix v4.3.3] 데이터 없음 명시적 표시
+   * [Fix v4.3.4] LLM 인사이트 주입, 요약 우선 전략
    */
   enrichPRDWithAnalysis(originalPrd, analysisResult) {
     let enriched = originalPrd;
@@ -1615,12 +1615,13 @@ export class Orchestrator {
     const hasInsights = analysisResult.insights?.insights?.length > 0;
     const hasPatterns = analysisResult.insights?.patterns?.length > 0;
     const hasRecommendations = analysisResult.insights?.recommendations?.length > 0;
+    const hasLLMInsights = analysisResult.insights?.llmInsights && !analysisResult.insights.llmInsights.error;
     const hasSummary = analysisResult.summary &&
                        (analysisResult.summary.totalRows > 0 || analysisResult.summary.queriesTotal > 0);
     const hasMockData = analysisResult.data?.some(d => d.mock === true);
 
     // 데이터가 전혀 없는 경우 명시적으로 표시
-    if (!hasInsights && !hasPatterns && !hasRecommendations && !hasSummary) {
+    if (!hasInsights && !hasPatterns && !hasRecommendations && !hasSummary && !hasLLMInsights) {
       enriched += `### ⚠️ 분석 결과 없음\n\n`;
       enriched += `Phase A(Analysis)에서 유의미한 데이터를 수집하지 못했습니다.\n\n`;
 
@@ -1638,7 +1639,56 @@ export class Orchestrator {
       return enriched;
     }
 
-    // 쿼리 결과 요약
+    // [New v4.3.4] LLM 비즈니스 인사이트 우선 주입 (Option C 핵심)
+    if (hasLLMInsights) {
+      const llm = analysisResult.insights.llmInsights;
+
+      enriched += `### 📊 경영진 요약 (Executive Summary)\n\n`;
+      enriched += `${llm.executiveSummary || '(요약 없음)'}\n\n`;
+
+      // 핵심 발견사항
+      if (llm.keyFindings && llm.keyFindings.length > 0) {
+        enriched += `### 🎯 핵심 발견사항\n\n`;
+        for (const finding of llm.keyFindings) {
+          const actionIcon = finding.actionable ? '✅' : '📌';
+          enriched += `${actionIcon} **${finding.finding}**\n`;
+          enriched += `   - 비즈니스 영향: ${finding.businessImpact}\n`;
+        }
+        enriched += `\n`;
+      }
+
+      // 트렌드
+      if (llm.trends && llm.trends.length > 0) {
+        enriched += `### 📈 데이터 트렌드\n\n`;
+        for (const trend of llm.trends) {
+          const arrow = trend.direction === '증가' ? '↑' : (trend.direction === '감소' ? '↓' : '→');
+          enriched += `- ${trend.metric}: ${arrow} ${trend.magnitude || ''}\n`;
+        }
+        enriched += `\n`;
+      }
+
+      // LLM 권장사항
+      if (llm.recommendations && llm.recommendations.length > 0) {
+        enriched += `### 💡 AI 권장사항\n\n`;
+        for (const rec of llm.recommendations) {
+          enriched += `- [${rec.priority}] **${rec.action}**\n`;
+          enriched += `  - 예상 ROI: ${rec.expectedROI}\n`;
+        }
+        enriched += `\n`;
+      }
+
+      // 데이터 품질
+      if (llm.dataQuality) {
+        enriched += `### 📋 데이터 품질 평가\n\n`;
+        enriched += `- 완전성: ${llm.dataQuality.completeness || 0}%\n`;
+        if (llm.dataQuality.concerns && llm.dataQuality.concerns.length > 0) {
+          enriched += `- 우려사항: ${llm.dataQuality.concerns.join(', ')}\n`;
+        }
+        enriched += `\n`;
+      }
+    }
+
+    // 쿼리 결과 요약 (간략화)
     if (analysisResult.summary) {
       enriched += `### 데이터 분석 요약\n`;
       enriched += `- 실행된 쿼리: ${analysisResult.summary.successCount || 0}/${analysisResult.summary.totalQueries || 0}\n`;
@@ -1650,19 +1700,24 @@ export class Orchestrator {
       enriched += `\n`;
     }
 
-    // 인사이트
+    // 코드 레벨 통계 인사이트 (상위 5개만)
     if (hasInsights) {
-      enriched += `### 발견된 인사이트\n`;
-      for (const insight of analysisResult.insights.insights) {
+      enriched += `### 상세 통계\n`;
+      const topInsights = analysisResult.insights.insights.slice(0, 5);
+      for (const insight of topInsights) {
         enriched += `- **${insight.finding}**: ${insight.implication}\n`;
+      }
+      if (analysisResult.insights.insights.length > 5) {
+        enriched += `- _(외 ${analysisResult.insights.insights.length - 5}개 생략)_\n`;
       }
       enriched += `\n`;
     }
 
-    // 패턴
+    // 패턴 (상위 3개만)
     if (hasPatterns) {
       enriched += `### 식별된 패턴\n`;
-      for (const pattern of analysisResult.insights.patterns) {
+      const topPatterns = analysisResult.insights.patterns.slice(0, 3);
+      for (const pattern of topPatterns) {
         enriched += `- **${pattern.name}** (${pattern.significance}): ${pattern.description}\n`;
       }
       enriched += `\n`;
@@ -1670,7 +1725,7 @@ export class Orchestrator {
 
     // 제안사항
     if (hasRecommendations) {
-      enriched += `### 제안사항\n`;
+      enriched += `### 기술 제안사항\n`;
       for (const rec of analysisResult.insights.recommendations) {
         enriched += `- [${rec.priority}] ${rec.action} - ${rec.expectedImpact}\n`;
       }

@@ -5,14 +5,16 @@
  * - 정량적 PRD 처리: SQL 생성 → 실행 → 결과 수집
  * - 혼합 PRD의 Phase A: 데이터 분석 → 인사이트 도출
  *
- * @version 1.0.2
+ * @version 1.0.4
  * @since 2025-12-22 (Fix: JSON Normalization)
+ * @updated 2025-12-24 - .env 환경변수 지원, Option C Hybrid 기반
  */
 
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { ProviderFactory } from "../providers/index.js";
+import { ReviewerSkill } from "../skills/reviewer/index.js";
 
 // ========== 보안 상수 ==========
 const SECURITY_LIMITS = {
@@ -21,6 +23,55 @@ const SECURITY_LIMITS = {
   MAX_RETRIES: 3,
   QUERY_TIMEOUT_MS: 60000,
 };
+
+// ========== PII 마스킹 패턴 (Security Filter v4.3.4) ==========
+const PII_PATTERNS = {
+  // 이메일 주소: abc@domain.com → a**@d***.com
+  email: {
+    pattern: /([a-zA-Z0-9._-]+)@([a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g,
+    replace: (match, user, domain) => {
+      const maskedUser = user.charAt(0) + '**';
+      const maskedDomain = domain.charAt(0) + '***.' + domain.split('.').pop();
+      return `${maskedUser}@${maskedDomain}`;
+    }
+  },
+  // 전화번호: 010-1234-5678 → 010-****-5678
+  phone: {
+    pattern: /(01[0-9])[-.\s]?(\d{3,4})[-.\s]?(\d{4})/g,
+    replace: (match, p1, p2, p3) => `${p1}-****-${p3}`
+  },
+  // 주민번호: 900101-1234567 → 900101-*******
+  ssn: {
+    pattern: /(\d{6})[-\s]?(\d{7})/g,
+    replace: (match, front, back) => `${front}-*******`
+  },
+  // 면허번호: 제12345호 → 제*****호
+  licenseNo: {
+    pattern: /제(\d{4,6})호/g,
+    replace: (match, num) => `제${'*'.repeat(num.length)}호`
+  },
+  // IP 주소: 192.168.1.100 → 192.168.***
+  ip: {
+    pattern: /(\d{1,3}\.\d{1,3})\.\d{1,3}\.\d{1,3}/g,
+    replace: (match, prefix) => `${prefix}.***`
+  },
+  // 카드번호: 1234-5678-9012-3456 → ****-****-****-3456
+  cardNumber: {
+    pattern: /(\d{4})[-\s]?(\d{4})[-\s]?(\d{4})[-\s]?(\d{4})/g,
+    replace: (match, p1, p2, p3, p4) => `****-****-****-${p4}`
+  }
+};
+
+// PII 컬럼 (컬럼명 기반 자동 마스킹)
+const PII_COLUMNS = [
+  'U_EMAIL', 'EMAIL', 'MAIL',
+  'U_TEL', 'U_PHONE', 'PHONE', 'TEL', 'MOBILE',
+  'U_JUMIN', 'SSN', 'RESIDENT_NO',
+  'LICENSE_NO', 'U_LICENSE',
+  'LOGIN_IP', 'IP_ADDR', 'CLIENT_IP',
+  'CARD_NO', 'ACCOUNT_NO',
+  'PASSWORD', 'PWD', 'U_PWD'
+];
 
 const KNOWN_TABLES = {
   USERS: [
@@ -86,13 +137,13 @@ export class AnalysisAgent {
     this.maxTokens = config.maxTokens || 8192;
     this.maxRetries = config.maxRetries || SECURITY_LIMITS.MAX_RETRIES;
 
+    // [Fix v4.3.4] .env 환경변수 우선 사용 (P0 인프라 구성)
     this.dbConfig = config.dbConfig || {
-      host: "222.122.26.242",
-      port: 3306,
-      database: "medigate",
-      user: "medigate",
-      password:
-        config.dbPassword || process.env.MEDIGATE_DB_PASSWORD || "apelWkd",
+      host: process.env.DB_HOST || "222.122.26.242",
+      port: parseInt(process.env.DB_PORT || "3306"),
+      database: process.env.DB_NAME || "medigate",
+      user: process.env.DB_USER || "ai_readonly",
+      password: process.env.DB_PASS || config.dbPassword || "",
     };
 
     this.outputDir =
@@ -242,6 +293,27 @@ export class AnalysisAgent {
 
       const successCount = queryResults.filter((r) => r.success).length;
       console.log(`  - 성공: ${successCount}/${queryResults.length}`);
+
+      // Step 4.5: Reviewer Skill 쿼리 결과 검증 (v1.0.3 - AGENT_ARCHITECTURE v2.6.2 준수)
+      console.log("\n[Step 4.5] Reviewer Skill: 쿼리 결과 검증...");
+      const reviewResult = await this._validateQueryResults(queryResults, prdObj, requirements);
+
+      if (!reviewResult.passed) {
+        console.error(`  ❌ Reviewer FAIL (${reviewResult.score}/100): ${reviewResult.summary}`);
+        console.log("  → Phase A 재시작 필요");
+
+        // 검증 실패 결과 반환 (Orchestrator에서 재시도 결정)
+        results.reviewResult = reviewResult;
+        results.success = false;
+        results.errors.push(`Reviewer Skill FAIL: ${reviewResult.summary}`);
+
+        // Fail-Fast: 리포트 생성 없이 조기 종료
+        console.log("\n[AnalysisAgent] ========== 검증 실패 - 조기 종료 ==========\n");
+        return results;
+      }
+
+      console.log(`  ✅ Reviewer PASS (${reviewResult.score}/100)`);
+      results.reviewResult = reviewResult;
 
       // Step 5: 결과 해석
       if (prdObj.type === "MIXED" || prdObj.pipeline === "mixed") {
@@ -476,15 +548,87 @@ export class AnalysisAgent {
       console.log(`  [DB] 연결 종료`);
     }
 
-    return results;
+    // [New v4.3.4] Security Filter: PII 마스킹 적용
+    console.log(`  [Security] PII 마스킹 적용 중...`);
+    const maskedResults = results.map(r => this._applyPIIMasking(r));
+    const maskedCount = maskedResults.reduce((sum, r) => sum + (r.piiMaskedCount || 0), 0);
+    if (maskedCount > 0) {
+      console.log(`  [Security] ✅ ${maskedCount}개 PII 필드 마스킹 완료`);
+    }
+
+    return maskedResults;
+  }
+
+  /**
+   * [New v4.3.4] PII 마스킹 적용 (Security Filter)
+   * - 컬럼명 기반 자동 마스킹
+   * - 패턴 기반 값 마스킹
+   */
+  _applyPIIMasking(queryResult) {
+    if (!queryResult.data || queryResult.data.length === 0) {
+      return queryResult;
+    }
+
+    let maskedCount = 0;
+    const maskedData = queryResult.data.map(row => {
+      const maskedRow = { ...row };
+
+      for (const [col, value] of Object.entries(row)) {
+        if (value === null || value === undefined) continue;
+
+        const upperCol = col.toUpperCase();
+        const strValue = String(value);
+
+        // 1. 컬럼명 기반 마스킹 (PASSWORD 등은 완전 마스킹)
+        if (PII_COLUMNS.some(pii => upperCol.includes(pii))) {
+          if (upperCol.includes('PASSWORD') || upperCol.includes('PWD')) {
+            maskedRow[col] = '********';
+          } else if (upperCol.includes('EMAIL') || upperCol.includes('MAIL')) {
+            maskedRow[col] = strValue.replace(PII_PATTERNS.email.pattern, PII_PATTERNS.email.replace);
+          } else if (upperCol.includes('TEL') || upperCol.includes('PHONE') || upperCol.includes('MOBILE')) {
+            maskedRow[col] = strValue.replace(PII_PATTERNS.phone.pattern, PII_PATTERNS.phone.replace);
+          } else if (upperCol.includes('JUMIN') || upperCol.includes('SSN')) {
+            maskedRow[col] = strValue.replace(PII_PATTERNS.ssn.pattern, PII_PATTERNS.ssn.replace);
+          } else if (upperCol.includes('IP')) {
+            maskedRow[col] = strValue.replace(PII_PATTERNS.ip.pattern, PII_PATTERNS.ip.replace);
+          } else if (upperCol.includes('LICENSE')) {
+            maskedRow[col] = strValue.replace(PII_PATTERNS.licenseNo.pattern, PII_PATTERNS.licenseNo.replace);
+          } else if (upperCol.includes('CARD') || upperCol.includes('ACCOUNT')) {
+            maskedRow[col] = strValue.replace(PII_PATTERNS.cardNumber.pattern, PII_PATTERNS.cardNumber.replace);
+          }
+          maskedCount++;
+          continue;
+        }
+
+        // 2. 패턴 기반 마스킹 (컬럼명과 무관하게 값 자체 검사)
+        if (PII_PATTERNS.email.pattern.test(strValue)) {
+          PII_PATTERNS.email.pattern.lastIndex = 0; // reset regex
+          maskedRow[col] = strValue.replace(PII_PATTERNS.email.pattern, PII_PATTERNS.email.replace);
+          maskedCount++;
+        } else if (PII_PATTERNS.ssn.pattern.test(strValue)) {
+          PII_PATTERNS.ssn.pattern.lastIndex = 0;
+          maskedRow[col] = strValue.replace(PII_PATTERNS.ssn.pattern, PII_PATTERNS.ssn.replace);
+          maskedCount++;
+        }
+      }
+
+      return maskedRow;
+    });
+
+    return {
+      ...queryResult,
+      data: maskedData,
+      piiMaskedCount: maskedCount,
+    };
   }
 
   async interpretResults(results, requirements) {
-    // [Fix v4.3.3] 실제 데이터 기반 인사이트 생성
+    // [Fix v4.3.4] Option C Hybrid: 코드 레벨 통계 + LLM 비즈니스 인사이트
     const insights = {
       patterns: [],
       insights: [],
       recommendations: [],
+      llmInsights: null,  // LLM 생성 비즈니스 인사이트
       dataAvailable: false,
     };
 
@@ -503,32 +647,10 @@ export class AnalysisAgent {
     insights.dataAvailable = true;
     console.log(`  [Interpret] 📊 ${resultsWithData.length}개 쿼리 결과 분석 중...`);
 
-    // 각 쿼리 결과에서 기본 통계 추출
-    for (const result of resultsWithData) {
-      if (result.data.length > 0) {
-        const sampleRow = result.data[0];
-        const columns = Object.keys(sampleRow);
-
-        insights.patterns.push({
-          name: result.name,
-          description: `${result.rowCount}행 반환, 컬럼: ${columns.slice(0, 5).join(', ')}${columns.length > 5 ? '...' : ''}`,
-          significance: result.rowCount > 100 ? "high" : "medium",
-        });
-
-        // 숫자형 컬럼 통계
-        for (const col of columns) {
-          const values = result.data.map(row => row[col]).filter(v => typeof v === 'number');
-          if (values.length > 0) {
-            const sum = values.reduce((a, b) => a + b, 0);
-            const avg = sum / values.length;
-            insights.insights.push({
-              finding: `${result.name}.${col} 평균값`,
-              implication: `평균: ${avg.toFixed(2)}, 총합: ${sum}, 건수: ${values.length}`,
-            });
-          }
-        }
-      }
-    }
+    // Step 1: 코드 레벨 통계 계산
+    const codeStats = this._calculateCodeLevelStats(resultsWithData);
+    insights.patterns = codeStats.patterns;
+    insights.insights = codeStats.insights;
 
     // 총 데이터 행 수에 따른 권장사항
     const totalRows = resultsWithData.reduce((sum, r) => sum + r.rowCount, 0);
@@ -540,17 +662,124 @@ export class AnalysisAgent {
       });
     }
 
-    if (resultsWithData.length > 3) {
-      insights.recommendations.push({
-        priority: "MEDIUM",
-        action: "쿼리 결과 캐싱 고려",
-        expectedImpact: "반복 조회 시 응답 시간 단축",
-      });
+    // Step 2: LLM 기반 비즈니스 인사이트 생성 (Option C 핵심)
+    console.log(`  [Interpret] 🤖 LLM 비즈니스 인사이트 생성 중...`);
+    try {
+      insights.llmInsights = await this._generateLLMInsights(resultsWithData, requirements, codeStats);
+      console.log(`  [Interpret] ✅ LLM 인사이트 생성 완료`);
+    } catch (llmError) {
+      console.warn(`  [Interpret] ⚠️ LLM 인사이트 생성 실패: ${llmError.message}`);
+      insights.llmInsights = { error: llmError.message };
     }
 
     console.log(`  [Interpret] ✅ 인사이트 ${insights.insights.length}개, 패턴 ${insights.patterns.length}개, 권장사항 ${insights.recommendations.length}개`);
 
     return insights;
+  }
+
+  /**
+   * [New v4.3.4] 코드 레벨 통계 계산
+   */
+  _calculateCodeLevelStats(resultsWithData) {
+    const patterns = [];
+    const insights = [];
+
+    for (const result of resultsWithData) {
+      if (result.data.length > 0) {
+        const sampleRow = result.data[0];
+        const columns = Object.keys(sampleRow);
+
+        patterns.push({
+          name: result.name,
+          description: `${result.rowCount}행 반환, 컬럼: ${columns.slice(0, 5).join(', ')}${columns.length > 5 ? '...' : ''}`,
+          significance: result.rowCount > 100 ? "high" : "medium",
+        });
+
+        // 숫자형 컬럼 통계
+        for (const col of columns) {
+          const values = result.data.map(row => {
+            const v = row[col];
+            return typeof v === 'number' ? v : (typeof v === 'string' ? parseFloat(v) : NaN);
+          }).filter(v => !isNaN(v));
+
+          if (values.length > 0) {
+            const sum = values.reduce((a, b) => a + b, 0);
+            const avg = sum / values.length;
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+
+            insights.push({
+              finding: `${result.name}.${col}`,
+              implication: `총합: ${sum.toLocaleString()}, 평균: ${avg.toFixed(2)}, 최대: ${max.toLocaleString()}, 최소: ${min.toLocaleString()}, 건수: ${values.length}`,
+              stats: { sum, avg, max, min, count: values.length }
+            });
+          }
+        }
+      }
+    }
+
+    return { patterns, insights };
+  }
+
+  /**
+   * [New v4.3.4] LLM 기반 비즈니스 인사이트 생성 (Option C 핵심)
+   */
+  async _generateLLMInsights(resultsWithData, requirements, codeStats) {
+    // 데이터 요약 생성 (LLM 컨텍스트용, 최대 20행씩)
+    const dataSummary = resultsWithData.map(r => ({
+      queryName: r.name,
+      sql: r.sql,
+      rowCount: r.rowCount,
+      sampleData: r.data.slice(0, 20),
+    }));
+
+    const systemPrompt = `당신은 데이터 분석 전문가입니다.
+쿼리 결과를 바탕으로 비즈니스 인사이트를 도출하세요.
+
+응답 형식 (JSON):
+{
+  "executiveSummary": "경영진 요약 (2-3문장)",
+  "keyFindings": [
+    { "finding": "발견사항", "businessImpact": "비즈니스 영향", "actionable": true/false }
+  ],
+  "trends": [
+    { "metric": "지표명", "direction": "증가/감소/유지", "magnitude": "퍼센트" }
+  ],
+  "recommendations": [
+    { "priority": "HIGH/MEDIUM/LOW", "action": "권장 조치", "expectedROI": "예상 효과" }
+  ],
+  "dataQuality": {
+    "completeness": 0-100,
+    "concerns": ["우려사항"]
+  }
+}`;
+
+    const userMessage = `## 분석 목적
+${requirements.objective || '(명시되지 않음)'}
+
+## 쿼리 결과 요약
+${JSON.stringify(dataSummary, null, 2)}
+
+## 코드 레벨 통계
+${JSON.stringify(codeStats, null, 2)}
+
+위 데이터를 기반으로 비즈니스 인사이트를 도출하세요.`;
+
+    const response = await this._sendMessage(systemPrompt, userMessage);
+
+    // JSON 파싱
+    try {
+      const jsonMatch = response.content.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1]);
+      }
+      return JSON.parse(response.content);
+    } catch {
+      return {
+        executiveSummary: response.content.substring(0, 500),
+        parseError: true
+      };
+    }
   }
 
   async generateOutputs(queries, results, insights, prd) {
@@ -641,6 +870,178 @@ export class AnalysisAgent {
     console.log(`    - analysis_report.md (${reportContent.length} bytes)`);
 
     return outputs;
+  }
+
+  /**
+   * Reviewer Skill을 사용한 쿼리 결과 검증 (v1.0.3)
+   * AGENT_ARCHITECTURE v2.6.2: Query Skill 직후 Reviewer Skill 검증
+   *
+   * @param {Array} queryResults - 쿼리 실행 결과
+   * @param {Object} prd - PRD 객체
+   * @param {Object} requirements - 분석 요구사항
+   * @returns {Object} 검증 결과 { passed, score, summary, issues }
+   */
+  async _validateQueryResults(queryResults, prd, requirements) {
+    try {
+      // ReviewerSkill 초기화
+      const reviewer = new ReviewerSkill({
+        projectRoot: this.projectRoot,
+      });
+      await reviewer.initialize();
+
+      // 쿼리 결과를 ReviewerSkill 입력 형식으로 변환
+      const outputs = {
+        queryResults: queryResults.map((r) => ({
+          name: r.name,
+          sql: r.sql,
+          rowCount: r.rowCount || 0,
+          success: r.success,
+          mock: r.mock || false,
+          error: r.error,
+        })),
+        totalRows: queryResults.reduce((sum, r) => sum + (r.rowCount || 0), 0),
+        successRate: queryResults.length > 0
+          ? queryResults.filter((r) => r.success).length / queryResults.length
+          : 0,
+      };
+
+      // PRD 정보 구성
+      const prdInfo = {
+        objective: prd.objective || requirements?.objective || "",
+        requirements: prd.requirements || [],
+        constraints: requirements?.constraints || ["SELECT only"],
+      };
+
+      // ReviewerSkill 검증 호출 (query_results 스코프)
+      const reviewResult = await reviewer.validate({
+        prd: prdInfo,
+        outputs: outputs,
+        validationScope: ["syntax", "semantic", "prd_match"],
+      });
+
+      // 쿼리 결과 특화 검증 추가
+      const customChecks = this._performQuerySpecificChecks(queryResults, prd);
+
+      // 최종 점수 계산 (ReviewerSkill 70% + 커스텀 체크 30%)
+      const finalScore = Math.round(
+        (reviewResult.score || 0) * 0.7 + customChecks.score * 0.3
+      );
+
+      const passed = finalScore >= 80 && customChecks.criticalIssues === 0;
+
+      return {
+        passed,
+        score: finalScore,
+        summary: passed
+          ? "쿼리 결과 검증 통과"
+          : `검증 실패: ${reviewResult.issues?.length || 0}개 이슈, ${customChecks.criticalIssues}개 치명적 오류`,
+        details: reviewResult.details || {},
+        issues: [...(reviewResult.issues || []), ...customChecks.issues],
+        customChecks,
+      };
+    } catch (error) {
+      console.warn(`  [Reviewer] 검증 중 오류: ${error.message}`);
+
+      // Fallback: 기본 검증 (ReviewerSkill 실패 시)
+      return this._fallbackValidation(queryResults, prd);
+    }
+  }
+
+  /**
+   * 쿼리 결과 특화 검증 (Reviewer Skill 보완)
+   */
+  _performQuerySpecificChecks(queryResults, prd) {
+    const issues = [];
+    let score = 100;
+    let criticalIssues = 0;
+
+    // 1. 전체 쿼리 실패 검사
+    const allFailed = queryResults.every((r) => !r.success);
+    if (allFailed && queryResults.length > 0) {
+      issues.push({
+        severity: "HIGH",
+        category: "query_execution",
+        description: "모든 쿼리가 실패했습니다",
+        recommendation: "SQL 문법 및 테이블명을 확인하세요",
+      });
+      score -= 50;
+      criticalIssues++;
+    }
+
+    // 2. 데이터 없음 검사 (Mock 제외)
+    const realQueries = queryResults.filter((r) => !r.mock);
+    const emptyResults = realQueries.filter((r) => r.success && r.rowCount === 0);
+    if (emptyResults.length > 0 && emptyResults.length === realQueries.length) {
+      issues.push({
+        severity: "MEDIUM",
+        category: "data_quality",
+        description: `${emptyResults.length}개 쿼리가 데이터 0건 반환`,
+        recommendation: "WHERE 조건 및 기간 설정을 확인하세요",
+      });
+      score -= 20;
+    }
+
+    // 3. Mock 모드 경고
+    const mockQueries = queryResults.filter((r) => r.mock);
+    if (mockQueries.length > 0) {
+      issues.push({
+        severity: "LOW",
+        category: "data_source",
+        description: `${mockQueries.length}개 쿼리가 Mock 모드로 실행됨 (DB 연결 없음)`,
+        recommendation: "실제 분석을 위해 DB 연결을 확인하세요",
+      });
+      score -= 10;
+    }
+
+    // 4. 쿼리 오류율 검사
+    const errorQueries = queryResults.filter((r) => r.error);
+    if (errorQueries.length > queryResults.length * 0.5) {
+      issues.push({
+        severity: "HIGH",
+        category: "query_errors",
+        description: `${errorQueries.length}/${queryResults.length} 쿼리에서 오류 발생`,
+        recommendation: "SQL 쿼리 생성 로직을 검토하세요",
+      });
+      score -= 30;
+      criticalIssues++;
+    }
+
+    return {
+      score: Math.max(0, score),
+      issues,
+      criticalIssues,
+    };
+  }
+
+  /**
+   * Fallback 검증 (ReviewerSkill 사용 불가 시)
+   */
+  _fallbackValidation(queryResults, prd) {
+    const successCount = queryResults.filter((r) => r.success).length;
+    const totalRows = queryResults.reduce((sum, r) => sum + (r.rowCount || 0), 0);
+
+    // 간단한 점수 계산
+    let score = 50; // 기본 점수
+
+    if (queryResults.length > 0) {
+      score += (successCount / queryResults.length) * 30; // 성공률 30점
+    }
+
+    if (totalRows > 0) {
+      score += 20; // 데이터 존재 시 20점
+    }
+
+    const passed = score >= 80;
+
+    return {
+      passed,
+      score: Math.round(score),
+      summary: passed
+        ? "Fallback 검증 통과"
+        : `Fallback 검증 실패 (${successCount}/${queryResults.length} 성공, ${totalRows}행)`,
+      issues: [],
+      fallback: true,
+    };
   }
 
   generateSummary(results, insights, prd) {
