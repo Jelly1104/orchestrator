@@ -109,13 +109,19 @@ export class LeaderAgent {
       throw new Error("[LeaderAgent] No available provider");
     }
 
+    // [Fix v4.3.11] maxTokens를 Provider config에 명시적으로 전달
+    const providerConfigWithTokens = {
+      ...this.providerConfig,
+      maxTokens: this.maxTokens,
+    };
+
     // Fallback 사용 시
     if (this.useFallback) {
       return await ProviderFactory.sendWithFallback(
         systemPrompt,
         userMessage,
         this.fallbackOrder,
-        { [this.providerName]: this.providerConfig }
+        { [this.providerName]: providerConfigWithTokens }
       );
     }
 
