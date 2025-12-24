@@ -1126,8 +1126,11 @@ export class Orchestrator {
 
       // AnalysisAgent 실행 (승인된 쿼리로)
       console.log('📊 [Analysis] AnalysisAgent 시작...');
-      // taskId 전달: 디렉토리 격리 (SYSTEM_MANIFEST v4.0.0)
-      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId);
+      // [Fix v4.3.0] Case-Centric 경로 주입
+      const analysisOutputPath = this.analysisDir(taskId);
+      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId, {
+        outputDir: analysisOutputPath
+      });
 
       metrics.endPhase('analysis', analysisResult.success ? 'success' : 'fail');
 
@@ -1211,8 +1214,11 @@ export class Orchestrator {
         parsedPRD.dbConnection = options.dbConfig;
       }
 
-      // taskId 전달: 디렉토리 격리 (SYSTEM_MANIFEST v4.0.0)
-      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId);
+      // [Fix v4.3.0] Case-Centric 경로 주입
+      const analysisOutputPath = this.analysisDir(taskId);
+      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId, {
+        outputDir: analysisOutputPath
+      });
       metrics.endPhase('analysis', analysisResult.success ? 'success' : 'partial');
 
       console.log(`\n✅ Phase A 완료: ${analysisResult.success ? '성공' : '부분 성공'}`);
@@ -1721,9 +1727,10 @@ export class Orchestrator {
 
     // 분석 결과 (Analysis/Mixed 파이프라인)
     if (result.analysis || result.pipeline === 'analysis' || result.pipeline === 'mixed') {
-      const analysisDir = path.join('src', 'analysis');
+      // [Fix v4.3.0] Case-Centric 경로 사용
+      const caseAnalysisDir = path.join('docs', 'cases', caseId, 'analysis');
       console.log(`\n📊 분석 결과:`);
-      console.log(`   ${path.join(projectRoot, analysisDir)}/`);
+      console.log(`   ${path.join(projectRoot, caseAnalysisDir)}/`);
 
       if (result.analysis?.outputs || result.outputs) {
         const outputs = result.analysis?.outputs || result.outputs || [];
@@ -1735,7 +1742,7 @@ export class Orchestrator {
       }
 
       // SQL 쿼리 파일
-      const sqlDir = path.join(projectRoot, analysisDir, 'sql');
+      const sqlDir = path.join(projectRoot, caseAnalysisDir, 'results');
       if (fs.existsSync(sqlDir)) {
         const sqlFiles = fs.readdirSync(sqlDir).filter(f => f.endsWith('.sql'));
         if (sqlFiles.length > 0) {
@@ -1744,7 +1751,7 @@ export class Orchestrator {
       }
 
       // 결과 데이터
-      const resultsDir = path.join(projectRoot, analysisDir, 'results');
+      const resultsDir = path.join(projectRoot, caseAnalysisDir, 'results');
       if (fs.existsSync(resultsDir)) {
         const resultFiles = fs.readdirSync(resultsDir);
         if (resultFiles.length > 0) {
@@ -1809,12 +1816,13 @@ export class Orchestrator {
       console.log(`   ⚠️  실패 원인 확인: workspace/logs/${taskId}.json`);
       console.log(`   🔧 수정 후 재실행 필요`);
     } else {
+      // [Fix v4.3.0] Case-Centric 경로로 통일
       if (result.pipeline === 'analysis') {
-        console.log(`   1. 분석 결과 검토: workspace/analysis/analysis_report.md`);
+        console.log(`   1. 분석 결과 검토: docs/cases/${caseId}/analysis/`);
         console.log(`   2. 인사이트 기반 액션 플랜 수립`);
         console.log(`   3. 필요시 Design 파이프라인으로 후속 작업`);
       } else if (result.pipeline === 'mixed') {
-        console.log(`   1. 분석 결과 검토: workspace/analysis/`);
+        console.log(`   1. 분석 결과 검토: docs/cases/${caseId}/analysis/`);
         console.log(`   2. 설계 문서 검토: docs/cases/${caseId}/`);
         console.log(`   3. 개발팀 HANDOFF.md 전달`);
       } else {

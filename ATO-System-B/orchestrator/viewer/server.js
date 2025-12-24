@@ -667,8 +667,13 @@ app.get('/api/docs/:taskId/:filename', (req, res) => {
 });
 
 // API: 생성된 파일 목록
+// [Fix v4.3.0] Case-Centric 경로 지원
 app.get('/api/files', (req, res) => {
-  const srcDir = path.join(projectRoot, 'src/analysis');
+  const caseId = req.query.caseId;
+  // Case ID가 있으면 해당 케이스의 analysis 폴더, 없으면 전체 cases 폴더
+  const srcDir = caseId
+    ? path.join(projectRoot, 'docs/cases', caseId, 'analysis')
+    : path.join(projectRoot, 'docs/cases');
   const files = [];
 
   const walkDir = (dir, prefix = '') => {
@@ -678,7 +683,7 @@ app.get('/api/files', (req, res) => {
       const relPath = prefix ? prefix + '/' + f : f;
       if (fs.statSync(fullPath).isDirectory()) {
         walkDir(fullPath, relPath);
-      } else if (f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.md')) {
+      } else if (f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.md') || f.endsWith('.json')) {
         files.push({
           name: f,
           path: relPath,
@@ -694,9 +699,15 @@ app.get('/api/files', (req, res) => {
 });
 
 // API: 파일 내용
+// [Fix v4.3.0] Case-Centric 경로 지원
 app.get('/api/file', (req, res) => {
   const relPath = req.query.path;
-  const fullPath = path.join(projectRoot, 'src/analysis', relPath);
+  const caseId = req.query.caseId;
+  // Case ID가 있으면 해당 케이스 폴더 기준, 없으면 docs/cases 기준
+  const baseDir = caseId
+    ? path.join(projectRoot, 'docs/cases', caseId)
+    : path.join(projectRoot, 'docs/cases');
+  const fullPath = path.join(baseDir, relPath);
   if (!fs.existsSync(fullPath)) {
     return res.status(404).json({ error: 'File not found' });
   }
@@ -704,7 +715,8 @@ app.get('/api/file', (req, res) => {
   const mimeTypes = {
     '.ts': 'text/typescript',
     '.sql': 'text/plain',
-    '.md': 'text/markdown'
+    '.md': 'text/markdown',
+    '.json': 'application/json'
   };
   res.type(mimeTypes[ext] || 'text/plain').send(fs.readFileSync(fullPath, 'utf-8'));
 });

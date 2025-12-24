@@ -169,15 +169,20 @@ export class AnalysisAgent {
 
   // ========== 메인 분석 함수 ==========
 
-  async analyze(prd, taskId = null) {
+  async analyze(prd, taskId = null, options = {}) {
     console.log("\n[AnalysisAgent] ========== 분석 시작 ==========");
 
-    if (taskId) {
+    // [Fix v4.3.0] Case-Centric 경로 지원: options.outputDir 우선 사용
+    if (options.outputDir) {
+      this.outputDir = options.outputDir;
+    } else if (taskId) {
+      // Fallback: docs/cases/{taskId}/analysis (Case-Centric 기본값)
       this.outputDir = path.join(
         this.projectRoot,
-        "workspace",
-        "analysis",
-        taskId
+        "docs",
+        "cases",
+        taskId,
+        "analysis"
       );
     }
     console.log(`[AnalysisAgent] 산출물 경로: ${this.outputDir}`);

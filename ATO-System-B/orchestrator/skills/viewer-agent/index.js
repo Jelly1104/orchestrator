@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SkillLoader } from '../skill-loader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,10 +21,23 @@ const projectRoot = path.resolve(__dirname, '../../..');
 class ViewerAgent {
   constructor(options = {}) {
     this.name = 'viewer-agent';
-    this.version = '1.0.0';
+    this.version = '1.4.0';
     this.options = options;
     this.viewerDir = path.join(projectRoot, 'orchestrator/viewer');
     this.logsDir = path.join(projectRoot, 'orchestrator/logs');
+
+    // SkillLoader 추가
+    this.skillLoader = new SkillLoader(path.join(__dirname, '..'));
+    this.skill = null;
+  }
+
+  /**
+   * 초기화 - SKILL.md 로드
+   */
+  async initialize() {
+    this.skill = await this.skillLoader.loadSkill('viewer-agent');
+    console.log('[ViewerAgent] Initialized with SKILL.md');
+    return this;
   }
 
   /**
@@ -150,9 +164,13 @@ class ViewerAgent {
 
   /**
    * 생성된 파일 목록
+   * [Fix v4.3.0] Case-Centric 경로 지원
    */
-  getGeneratedFiles() {
-    const srcDir = path.join(projectRoot, 'src/analysis');
+  getGeneratedFiles(caseId = null) {
+    // Case ID가 있으면 해당 케이스 폴더, 없으면 전체 cases 폴더
+    const srcDir = caseId
+      ? path.join(projectRoot, 'docs/cases', caseId)
+      : path.join(projectRoot, 'docs/cases');
     const files = [];
 
     const walkDir = (dir, prefix = '') => {
@@ -162,7 +180,7 @@ class ViewerAgent {
         const relPath = prefix ? prefix + '/' + f : f;
         if (fs.statSync(fullPath).isDirectory()) {
           walkDir(fullPath, relPath);
-        } else if (f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.md')) {
+        } else if (f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.md') || f.endsWith('.json')) {
           files.push({
             name: f,
             path: relPath,
@@ -223,8 +241,20 @@ export function getViewerAgent(options = {}) {
   return instance;
 }
 
-// 기본 내보내기
-export default ViewerAgent;
+// 팩토리 패턴 기본 내보내기
+export default {
+  create: (config = {}) => new ViewerAgent(config),
+  meta: {
+    name: 'viewer-agent',
+    version: '1.4.0',
+    description: 'Orchestrator 결과 웹 뷰어',
+    category: 'utility',
+    dependencies: ['SkillLoader'],
+    status: 'active'
+  }
+};
+
+export { ViewerAgent };
 
 // CLI 실행 시
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
