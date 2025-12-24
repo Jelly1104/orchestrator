@@ -83,6 +83,12 @@ export class Orchestrator {
     // Pre-Step: 로그 경로를 workspace/logs로 변경 (2025-12-22)
     this.logDir = path.join(this.projectRoot, 'workspace/logs');
 
+    // [New] Case-Centric Path Helpers (v4.3.0)
+    // 모든 산출물을 docs/cases/{taskId}/ 하위에 통합 저장
+    this.caseOutputDir = (taskId) => path.join(this.projectRoot, 'docs/cases', taskId);
+    this.analysisDir = (taskId) => path.join(this.caseOutputDir(taskId), 'analysis');
+    this.visualsDir = (taskId) => path.join(this.caseOutputDir(taskId), 'visuals');
+
     // Multi-LLM Provider 설정
     this.providerConfig = {
       provider: config.provider || 'anthropic',
