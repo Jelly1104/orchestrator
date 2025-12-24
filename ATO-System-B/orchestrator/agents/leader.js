@@ -44,7 +44,9 @@ const SECURITY_LIMITS = {
 export class LeaderAgent {
   constructor(config = {}) {
     this.projectRoot = config.projectRoot || process.cwd();
-    this.maxTokens = config.maxTokens || 8192;
+    // [Fix v4.3.10] 4개 설계 문서(IA, WF, SDD, HANDOFF) 생성을 위해 토큰 제한 확장
+    // 참조: AGENT_ARCHITECTURE.md 섹션 0.3.1
+    this.maxTokens = config.maxTokens || 16384;
 
     // Multi-LLM Provider 설정
     this.providerName = config.provider || "anthropic";
