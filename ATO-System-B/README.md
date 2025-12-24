@@ -210,6 +210,40 @@ cd backend && npm run lint
 | `.claude/workflows/*` | 작업 프로세스 정의 |
 | `.claude/context/*` | 팀 철학 및 행동 강령 |
 
+## Phase 정의 (v4.3.2)
+
+Orchestrator 파이프라인의 Phase 정의:
+
+| Phase | 이름 | 설명 | 구현 상태 |
+|-------|------|------|-----------|
+| **Phase A** | Analysis | DB 분석, SQL 쿼리 실행, 데이터 추출 | ✅ 구현됨 |
+| **Phase B** | Design | IA.md, Wireframe.md, SDD.md, HANDOFF.md 생성 | ✅ 구현됨 |
+| **Phase C** | Code Implementation | SubAgent를 통한 코드 구현 | ⏳ 미구현 |
+| **Phase D** | Security Layer | 입력 검증, 프롬프트 인젝션 방어 | ✅ 구현됨 (내부) |
+
+### 파이프라인 타입
+
+```bash
+# Mixed Pipeline (Analysis → Design)
+# Phase A + Phase B 순차 실행
+node index.js --prd PRD.md "DB 분석 후 설계 필요한 작업"
+
+# Design Only Pipeline
+# Phase B만 실행
+node index.js --prd PRD.md "UI 설계 작업"
+
+# Analysis Only Pipeline
+# Phase A만 실행
+node index.js --prd PRD.md "데이터 분석 작업"
+```
+
+### Phase C (Code Implementation) 로드맵
+
+Phase C는 PRD에서 정의된 기능이지만 현재 미구현 상태입니다:
+- SubAgent가 HANDOFF.md 기반으로 코드를 작성
+- Leader Agent가 코드 리뷰 수행
+- PASS/FAIL 판정 후 피드백 루프
+
 ## HITL 체크포인트
 
 1. **PRD 보완** - 요구사항 정의 검토

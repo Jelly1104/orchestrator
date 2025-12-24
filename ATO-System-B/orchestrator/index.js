@@ -530,8 +530,13 @@ async function main() {
         completedPhases.push("Phase B (Design)");
       }
 
+      // [Fix v4.3.2] Phase 표시: "Final" → 마지막 실행된 Phase
+      const lastPhase = completedPhases.length > 0
+        ? completedPhases[completedPhases.length - 1]
+        : "Final";
+
       const continueNext = await triggerHITLCheckpoint(result.taskId, {
-        phase: "Final",
+        phase: lastPhase,
         description: "모든 Phase 완료 - 산출물 검토",
         completedPhases: completedPhases,
         nextAction: null, // 최종 체크포인트이므로 다음 동작 없음
