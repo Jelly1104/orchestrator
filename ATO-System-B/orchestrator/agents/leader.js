@@ -130,16 +130,23 @@ export class LeaderAgent {
   /**
    * 사용자 입력 새니타이징 (프롬프트 인젝션 방어)
    * Security Layer 연동 (Phase D)
+   * @param {string} input - 검증할 입력
+   * @param {number} maxLength - 최대 길이
+   * @param {Object} options - 검증 옵션
+   * @param {boolean} options.warnOnly - 차단 대신 경고만 (PRD 등 신뢰 컨텐츠용)
    */
-  sanitizeUserInput(input, maxLength) {
+  sanitizeUserInput(input, maxLength, options = {}) {
     if (!input || typeof input !== "string") return "";
+
+    const { warnOnly = false } = options;
 
     // Security Layer 활성화 시 InputValidator 사용
     if (isEnabled("SECURITY_INPUT_VALIDATION")) {
       const inputValidator = getInputValidator();
-      const result = inputValidator.validate(input, { maxTokens: maxLength });
+      // PRD, 문서 등 신뢰 컨텐츠는 warnOnly로 처리 (SQL 키워드 등 허용)
+      const result = inputValidator.validate(input, 'DOCUMENT_CONTENT', { warnOnly });
 
-      if (!result.safe) {
+      if (!result.valid && !warnOnly) {
         const securityMonitor = getSecurityMonitor();
         securityMonitor.report(EVENT_TYPES.INPUT_VALIDATION_FAIL, {
           agent: "LeaderAgent",
@@ -152,7 +159,8 @@ export class LeaderAgent {
         );
       }
 
-      return result.sanitized;
+      // warnOnly면 원본 반환, 아니면 sanitized 반환
+      return warnOnly ? input.substring(0, maxLength) : (result.sanitized || input.substring(0, maxLength));
     }
 
     // 레거시 방식 (fallback)
@@ -326,9 +334,11 @@ ${content}
       taskDescription,
       SECURITY_LIMITS.MAX_TASK_DESCRIPTION_LENGTH
     );
+    // PRD는 신뢰 컨텐츠 - SQL 키워드 등 허용 (warnOnly)
     const sanitizedPrd = this.sanitizeUserInput(
       prdContent,
-      SECURITY_LIMITS.MAX_PRD_CONTENT_LENGTH
+      SECURITY_LIMITS.MAX_PRD_CONTENT_LENGTH,
+      { warnOnly: true }
     );
 
     // ========== Gap Check (신규) ==========
