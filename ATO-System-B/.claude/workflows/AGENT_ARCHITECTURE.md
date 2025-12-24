@@ -1,9 +1,9 @@
 # AGENT_ARCHITECTURE.md
 
-> **문서 버전**: 2.6.2
+> **문서 버전**: 2.6.3
 > **최종 업데이트**: 2025-12-24
 > **물리적 경로**: `.claude/workflows/AGENT_ARCHITECTURE.md`
-> **변경 이력**: Phase A 다이어그램 수정 - Reviewer Skill 위치를 Query Skill 직후로 이동
+> **변경 이력**: Provider 스트리밍 지원 추가, OpenAI 모델 gpt-4o로 변경
 > **상위 문서**: `CLAUDE.md` > **대상 Agent**: Leader, SubAgent, AnalysisAgent, OutputValidator
 > **참고**: Orchestrator는 Agent가 아닌 워크플로우 제어 모듈입니다 (JavaScript 클래스)
 
@@ -585,8 +585,9 @@ orchestrator/providers/
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │    ┌──────────────┐     FAIL     ┌──────────────┐     FAIL     ┌─────────┐ │
-│    │   Claude     │ ──────────►  │    GPT-4     │ ──────────►  │ Gemini  │ │
+│    │   Claude     │ ──────────►  │   GPT-4o     │ ──────────►  │ Gemini  │ │
 │    │  (Primary)   │              │ (Fallback 1) │              │ (FB 2)  │ │
+│    │  Streaming   │              │  16K tokens  │              │         │ │
 │    └──────────────┘              └──────────────┘              └─────────┘ │
 │           │                             │                           │      │
 │           ▼                             ▼                           ▼      │
@@ -594,7 +595,7 @@ orchestrator/providers/
 │                                                                             │
 │    환경변수:                                                                  │
 │    • ANTHROPIC_API_KEY (Claude)                                             │
-│    • OPENAI_API_KEY (GPT-4)                                                 │
+│    • OPENAI_API_KEY (GPT-4o)                                                │
 │    • GOOGLE_API_KEY (Gemini)                                                │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -609,11 +610,28 @@ const orchestrator = new Orchestrator({
   fallbackOrder: ["anthropic", "openai", "gemini"],
   useFallback: true, // Fallback 활성화
   providerConfig: {
-    anthropic: { model: "claude-sonnet-4-20250514" },
-    openai: { model: "gpt-4-turbo-preview" },
+    anthropic: { model: "claude-sonnet-4-20250514", useStreaming: true },
+    openai: { model: "gpt-4o" },  // gpt-4-turbo (4K) → gpt-4o (16K)
     gemini: { model: "gemini-pro" },
   },
 });
+```
+
+### 4.4 Provider 스트리밍 지원 (v4.3.13)
+
+> **배경**: 32768+ 토큰 요청 시 10분 이상 소요 가능 → Anthropic API는 스트리밍 필수
+
+| Provider | 스트리밍 | 최대 출력 토큰 | 비고 |
+|----------|---------|---------------|------|
+| **Anthropic** | ✅ 기본 활성 | 64,000 | 장시간 작업에 필수 (10분+ 시 타임아웃 방지) |
+| **OpenAI** | ❌ 미지원 | 16,384 (gpt-4o) | 모델별 토큰 제한 자동 적용 |
+| **Gemini** | ❌ 미지원 | 8,192 | Fallback 용도 |
+
+**스트리밍 비활성화** (작은 요청용):
+```javascript
+providerConfig: {
+  anthropic: { useStreaming: false }  // 기본값: true
+}
 ```
 
 ---
@@ -904,6 +922,7 @@ workspace/logs/audit/audit-*.jsonl     # 보안 감사 로그
 
 | 버전  | 날짜       | 변경 내용                                                                      |
 | ----- | ---------- | ------------------------------------------------------------------------------ |
+| 2.6.3 | 2025-12-24 | [Fix v4.3.13] AnthropicProvider 스트리밍 지원 추가 (32K+ 토큰 요청 시 필수), OpenAI 기본 모델 gpt-4-turbo→gpt-4o 변경 (16K 토큰 지원) |
 | 2.6.2 | 2025-12-24 | Phase A 다이어그램 수정: Reviewer Skill 위치를 Query Skill 직후로 이동, 쿼리 결과 검증 후 리포트 생성 흐름으로 변경 |
 | 2.6.1 | 2025-12-24 | Agent-Skill 권한 매트릭스 업데이트: Leader→reviewer, SubAgent→doc-sync, User(HITL)→viewer 추가, 사용 시점 설명 추가 |
 | 2.6.0 | 2025-12-24 | 공통 Skill (Reviewer, Viewer, Doc-Sync) 표 추가, 다이어그램에 Cross-Phase Skill 흐름 반영 (HITL↔Viewer, 품질검증↔Reviewer, Phase완료↔Doc-Sync) |

@@ -3,18 +3,38 @@
  *
  * Multi-LLM 아키텍처 (v3.2.0)
  * - Fallback Provider
- * - gpt-4-turbo 기본 모델
+ * - gpt-4o 기본 모델 (gpt-4-turbo에서 변경)
+ *
+ * [Fix v4.3.13] 모델 및 토큰 제한 업데이트
+ * - gpt-4-turbo: max 4096 tokens (부족)
+ * - gpt-4o: max 16384 tokens (충분)
  */
 
 import { BaseProvider } from './base.js';
+
+// OpenAI 모델별 최대 출력 토큰 제한
+const MODEL_MAX_TOKENS = {
+  'gpt-4-turbo': 4096,
+  'gpt-4o': 16384,
+  'gpt-4o-mini': 16384,
+  'gpt-4': 8192
+};
 
 export class OpenAIProvider extends BaseProvider {
   constructor(config = {}) {
     super(config);
 
     this.apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-    this.model = config.model || 'gpt-4-turbo';
+    // [Fix v4.3.13] gpt-4o로 변경 (16384 토큰 지원)
+    this.model = config.model || 'gpt-4o';
     this.baseURL = config.baseURL || 'https://api.openai.com/v1';
+
+    // [Fix v4.3.13] 모델별 최대 토큰 제한 적용
+    const modelMaxTokens = MODEL_MAX_TOKENS[this.model] || 4096;
+    if (this.maxTokens > modelMaxTokens) {
+      console.warn(`[OpenAIProvider] maxTokens ${this.maxTokens} → ${modelMaxTokens} (모델 제한)`);
+      this.maxTokens = modelMaxTokens;
+    }
   }
 
   /**
