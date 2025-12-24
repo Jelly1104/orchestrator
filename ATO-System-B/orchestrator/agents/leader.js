@@ -44,9 +44,10 @@ const SECURITY_LIMITS = {
 export class LeaderAgent {
   constructor(config = {}) {
     this.projectRoot = config.projectRoot || process.cwd();
-    // [Fix v4.3.10] 4개 설계 문서(IA, WF, SDD, HANDOFF) 생성을 위해 토큰 제한 확장
+    // [Fix v4.3.12] 4개 설계 문서(IA, WF, SDD, HANDOFF) 생성을 위해 토큰 제한 재확장
+    // 16384도 부족 → 32768로 확장 (Claude Sonnet 4는 64K까지 지원)
     // 참조: AGENT_ARCHITECTURE.md 섹션 0.3.1
-    this.maxTokens = config.maxTokens || 16384;
+    this.maxTokens = config.maxTokens || 32768;
 
     // Multi-LLM Provider 설정
     this.providerName = config.provider || "anthropic";

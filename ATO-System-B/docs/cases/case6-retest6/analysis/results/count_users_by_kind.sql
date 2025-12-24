@@ -1,0 +1,1 @@
+SELECT U_KIND, COUNT(*) as user_count FROM USERS GROUP BY U_KIND;
