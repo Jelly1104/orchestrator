@@ -31,7 +31,38 @@ ATO-System-B/
 └── CLAUDE.md                   # 팀 공통 헌법 (최상위 문서)
 ```
 
-## 시작하기
+## Quick Start (첫 실행)
+
+```bash
+# 1. 저장소 클론
+git clone https://github.com/Jelly1104/orchestrator.git
+cd ATO-System-B
+
+# 2. 환경 변수 설정
+cp .env.example .env
+# .env 파일을 열어 API 키 입력
+
+# 3. 전체 의존성 설치
+npm install
+cd orchestrator && npm install && cd ..
+cd backend && npm install && cd ..
+cd frontend && npm install && cd ..
+cd mcp-server && npm install && cd ..
+
+# 4. 개발 서버 실행 (터미널 3개 필요)
+# 터미널 1: Backend
+cd backend && npm run dev
+
+# 터미널 2: Frontend
+cd frontend && npm run dev
+
+# 터미널 3: Orchestrator
+cd orchestrator && npm start
+```
+
+---
+
+## 상세 설정
 
 ### 사전 요구사항
 
@@ -39,35 +70,19 @@ ATO-System-B/
 - npm 9+
 - MySQL 8.0+
 
-### 환경 변수 설정
+### 환경 변수
 
 ```bash
-# .env 파일 생성 (각 디렉토리별)
-cp .env.example .env
-
-# 필수 환경 변수
-ANTHROPIC_API_KEY=your_api_key
-NOTION_API_KEY=your_notion_key
-DB_HOST=localhost
-DB_USER=ai_readonly
-DB_PASSWORD=your_password
-DB_NAME=ato_system
+# .env 필수 항목
+ANTHROPIC_API_KEY=your_api_key      # Claude API
+NOTION_API_KEY=your_notion_key      # Notion 연동
+DB_HOST=localhost                    # MySQL 호스트
+DB_USER=ai_readonly                  # DB 계정 (읽기 전용)
+DB_PASSWORD=your_password            # DB 비밀번호
+DB_NAME=ato_system                   # 데이터베이스명
 ```
 
-### 설치
-
-```bash
-# 루트 의존성
-npm install
-
-# 각 모듈별 설치
-cd orchestrator && npm install
-cd ../backend && npm install
-cd ../frontend && npm install
-cd ../mcp-server && npm install
-```
-
-## 실행 명령어
+## 명령어 레퍼런스
 
 ### 개발 모드
 
