@@ -24,15 +24,34 @@ const __dirname = path.dirname(__filename);
 
 /**
  * 스킬 유형 정의
+ *
+ * 네이밍 규칙 (v2.5.0):
+ * - Skill 이름에서 '-agent' 접미사 제거
+ * - 'agent'는 LLM 기반 실행 주체에만 사용
+ * - Skill은 능력/역할 정의서를 의미
  */
 export const SkillType = {
-  QUERY: 'query-agent',
-  CODE: 'code-agent',
-  DESIGN: 'design-agent',
-  DOC: 'doc-agent',
-  PROFILE: 'profile-agent',
-  REVIEW: 'review-agent',
-  VIEWER: 'viewer-agent',
+  QUERY: 'query',
+  CODER: 'coder',
+  DESIGNER: 'designer',
+  DOC_SYNC: 'doc-sync',
+  PROFILER: 'profiler',
+  REVIEWER: 'reviewer',
+  VIEWER: 'viewer',
+};
+
+/**
+ * 하위 호환성을 위한 레거시 매핑 (Deprecated)
+ * @deprecated v3.0.0에서 제거 예정
+ */
+export const LegacySkillTypeMap = {
+  'query-agent': 'query',
+  'code-agent': 'coder',
+  'design-agent': 'designer',
+  'doc-agent': 'doc-sync',
+  'profile-agent': 'profiler',
+  'review-agent': 'reviewer',
+  'viewer-agent': 'viewer',
 };
 
 /**
@@ -145,11 +164,13 @@ export class SkillRegistry {
         const indexPath = path.join(this.skillsRoot, skillType, 'index.js');
         const module = await import(indexPath);
 
-        // 클래스 이름 추론 (예: review-agent → ReviewAgent)
-        const className = skillType
+        // 클래스 이름 추론 (예: reviewer → Reviewer, doc-sync → DocSync)
+        // Skill 클래스 명명 규칙: PascalCase + 'Skill' 접미사
+        const baseClassName = skillType
           .split('-')
           .map(part => part.charAt(0).toUpperCase() + part.slice(1))
           .join('');
+        const className = baseClassName + 'Skill';
 
         AgentClass = module[className] || module.default;
       } catch {

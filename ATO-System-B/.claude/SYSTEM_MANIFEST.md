@@ -1,6 +1,6 @@
 # SYSTEM_MANIFEST.md (System B Control Tower)
 
-**Version**: 4.3.0
+**Version**: 4.4.0
 **Last Updated**: 2025-12-24
 **Role**: Orchestrator's Configuration Map & Human Guide
 
@@ -57,30 +57,31 @@ Orchestrator는 작업 모드에 따라 아래 경로에서 문서를 로드합�
 
 각 Agent는 역할에 따라 아래 문서를 로드합니다. 모든 Agent는 `CLAUDE.md`를 필수 로드합니다.
 
-| Agent | 필수 로딩 문서 | 선택 로딩 문서 |
-| :---- | :------------- | :------------- |
+| Agent/Skill | 필수 로딩 문서 | 선택 로딩 문서 |
+| :---------- | :------------- | :------------- |
 | **Orchestrator** | SYSTEM_MANIFEST.md | AGENT_ARCHITECTURE.md |
 | **Leader** | DOMAIN_SCHEMA.md, DOCUMENT_PIPELINE.md | AI_Playbook.md |
-| **code-agent** | DOMAIN_SCHEMA.md, CODE_STYLE.md, TDD_WORKFLOW.md | ERROR_HANDLING_GUIDE.md |
-| **query-agent** | DOMAIN_SCHEMA.md, DB_ACCESS_POLICY.md, ANALYSIS_GUIDE.md | - |
-| **design-agent** | DOCUMENT_PIPELINE.md, PRD_GUIDE.md | AI_Playbook.md |
-| **doc-agent** | DOCUMENT_PIPELINE.md | PRD_GUIDE.md |
-| **profile-agent** | DOMAIN_SCHEMA.md, ANALYSIS_GUIDE.md | - |
-| **review-agent** | VALIDATION_GUIDE.md, CODE_STYLE.md | TDD_WORKFLOW.md |
-| **viewer-agent** | SYSTEM_MANIFEST.md | - |
+| **coder** (Skill) | DOMAIN_SCHEMA.md, CODE_STYLE.md, TDD_WORKFLOW.md | ERROR_HANDLING_GUIDE.md |
+| **query** (Skill) | DOMAIN_SCHEMA.md, DB_ACCESS_POLICY.md, ANALYSIS_GUIDE.md | - |
+| **designer** (Skill) | DOCUMENT_PIPELINE.md, PRD_GUIDE.md | AI_Playbook.md |
+| **doc-sync** (Skill) | DOCUMENT_PIPELINE.md | PRD_GUIDE.md |
+| **profiler** (Skill) | DOMAIN_SCHEMA.md, ANALYSIS_GUIDE.md | - |
+| **reviewer** (Skill) | VALIDATION_GUIDE.md, CODE_STYLE.md | TDD_WORKFLOW.md |
+| **viewer** (Skill) | SYSTEM_MANIFEST.md | - |
 
-### 3.1 Agent 용어 매핑
+### 3.1 Skill-Agent 용어 매핑
 
-SYSTEM_MANIFEST(Skill 기반)와 AGENT_ARCHITECTURE(역할 기반) 간 용어 매핑입니다.
+Skill과 Agent(역할 기반) 간 용어 매핑입니다.
 
-| SYSTEM_MANIFEST (Skill) | AGENT_ARCHITECTURE (Role) | 설명 |
-| :---------------------- | :------------------------ | :--- |
-| code-agent | SubAgent (Coding Mode) | 코드 구현 담당 |
-| query-agent | AnalysisAgent | SQL 쿼리 및 데이터 분석 |
-| design-agent | Leader (Planning Mode) | 설계 문서 생성 |
-| review-agent | OutputValidator | 산출물 검증 |
-| Leader | Leader | 전체 조율 및 PASS/FAIL 판정 |
-| Orchestrator | Orchestrator | 워크플로우 제어 |
+| Skill | 호출 Agent | 설명 |
+| :---- | :--------- | :--- |
+| coder | SubAgent (Coding Mode) | 코드 구현 담당 |
+| query | AnalysisAgent | SQL 쿼리 및 데이터 분석 |
+| profiler | AnalysisAgent | 프로필 분석 |
+| designer | Leader (Planning Mode) | 시각화 고도화 |
+| doc-sync | Leader | 문서 동기화 |
+| reviewer | OutputValidator | 산출물 검증 |
+| viewer | (Orchestrator) | 웹 뷰어 (LLM 미사용) |
 
 > **토큰 최적화**: 상세 토큰 예산은 `AGENT_ARCHITECTURE.md`의 **Agent 로딩 전략** 섹션을 참조하세요.
 
@@ -94,19 +95,33 @@ Orchestrator는 PRD 분석 결과에 따라 자동으로 적절한 모드를 선
 | **Coding** | Group A + TDD_WORKFLOW.md | 구현/수정 요청 |
 | **Review** | Group A (VALIDATION) + PRD_GUIDE.md | 검토/QA 요청 |
 
-## 5. Skill Registry (v1.0.0)
+## 5. Skill Registry (v2.5.0)
 
 7개 스킬이 `orchestrator/skills/` 하위에 정의되어 있습니다.
 
-| Skill | Version | Status |
-| :---- | :------ | :----- |
-| query-agent | v1.1.0 | Ready |
-| code-agent | v1.2.0 | Ready |
-| design-agent | v2.1.0 | Ready |
-| doc-agent | v2.0.0 | Ready |
-| profile-agent | v1.1.0 | Ready |
-| review-agent | v1.1.0 | Ready |
-| viewer-agent | v1.4.0 | Ready |
+> **네이밍 규칙 (v2.5.0)**: Skill 이름에서 `-agent` 접미사 제거. `agent`는 LLM 기반 실행 주체에만 사용.
+
+| Skill | Version | Status | 설명 |
+| :---- | :------ | :----- | :--- |
+| query | v1.2.0 | Ready | SQL 쿼리 생성 및 실행 |
+| coder | v1.3.0 | Ready | 설계 문서 기반 코드 구현 |
+| designer | v2.2.0 | Ready | 시각화 고도화 (MD → HTML) |
+| doc-sync | v2.1.0 | Ready | 로컬 ↔ Notion 동기화 |
+| profiler | v1.2.0 | Ready | 회원 프로필 분석 |
+| reviewer | v1.2.0 | Ready | 산출물 품질 검증 |
+| viewer | v1.5.0 | Ready | 웹 뷰어 API |
+
+### 5.1 레거시 매핑 (하위 호환성)
+
+| 기존 이름 (Deprecated) | 새 이름 |
+| :--------------------- | :------ |
+| query-agent | query |
+| code-agent | coder |
+| design-agent | designer |
+| doc-agent | doc-sync |
+| profile-agent | profiler |
+| review-agent | reviewer |
+| viewer-agent | viewer |
 
 ## 6. Workspace Paths (런타임 임시 저장소)
 

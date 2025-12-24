@@ -80,10 +80,10 @@ FLUSH PRIVILEGES;
 | **동시 쿼리**    | 3개      | 리소스 보호      |
 | **일일 쿼리 수** | 1,000개  | 과도한 사용 방지 |
 
-### 3.2 구현 (QueryAgent)
+### 3.2 구현 (Query Skill)
 
 ```javascript
-// orchestrator/skills/query-agent/index.js
+// orchestrator/skills/query/index.js
 
 const QUERY_LIMITS = {
   MAX_ROWS: 10000,

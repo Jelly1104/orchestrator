@@ -1,7 +1,7 @@
 # CODE_STYLE.md - 코딩 스타일 가이드 (범용)
 
-> **문서 버전**: 1.2.2
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 1.3.1
+> **최종 업데이트**: 2025-12-23
 > **물리적 경로**: `.claude/rules/CODE_STYLE.md`
 > **상위 문서**: `CLAUDE.md` > **대상**: 모든 AI 에이전트
 
@@ -33,6 +33,21 @@
 ---
 
 ## 📐 공통 원칙 (General Principles)
+
+### 1.0 필수 조건 (전 영역 공통)
+
+> **v1.3.0 추가**: CLAUDE.md에서 이관
+
+```yaml
+타입 안정성:
+  - 엄격 모드 필수 (strict, sound null safety 등)
+  - 타입 회피 금지 (any, dynamic, Object 등)
+  - 명시적 타입 정의
+
+Testing:
+  - 커버리지 ≥ 90% (기본값, PROJECT_STACK.md에서 오버라이드 가능)
+  - TDD 사이클 준수
+```
 
 ### 1.1 절대 금지 사항 (Never)
 
@@ -197,14 +212,16 @@ AND BOARD_IDX = 100;
 
 ---
 
-## 📚 Updated Related Docs
+## 📚 관련 문서
 
-| 문서               | 역할                                                |
-| ------------------ | --------------------------------------------------- |
-| `CLAUDE.md`        | 최상위 헌법 (충돌 시 이 문서가 우선)                |
-| `PROJECT_STACK.md` | 프로젝트별 기술 스택/버전 정의 (.claude/rules/)     |
-| `DOMAIN_SCHEMA.md` | 필독 DB 컬럼명 및 네이밍 기준 원천 (.claude/rules/) |
-| `QUALITY_GATES.md` | 스타일 준수 여부 최종 검증 체크리스트               |
+| 문서 | 역할 |
+|------|------|
+| `CLAUDE.md` | 최상위 헌법 (충돌 시 이 문서가 우선) |
+| `PROJECT_STACK.md` | 프로젝트별 기술 스택/버전 정의 |
+| `DOMAIN_SCHEMA.md` | DB 컬럼명 및 네이밍 기준 원천 (**필독**) |
+| `DB_ACCESS_POLICY.md` | DB 접근 권한, SQL 실행 제한 |
+| `VALIDATION_GUIDE.md` | 스타일 준수 여부 최종 검증 체크리스트 |
+| `TDD_WORKFLOW.md` | TDD 개발 절차 |
 
 ---
 

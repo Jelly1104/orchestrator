@@ -1,7 +1,7 @@
 # DOMAIN_SCHEMA.md
 
-> **문서 버전**: 1.1.1
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 1.2.0
+> **최종 업데이트**: 2025-12-23
 > **물리적 경로**: `.claude/rules/DOMAIN_SCHEMA.md`
 > **상위 문서**: `CLAUDE.md`
 > **대상**: 도메인 이해가 필요한 에이전트
@@ -60,6 +60,14 @@ AI는 이 문서를 참조하여 **Hallucination(없는 컬럼 참조) 없는 �
 | 3 | `BOARD_MUZZIMA` | 337만 | 1.7GB | 🔴 High | 메인 게시판 본문 (TEXT 타입 주의) |
 | 4 | `POINT_GRANT` | 64만 | 94MB | 🟡 Medium | 포인트 적립 내역 |
 | 5 | `USERS` | 20만 | 92MB | 🟢 Low | 회원 마스터 |
+
+### 2.1 대용량 테이블 인덱스 현황
+
+| 테이블 | 인덱스 컬럼 | 용도 |
+|--------|------------|------|
+| `USER_LOGIN` | (U_ID, LOGIN_DATE) | 사용자별 로그인 조회 |
+| `COMMENT` | (BOARD_IDX, SVC_CODE) | 게시글별 댓글 조회 |
+| `BOARD_MUZZIMA` | (CTG_CODE, REG_DATE) | 카테고리별 최신순 |
 
 ---
 
@@ -178,22 +186,9 @@ CREATE TABLE COMMENT (
 
 ---
 
-## 5. AI 학습용 데이터셋 (AI Assets)
+## 5. 자주 사용하는 쿼리 패턴 (Legacy Pattern)
 
-향후 모델 학습 및 RAG 구축 시 활용 가능한 데이터 자산입니다.
-
-| 카테고리 | 데이터 소스 | 활용 방안 (Use Case) |
-|---------|------------|---------------------|
-| NLP/LLM | `BOARD_*.CONTENT`, `COMMENT.CONTENT` | - 의료 도메인 특화 LLM 파인튜닝<br>- 게시글 3줄 요약/감성 분석<br>- 악성 댓글 자동 필터링 |
-| 추천/예측 | `USER_DETAIL` (전공/지역), `CBIZ_REC_*` (공고 조회) | - 의사 개인화 채용 공고 추천<br>- 관심사 기반 게시글 추천 |
-| 상권 분석 | `LOCATION_SALES_MONTHLY`, `CBIZ_LEASE` | - 개원 입지 매출 예측 모델<br>- 임대료 적정성 평가 |
-| 네트워크 | `COMMENT` (대댓글 관계), `S_COLLEAGUE` | - 의사 인맥/영향력 그래프 분석<br>- Key Opinion Leader (KOL) 발굴 |
-
----
-
-## 6. 자주 사용하는 쿼리 패턴 (Legacy Pattern)
-
-### 1. 유효한 채용공고 조회
+### 5.1 유효한 채용공고 조회
 
 ```sql
 WHERE APPROVAL_FLAG='Y'
@@ -203,14 +198,14 @@ WHERE APPROVAL_FLAG='Y'
   AND DEL_FLAG='N'
 ```
 
-### 2. 카테고리별 게시글 페이징
+### 5.2 카테고리별 게시글 페이징
 
 ```sql
 WHERE CTG_CODE=?
 ORDER BY GRP_IDX DESC, GRP_SEQ ASC -- 레거시 정렬 방식
 ```
 
-### 3. 활성 의사 회원만 조회(Corrected)
+### 5.3 활성 의사 회원만 조회 (Corrected)
 
 ```sql
 WHERE U_KIND = 'DOC001'
@@ -219,9 +214,13 @@ WHERE U_KIND = 'DOC001'
 
 ---
 
-## 7. 데이터 보안 고려사항
+## 6. 보안 및 접근 제어
 
-### 7.1 민감 데이터
+> **역할 분리**: 이 섹션은 민감 데이터의 **정의(What)**를 다룹니다.
+> - 접근 권한, 실행 제한, 감사 로깅 → `DB_ACCESS_POLICY.md` 참조
+> - 쿼리 실행 전 검증 규칙 → `VALIDATION_GUIDE.md` 참조
+
+### 6.1 민감 데이터 분류
 
 ```yaml
 최고 민감:
@@ -238,13 +237,11 @@ WHERE U_KIND = 'DOC001'
   - 진료 내역 저장 금지
 ```
 
----
-
-## 8. 복합 쿼리 제한 (Composite Query Whitelist)
+### 6.2 복합 쿼리 제한 (Composite Query Whitelist)
 
 **PII(개인식별정보) 추론 방지를 위해 허용된 JOIN 패턴만 사용합니다.**
 
-### ✅ 허용된 복합 쿼리 패턴
+#### ✅ 허용된 복합 쿼리 패턴
 
 | 패턴 | 용도 | 예시 |
 |-----|------|------|
@@ -252,7 +249,7 @@ WHERE U_KIND = 'DOC001'
 | `COMMENT + USERS` | 댓글 작성자 표시 | 댓글에 작성자명 표시 |
 | `CBIZ_REC* + USERS` | 채용공고 담당자 표시 | 공고에 담당자 정보 표시 |
 
-### ❌ 금지된 복합 쿼리 패턴
+#### ❌ 금지된 복합 쿼리 패턴
 
 | 패턴 | 위험 | 이유 |
 |-----|------|------|
@@ -260,7 +257,7 @@ WHERE U_KIND = 'DOC001'
 | `USERS + USER_DETAIL + USER_CI` | 🚨 Extreme | 완전한 개인정보 조합 |
 | `USERS + POINT_GRANT + CBIZ_*` | 🔴 High | 거래/수익 패턴 추론 |
 
-### 복합 쿼리 요청 시 절차
+#### 복합 쿼리 요청 시 절차
 
 ```yaml
 1. 위 허용 패턴에 해당하는가?
@@ -274,6 +271,21 @@ WHERE U_KIND = 'DOC001'
 3. 승인 없이 3개 이상 테이블 JOIN 금지
 ```
 
+> **역할 분리**: 접근 권한/실행 제한/감사 로깅은 `DB_ACCESS_POLICY.md`를 참조하세요.
+
+---
+
+## 7. AI 학습용 데이터셋 (AI Assets)
+
+향후 모델 학습 및 RAG 구축 시 활용 가능한 데이터 자산입니다.
+
+| 카테고리 | 데이터 소스 | 활용 방안 (Use Case) |
+|---------|------------|---------------------|
+| NLP/LLM | `BOARD_*.CONTENT`, `COMMENT.CONTENT` | - 의료 도메인 특화 LLM 파인튜닝<br>- 게시글 3줄 요약/감성 분석<br>- 악성 댓글 자동 필터링 |
+| 추천/예측 | `USER_DETAIL` (전공/지역), `CBIZ_REC_*` (공고 조회) | - 의사 개인화 채용 공고 추천<br>- 관심사 기반 게시글 추천 |
+| 상권 분석 | `LOCATION_SALES_MONTHLY`, `CBIZ_LEASE` | - 개원 입지 매출 예측 모델<br>- 임대료 적정성 평가 |
+| 네트워크 | `COMMENT` (대댓글 관계), `S_COLLEAGUE` | - 의사 인맥/영향력 그래프 분석<br>- Key Opinion Leader (KOL) 발굴 |
+
 ---
 
 ## 📚 관련 문서
@@ -281,8 +293,8 @@ WHERE U_KIND = 'DOC001'
 | 문서 | 역할 |
 |------|------|
 | `CLAUDE.md` | 프로젝트 컨텍스트 |
-| `AI_Playbook.md` | 팀 철학/OKR |
-| `guards/SECURITY_CHECKLIST.md` | 보안 체크리스트 |
+| `DB_ACCESS_POLICY.md` | 접근 권한, 실행 제한, 감사 로깅 |
+| `VALIDATION_GUIDE.md` | 쿼리 실행 전 검증 규칙 |
 
 ---
 

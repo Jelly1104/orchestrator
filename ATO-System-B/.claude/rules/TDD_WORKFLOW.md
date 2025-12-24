@@ -1,7 +1,7 @@
 # TDD_WORKFLOW.md
 
-> **문서 버전**: 1.3.1
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 1.3.2
+> **최종 업데이트**: 2025-12-23
 > **물리적 경로**: `.claude/rules/TDD_WORKFLOW.md`
 > **상위 문서**: `CLAUDE.md`
 > **대상**: 기능 개발 / 버그 수정 담당 서브 에이전트
@@ -248,4 +248,12 @@ describe('Bug #1234 - 댓글 카운트 오류', () => {
 
 ---
 
-**관련 문서**: `CLAUDE.md` (프로젝트 헌법 및 아키텍처 원칙) | `DOMAIN_SCHEMA.md` (**필독** 실제 DB 스키마 및 제약사항) | `QUALITY_GATES.md` (배포 전 품질 체크리스트) | `CODE_STYLE.md` (린트 규칙 및 네이밍 컨벤션)
+## 📚 관련 문서
+
+| 문서 | 역할 |
+|------|------|
+| `CLAUDE.md` | 프로젝트 헌법 및 아키텍처 원칙 |
+| `DOMAIN_SCHEMA.md` | DB 스키마 및 제약사항 (**필독**) |
+| `VALIDATION_GUIDE.md` | 산출물 검증 기준, Quality Gates (Phase 4) |
+| `CODE_STYLE.md` | 린트 규칙 및 네이밍 컨벤션 |
+| `DB_ACCESS_POLICY.md` | DB 접근 권한 및 보안 정책 |

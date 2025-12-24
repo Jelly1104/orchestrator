@@ -284,7 +284,7 @@ ${content}
       '.claude/rules/DOMAIN_SCHEMA.md',
       '.claude/rules/TDD_WORKFLOW.md',
       '.claude/rules/CODE_STYLE.md',
-      '.claude/rules/PROJECT_STACK.md'
+      '.claude/project/PROJECT_STACK.md'
     ];
 
     let context = '';

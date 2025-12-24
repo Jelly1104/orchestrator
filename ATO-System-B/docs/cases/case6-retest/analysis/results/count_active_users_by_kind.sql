@@ -1,0 +1,1 @@
+SELECT U_KIND, COUNT(*) as active_user_count FROM USERS WHERE U_ALIVE = 1 GROUP BY U_KIND

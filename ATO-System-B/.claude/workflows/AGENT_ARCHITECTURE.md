@@ -1,34 +1,39 @@
 # AGENT_ARCHITECTURE.md
 
-> **문서 버전**: 2.2.1
-> **최종 업데이트**: 2025-12-22
+> **문서 버전**: 2.6.2
+> **최종 업데이트**: 2025-12-24
 > **물리적 경로**: `.claude/workflows/AGENT_ARCHITECTURE.md`
-> **변경 이력**: 레거시 src/ 경로 완전 제거 - 디렉토리 구조도 현행화
-> **상위 문서**: `CLAUDE.md` > **대상 Agent**: Orchestrator, Leader, SubAgent, OutputValidator
+> **변경 이력**: Phase A 다이어그램 수정 - Reviewer Skill 위치를 Query Skill 직후로 이동
+> **상위 문서**: `CLAUDE.md` > **대상 Agent**: Leader, SubAgent, AnalysisAgent, OutputValidator
+> **참고**: Orchestrator는 Agent가 아닌 워크플로우 제어 모듈입니다 (JavaScript 클래스)
 
 ---
 
 ## 0. Agent 로딩 설정
 
+> **⚠️ 용어 정의**: 이 문서에서 "Agent"는 LLM 기반 에이전트만 의미합니다.
+> Orchestrator는 JavaScript 클래스로, Agent가 아닌 **워크플로우 제어 모듈**입니다.
+
 ### 0.1 섹션별 로딩 대상
 
-| 섹션                         | 대상 Agent       | 필수 여부 |
-| ---------------------------- | ---------------- | --------- |
-| 섹션 1 (아키텍처 개요)       | Orchestrator     | 필수      |
-| 섹션 2 (협업 사이클)         | 참조용           | 선택      |
-| 섹션 3.1 (Orchestrator 역할) | Orchestrator     | 필수      |
-| 섹션 3.2 (Leader 역할)       | Leader           | 필수      |
-| 섹션 3.3 (SubAgent 역할)     | SubAgent         | 필수      |
-| 섹션 4 (Multi-LLM Provider)  | Orchestrator     | 선택      |
-| 섹션 5 (보안 아키텍처)       | 모든 Agent       | 권장      |
-| 섹션 6 (Handoff 프로토콜)    | Leader, SubAgent | 필수      |
-| 섹션 7-10 (사용법 등)        | 사용자 참조용    | -         |
+| 섹션                          | 대상                | 필수 여부 |
+| ----------------------------- | ------------------- | --------- |
+| 섹션 1 (아키텍처 개요)        | 사용자/개발자 참조  | -         |
+| 섹션 2 (협업 사이클)          | 참조용              | 선택      |
+| 섹션 3.1 (Orchestrator 역할)  | 사용자/개발자 참조  | -         |
+| 섹션 3.2 (Leader 역할)        | Leader Agent        | 필수      |
+| 섹션 3.3 (SubAgent 역할)      | SubAgent            | 필수      |
+| 섹션 3.4 (AnalysisAgent 역할) | AnalysisAgent       | 필수      |
+| 섹션 4 (Multi-LLM Provider)   | 사용자/개발자 참조  | -         |
+| 섹션 5 (보안 아키텍처)        | 모든 Agent          | 권장      |
+| 섹션 6 (Handoff 프로토콜)     | Leader, SubAgent    | 필수      |
+| 섹션 7-10 (사용법 등)         | 사용자 참조용       | -         |
 
 ### 0.2 로딩 우선순위
 
 **필수 로딩 (모든 실행에서)**
 
-- 자신의 역할 정의 섹션 (3.1 / 3.2 / 3.3)
+- 자신의 역할 정의 섹션 (3.1 / 3.2 / 3.3 / 3.4)
 - Handoff 프로토콜 (섹션 6) - Leader/SubAgent만
 
 **선택 로딩 (필요시)**
@@ -38,12 +43,14 @@
 
 ### 0.3 Agent별 로딩 예상 토큰
 
-| Agent               | 로딩 섹션          | 예상 토큰 |
-| ------------------- | ------------------ | --------- |
-| **Leader**          | 섹션 3.2, 섹션 6   | ~800      |
-| **SubAgent**        | 섹션 3.3, 섹션 6   | ~600      |
-| **Orchestrator**    | 섹션 1, 3.1, 5, 10 | ~1,200    |
-| **OutputValidator** | 섹션 5.1 Layer 3   | ~300      |
+> LLM 기반 Agent만 토큰을 소비합니다. Orchestrator는 코드 모듈이므로 제외.
+
+| Agent               | 로딩 섹션            | 예상 토큰 |
+| ------------------- | -------------------- | --------- |
+| **Leader**          | 섹션 3.2, 섹션 6     | ~800      |
+| **SubAgent**        | 섹션 3.3, 섹션 6     | ~600      |
+| **AnalysisAgent**   | 섹션 3.4             | ~500      |
+| **OutputValidator** | 섹션 5.1 Layer 3     | ~300      |
 
 ### 0.4 Task ID 네이밍 규칙
 
@@ -76,17 +83,18 @@ keywords: [
 - 예: `case5-dormancy-1766037994472` → `case5-dormancy`
 - fallback: `task-1766113510884` → `task-510884`
 
-**산출물 경로 규칙** (SYSTEM_MANIFEST v4.1.0 준수, Flatten 구조 2025-12-23):
+**산출물 경로 규칙** (SYSTEM_MANIFEST v4.3.0 준수, Case-Centric 구조):
 
 ```
 docs/cases/{caseId}/               # 케이스 설계 문서 (PRD, IA, SDD, Wireframe, HANDOFF)
+docs/cases/{caseId}/analysis/      # 분석 결과 (SQL, JSON, 리포트) ✅
 docs/cases/{caseId}/visuals/       # 시각화 산출물 (HTML)
-workspace/analysis/{task-id}/      # 분석 결과 (SQL, JSON, 리포트)
-workspace/features/{feature}/      # 피처별 산출물
 backend/src/{feature}/             # 백엔드 구현 코드
 frontend/src/{feature}/            # 프론트엔드 구현 코드
 workspace/logs/{task-id}.json      # 실행 로그
 ```
+
+> ⚠️ **Deprecated**: `workspace/analysis/{task-id}/`는 `docs/cases/{caseId}/analysis/`로 통합되었습니다.
 
 **caseId 추출 규칙**:
 - `case5-dormancy-20251223` → `case5-dormancy` (날짜 8자리 제거)
@@ -99,55 +107,122 @@ workspace/logs/{task-id}.json      # 실행 로그
 
 ---
 
-## 0.5 전체 파이프라인 플로우 (HITL 포함)
+## 0.5 전체 파이프라인 플로우 (Phase 기반 HITL)
 
 > 🔴 빨간색 노드 = Human-in-the-Loop 체크포인트
+> **Phase 정의**: README.md v4.3.2와 동기화
+
+### Phase 개요
+
+| Phase | 이름 | 담당 Agent | 사용 Skill | 설명 | 구현 상태 |
+|-------|------|------------|------------|------|-----------|
+| **Phase A** | Analysis | AnalysisAgent | query, profiler | DB 분석, SQL 쿼리 실행, 데이터 추출 | ✅ 구현됨 |
+| **Phase B** | Design | Leader | designer | IA.md, Wireframe.md, SDD.md, HANDOFF.md 생성 | ✅ 구현됨 |
+| **Phase C** | Code Implementation | SubAgent | coder | HANDOFF.md 기반 코드 구현 | ⏳ 미구현 |
+| **Phase D** | Security Layer | Orchestrator (내부) | - | 입력 검증, 프롬프트 인젝션 방어 | ✅ 구현됨 |
+
+### 공통 Skill (Cross-Phase)
+
+| Skill | 사용 시점 | 호출 주체 | 설명 | 구현 상태 |
+|-------|----------|----------|------|-----------|
+| **reviewer** | Phase 산출물 완료 후 | Leader | 품질 검증 (80점 미만 시 재작업) | ✅ 구현됨 |
+| **viewer** | HITL 체크포인트 | User (웹 대시보드) | 실시간 모니터링, 승인/거부/피드백 | ✅ 구현됨 |
+| **doc-sync** | Phase 완료 후 | Leader → SubAgent | Notion 동기화 (산출물 업로드) | ✅ 구현됨 |
+
+### 파이프라인 타입
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Pipeline Type Selection (PRD type 필드 기반)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Analysis Only     →  Phase A만 실행                                        │
+│  Design Only       →  Phase B만 실행                                        │
+│  Mixed (기본)      →  Phase A → Phase B 순차 실행                           │
+│  Full (향후)       →  Phase A → Phase B → Phase C 전체 실행                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Phase 기반 파이프라인 흐름
 
 ```mermaid
 graph TD
     A[PRD 입력] --> B{PRD Gap Check}
-    B -- 불완전 --> C[🧑 인간: PRD 보완]
-    B -- 완전 --> D[자동: 유형 판별]
+    B -- 불완전 --> C[🧑 HITL: PRD 보완]
+    B -- 완전 --> D[자동: Pipeline Type 판별]
 
-    D --> E{Analysis?}
-    E -- Yes --> F[AnalysisAgent]
-    E -- No --> G[LeaderAgent Planning]
+    D --> E{Pipeline Type?}
 
-    F --> H[SQL 실행]
-    H --> I{결과 검증}
-    I -- 이상 --> J[🧑 인간: 쿼리 검토]
-    I -- 정상 --> K[분석 리포트 생성]
+    %% Phase A: Analysis
+    E -- Analysis/Mixed --> F[Phase A: AnalysisAgent]
+    F --> G[Query Skill: SQL 실행]
+    G --> G1[Reviewer Skill: 쿼리 결과 검증]
+    G1 -- FAIL --> F
+    G1 -- PASS --> H{결과 이상?}
+    H -- 이상 --> I[🧑 HITL: 쿼리 검토]
+    I -.-> I1[Viewer Skill: 대시보드]
+    H -- 정상 --> J[분석 리포트 생성]
+    J --> J2[Doc-Sync Skill: Notion 동기화]
+    J2 --> K{Mixed Pipeline?}
+    K -- Yes --> L[Phase B로 진행]
+    K -- No --> U[완료]
 
-    G --> L[IA/Wireframe/SDD]
-    L --> M[🧑 인간: 설계 승인]
-    M -- 승인 --> N[CodeAgent 구현]
-    M -- 수정요청 --> G
+    %% Phase B: Design
+    E -- Design Only --> L
+    L --> M[Phase B: Leader Planning]
+    M --> N[Designer Skill: IA/Wireframe/SDD/HANDOFF]
+    N --> N1[Reviewer Skill: 품질 검증]
+    N1 -- FAIL --> M
+    N1 -- PASS --> O[🧑 HITL: 설계 승인]
+    O -.-> O1[Viewer Skill: 대시보드]
+    O -- 승인 --> O2[Doc-Sync Skill: Notion 동기화]
+    O2 --> P{Phase C 필요?}
+    O -- 수정요청 --> M
 
-    N --> O[Output Validation]
-    O --> P[Leader Review]
-    P -- FAIL 3회 --> Q[🧑 인간: 수동 수정]
-    P -- PASS --> R[최종 산출물]
-
-    R --> S{프론트 배포?}
-    S -- Yes --> T[🧑 인간: 배포 승인]
-    S -- No --> U[완료]
+    %% Phase C: Code Implementation (미구현)
+    P -- Yes --> Q[Phase C: SubAgent 구현]
+    P -- No --> U
+    Q --> R[Coder Skill: 코드 작성]
+    R --> S[Reviewer Skill: Output Validation]
+    S -- FAIL --> Q
+    S -- PASS --> T[Leader Review]
+    T -- FAIL 3회 --> V[🧑 HITL: 수동 수정]
+    V -.-> V1[Viewer Skill: 대시보드]
+    T -- PASS --> T1[Doc-Sync Skill: Notion 동기화]
+    T1 --> W{프론트 배포?}
+    W -- Yes --> X[🧑 HITL: 배포 승인]
+    X -.-> X1[Viewer Skill: 대시보드]
+    W -- No --> U
 
     style C fill:#ffcccc
-    style J fill:#ffcccc
-    style M fill:#ffcccc
-    style Q fill:#ffcccc
-    style T fill:#ffcccc
+    style I fill:#ffcccc
+    style O fill:#ffcccc
+    style V fill:#ffcccc
+    style X fill:#ffcccc
+    style I1 fill:#e6f3ff
+    style O1 fill:#e6f3ff
+    style V1 fill:#e6f3ff
+    style X1 fill:#e6f3ff
+    style G1 fill:#fff3cd
+    style N1 fill:#fff3cd
+    style S fill:#fff3cd
+    style J2 fill:#d4edda
+    style O2 fill:#d4edda
+    style T1 fill:#d4edda
 ```
+
+> **범례**: 🔴 빨간색 = HITL 체크포인트 | 🔵 파란색 = Viewer Skill | 🟡 노란색 = Reviewer Skill | 🟢 초록색 = Doc-Sync Skill
 
 ### HITL 체크포인트 요약
 
-| 체크포인트    | 노드 | 트리거 조건                                  | 인간 액션                    |
-| ------------- | ---- | -------------------------------------------- | ---------------------------- |
-| **PRD 보완**  | C    | PRD Gap Check 불완전 (필수 항목 누락)        | PRD 필수 항목 보완 후 재시작 |
-| **쿼리 검토** | J    | SQL 결과 이상 (0행, 타임아웃, 스키마 불일치) | 쿼리 수정 또는 승인          |
-| **설계 승인** | M    | IA/Wireframe/SDD 생성 완료                   | 설계 검토 및 승인/수정요청   |
-| **수동 수정** | Q    | 3회 연속 Review FAIL                         | 직접 수정 또는 방향 조정     |
-| **배포 승인** | T    | 프론트엔드 배포 필요 시                      | 최종 배포 승인               |
+| 체크포인트    | Phase | 트리거 조건                                  | 인간 액션                    |
+| ------------- | ----- | -------------------------------------------- | ---------------------------- |
+| **PRD 보완**  | 진입 전 | PRD Gap Check 불완전 (필수 항목 누락)        | PRD 필수 항목 보완 후 재시작 |
+| **쿼리 검토** | A    | SQL 결과 이상 (0행, 타임아웃, 스키마 불일치) | 쿼리 수정 또는 승인          |
+| **설계 승인** | B    | IA/Wireframe/SDD 생성 완료                   | 설계 검토 및 승인/수정요청   |
+| **수동 수정** | C    | 3회 연속 Review FAIL                         | 직접 수정 또는 방향 조정     |
+| **배포 승인** | C    | 프론트엔드 배포 필요 시                      | 최종 배포 승인               |
 
 ### 자동 중단 트리거
 
@@ -156,15 +231,111 @@ PRD Gap Check:
   - 필수 6개 항목 중 누락 존재
   - type/pipeline 불일치
 
-SQL 결과 검증:
+Phase A (SQL 결과 검증):
   - 결과 행 0개
   - 쿼리 타임아웃 (30초 초과)
   - DOMAIN_SCHEMA.md와 컬럼 불일치
 
-Output Validation:
+Phase C (Output Validation):
   - PRD 체크리스트 매칭률 < 80%
   - 보안 게이트 위반 (Protected Path 접근)
   - 재시도 횟수 >= 3회
+```
+
+---
+
+## 0.6 Skill-Agent 매핑 (도구 규정)
+
+> **Source of Truth**: `SYSTEM_MANIFEST.md`의 Skill Registry 및 `orchestrator/skills/README.md`와 동기화
+> 각 Agent가 사용 가능한 Skill을 명확히 규정합니다.
+
+### Skill vs Agent 개념 정리
+
+> **네이밍 규칙 (v2.5.0)**: Skill 이름에서 `-agent` 접미사 제거. `agent`는 LLM 기반 실행 주체에만 사용.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Skill과 Agent의 관계                                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Skill (skills/*/SKILL.md)              Agent (agents/*.js)                 │
+│  ─────────────────────────              ─────────────────────               │
+│  • 능력/역할 정의서                      • LLM 기반 실행 주체                  │
+│  • 프롬프트 템플릿                       • Claude API 호출                     │
+│  • 입출력 스키마 정의                    • Skill을 로드하여 사용                │
+│                                                                             │
+│  예시:                                                                       │
+│  AnalysisAgent (agents/analysis-agent.js)                                   │
+│    └── query Skill (skills/query/SKILL.md) 로드                             │
+│    └── profiler Skill (skills/profiler/SKILL.md) 로드                       │
+│                                                                             │
+│  ⚠️ Skill 자체는 Agent가 아닙니다. Agent가 Skill을 사용합니다.                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Skill 목록 및 호출 Agent
+
+| Skill | Version | 호출 Agent | Phase | 주요 기능 |
+|-------|---------|------------|-------|-----------|
+| **query** | v1.2.0 | AnalysisAgent | A | SQL 쿼리 작성 및 실행, 데이터 추출 |
+| **profiler** | v1.2.0 | AnalysisAgent | A | 사용자 프로파일 분석, 세그먼트 분류 |
+| **designer** | v2.2.0 | Leader | B | 시각화 고도화 (Mermaid → HTML) |
+| **doc-sync** | v2.1.0 | Leader | B | 로컬 ↔ Notion 동기화 |
+| **coder** | v1.3.0 | SubAgent | C | 코드 구현 (backend/frontend) |
+| **reviewer** | v1.2.0 | OutputValidator | C | 산출물 품질 검증, PASS/FAIL |
+| **viewer** | v1.5.0 | (Orchestrator) | - | 웹 뷰어 API (LLM 미사용) |
+
+> **참고**: viewer는 순수 JavaScript 유틸리티로, LLM Agent가 아닙니다.
+
+### Agent-Skill 권한 매트릭스
+
+```
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  Agent-Skill 권한 매트릭스                                                         │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│                 query  profiler  designer  doc-sync  coder  reviewer  viewer     │
+│  ───────────────────────────────────────────────────────────────────────────────  │
+│  Orchestrator     -       -          -         -        -       -       ✅       │
+│  Leader           -       -          ✅        ✅       -       ✅      -        │
+│  SubAgent         -       -          -         ✅       ✅      -       -        │
+│  AnalysisAgent    ✅      ✅         -         -        -       -       -        │
+│  User (HITL)      -       -          -         -        -       -       ✅       │
+│                                                                                   │
+│  ✅ = 사용 가능 / - = 사용 불가                                                     │
+│                                                                                   │
+│  사용 시점:                                                                        │
+│  • reviewer: Phase 산출물 완료 후 품질 검증 (Leader가 호출)                         │
+│  • doc-sync: Phase 완료 + HITL 승인 후 Notion 동기화 (Leader→SubAgent 지시)        │
+│  • viewer: HITL 체크포인트에서 User가 대시보드로 모니터링/승인/거부                  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 왜 Leader는 DB에 직접 접속하지 않는가?
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🔒 역할 분리 원칙 (Separation of Concerns)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Leader Agent의 역할:                                                        │
+│  ├── 설계자 (Architect): 전체 구조 설계, IA/SDD 생성                          │
+│  ├── 조율자 (Coordinator): SubAgent 작업 지시, HANDOFF 생성                   │
+│  └── 검증자 (Reviewer): 산출물 검토, PASS/FAIL 판정                           │
+│                                                                             │
+│  Leader가 DB 접속하지 않는 이유:                                              │
+│  1. 단일 책임 원칙 (SRP): 설계/조율과 데이터 분석은 별개 관심사                   │
+│  2. 보안 분리: DB 접근 권한은 AnalysisAgent에만 부여 (Query Skill 사용)         │
+│  3. 토큰 효율성: Leader는 설계 컨텍스트만 로드, DB 스키마 불필요                  │
+│  4. 감사 추적: DB 쿼리는 AnalysisAgent를 통해서만 실행 → 로깅 일원화            │
+│                                                                             │
+│  데이터가 필요할 때:                                                          │
+│  PRD → Orchestrator → AnalysisAgent (Phase A) → 분석 결과 → Leader (Phase B) │
+│                                                                             │
+│  ⚠️ Leader가 직접 SELECT 쿼리를 작성/실행하는 것은 아키텍처 위반입니다.          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -194,155 +365,121 @@ Output Validation:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 시스템 다이어그램
+### 1.2 시스템 다이어그램 (Phase 기반)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│         Orchestrator-Centric Multi-LLM Architecture (v3.2.0)                │
+│         Orchestrator-Centric Multi-LLM Architecture (v4.0.0)                │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  📥 INPUT                                                                   │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│  • PRD (.claude/project/PRD.md)                                             │
 │  • 사용자 요청 (자연어)                                                       │
-│  • Lightweight PRD (15줄 이내)                                               │
-│  • 제약사항 & 성공기준                                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                      │
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  🎛️ ORCHESTRATOR (orchestrator.js)                                          │
+│  🎛️ ORCHESTRATOR (orchestrator.js) - 워크플로우 제어 모듈                      │
 │  ═══════════════════════════════════════════════════════════════════════════│
-│                                                                             │
-│  역할: 전체 워크플로우 제어 + 보안 검증                                          │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  Security Layer (v3.2.0)                                            │    │
-│  │  • validateTaskId()      - Path Traversal 방지                       │    │
-│  │  • sanitizeTaskDescription() - 입력 길이 제한 (10,000자)               │    │
-│  │  • sanitizePrdContent()  - PRD 길이 제한 (50,000자)                   │    │
-│  │  • validateFilePath()    - 경로 검증                                  │    │
-│  │  • checkRateLimit()      - 20회/시간 제한                             │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  Provider Factory                                                   │    │
-│  │  • Anthropic (Claude) ─► Primary                                    │    │
-│  │  • OpenAI (GPT-4)     ─► Fallback #1                                │    │
-│  │  • Google (Gemini)    ─► Fallback #2                                │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
+│  • PRD 파싱 → Pipeline Type 결정 (Analysis/Design/Mixed/Full)               │
+│  • Phase에 맞는 Agent 호출                                                   │
+│  • HITL 체크포인트 관리                                                       │
+│  • Security Layer (입력 검증, Rate Limiting)                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
-          │                                             ▲
-          │ run()                                       │ results
-          ▼                                             │
+          │
+          ├─────────────────────────────────────────────────────────────────┐
+          │                                                                 │
+          ▼ [Phase A: Analysis]                                             │
+┌─────────────────────────────────────┐                                     │
+│  📊 ANALYSIS AGENT                  │                                     │
+│  ─────────────────────────────────  │                                     │
+│  • SQL 쿼리 작성/실행                 │                                     │
+│  • 데이터 추출 및 분석                │                                     │
+│  • 분석 리포트 생성                   │                                     │
+│                                     │                                     │
+│  Skill: query, profiler             │                                     │
+│  Output: analysis/*.sql, *.json     │                                     │
+└─────────────────────────────────────┘                                     │
+          │                                                                 │
+          ▼ [Phase B: Design]                                               │
+┌─────────────────────────────────────┐                                     │
+│  🧠 LEADER AGENT                    │                                     │
+│  ─────────────────────────────────  │                                     │
+│  [Planning Mode]                    │                                     │
+│  • 요구사항 분석                      │                                     │
+│  • IA.md / Wireframe.md 생성        │                                     │
+│  • SDD.md / HANDOFF.md 생성         │                                     │
+│                                     │                                     │
+│  Skill: designer, doc-sync          │                                     │
+│  Output: docs/cases/{caseId}/*.md   │                                     │
+└─────────────────────────────────────┘                                     │
+          │                                                                 │
+          ▼ [Phase C: Implementation] ⏳ 미구현                               │
+┌─────────────────────────────────────┐                                     │
+│  ⚙️ SUB-AGENT                       │                                     │
+│  ─────────────────────────────────  │                                     │
+│  [Coding Mode]                      │                                     │
+│  • HANDOFF.md 기반 코드 구현          │                                     │
+│  • 테스트 작성                        │                                     │
+│                                     │                                     │
+│  Skill: coder                       │                                     │
+│  Output: backend/src/*, frontend/*  │                                     │
+└─────────────────────────────────────┘                                     │
+          │                                                                 │
+          ▼ [Review Loop] ⏳ 미구현                                          │
+┌─────────────────────────────────────┐                                     │
+│  🔍 LEADER (Review Mode)            │──── FAIL (최대 3회) ────┐            │
+│  • 코드 리뷰                          │                        │            │
+│  • VALIDATION_GUIDE 검증             │                        ▼            │
+│  • PASS/FAIL 판정                    │◄─── 피드백 반영 ◄── SubAgent        │
+└─────────────────────────────────────┘                                     │
+          │ PASS                                                            │
+          ▼                                                                 │
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  🧠 LEADER AGENT (leader.js)                                                │
-│  ═══════════════════════════════════════════════════════════════════════════│
+│  📤 OUTPUT                                                                  │
+│  ─────────────────────────────────────────────────────────────────────────  │
 │                                                                             │
-│  역할: Thinking / Planning / Review                                          │
-│  • 직접적인 코드 실행 책임 없음                                                 │
+│  [Phase A 산출물]                    [Phase B 산출물]                        │
+│  ┌─────────────────────────┐        ┌─────────────────────────┐            │
+│  │ docs/cases/{id}/analysis/│        │ docs/cases/{id}/        │            │
+│  │ ├── query.sql           │        │ ├── PRD.md (스냅샷)      │            │
+│  │ ├── result.json         │        │ ├── IA.md               │            │
+│  │ └── report.md           │        │ ├── Wireframe.md        │            │
+│  └─────────────────────────┘        │ ├── SDD.md              │            │
+│                                     │ └── HANDOFF.md          │            │
+│  [Phase C 산출물] ⏳ 미구현           └─────────────────────────┘            │
+│  ┌─────────────────────────┐                                               │
+│  │ backend/src/{feature}/  │        [로그]                                  │
+│  │ frontend/src/{feature}/ │        ┌─────────────────────────┐            │
+│  │ **/tests/*.test.ts      │        │ workspace/logs/{id}.json│            │
+│  └─────────────────────────┘        └─────────────────────────┘            │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  Security (Prompt Injection Defense)                                │    │
-│  │  • sanitizeUserInput()   - 위험 패턴 필터링                            │    │
-│  │  • wrapUserContent()     - 경계 마커로 감싸기                          │    │
-│  │    ───USER_INPUT_START───                                           │    │
-│  │    (user content)                                                   │    │
-│  │    ───USER_INPUT_END───                                             │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
-│  [Planning Mode]                    [Review Mode]                           │
-│  ┌─────────────────────┐           ┌─────────────────────┐                  │
-│  │ • 요구사항 분석        │           │ • 코드 리뷰            │                 │
-│  │ • IA.md 생성          │           │ • QUALITY_GATES 검증  │                 │
-│  │ • Wireframe.md 생성   │           │ • 피드백 생성          │                 │
-│  │ • SDD.md 생성         │           │ • PASS/FAIL 판정      │                 │
-│  │ • HANDOFF.md 생성     │           │                      │                 │
-│  └─────────────────────┘           └─────────────────────┘                  │
-│                                                                             │
-│  Context: CLAUDE.md + AI_Playbook.md + DOMAIN_SCHEMA.md + DOCUMENT_PIPELINE │
-└─────────────────────────────────────────────────────────────────────────────┘
-          │                                             ▲
-          │ 📋 HANDOFF.md                               │ 📤 Code + Tests
-          ▼                                             │
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ⚙️ SUB-AGENT (subagent.js)                                                 │
-│  ═══════════════════════════════════════════════════════════════════════════│
-│                                                                             │
-│  역할: 실행 엔진 (코드 생성)                                                   │
-│  • 승인된 계획만 실행                                                          │
-│  • 아키텍처 판단/결정 권한 없음                                                  │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  Security (Output Validation)                                       │    │
-│  │  • validateOutput()      - 출력 파일 경로 검증                         │    │
-│  │    ✗ Path Traversal (../)                                           │    │
-│  │    ✗ Absolute Path (/etc/passwd)                                    │    │
-│  │    ✗ Protected Path (.claude/{rules,workflows,context}/*)           │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
-│  [Coding Mode]                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  INPUT (from Leader)          OUTPUT (to Leader)                    │    │
-│  │  ───────────────────          ─────────────────                     │    │
-│  │  • HANDOFF.md                 • backend/src/{feature}/*.ts          │    │
-│  │  • IA.md                      • frontend/src/{feature}/*.tsx        │    │
-│  │  • SDD.md                     • **/tests/*.test.ts                  │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
-│  🚨 제약사항 (강제 규칙):                                                      │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ ❌ .claude/{rules, workflows, context}/* 수정 금지                    │    │
-│  │ ❌ 아키텍처 임의 변경 금지                                               │    │
-│  │ ❌ 서버 DB INSERT/UPDATE/DELETE 금지                                   │    │
-│  │ ✅ SELECT만 허용 → 로컬에서 작업                                         │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
-│  Context: CLAUDE.md + DOMAIN_SCHEMA.md + TDD_WORKFLOW.md + CODE_STYLE.md    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. 협업 사이클 (Orchestrator 자동화)
+## 2. 협업 사이클
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  🔄 자동화된 협업 사이클                                                       │
-│  ═══════════════════════════════════════════════════════════════════════════│
-│                                                                             │
-│  ┌────────────┐                                                             │
-│  │ 1. 입력    │ ─── 사용자 개입 (1회만)                                        │
-│  │ (User)     │     Task Description + PRD (optional)                       │
-│  └─────┬──────┘                                                             │
-│        │                                                                    │
-│        ▼                                                                    │
-│  ┌────────────┐     ┌────────────┐     ┌─────────────┐     ┌────────────┐  ┌────────────┐ │
-│  │ 2. 계획    │ ──► │ 3. 구현    │ ──► │ 3.5 Output  │ ──► │ 4. 검증    │ ─►│ 5. 완료    │ │
-│  │ (Leader)   │     │ (Sub)      │     │ Validation  │     │ (Leader)   │  │            │ │
-│  └────────────┘     └────────────┘     └─────────────┘     └─────┬──────┘  └────────────┘ │
-│        │                 │                   │                   │                        │
-│        ▼                 ▼                   ▼                   ▼                        │
-│   IA.md         backend/src/*.ts     PRD 체크리스트       PASS? ──┬── YES → 완료          │
-│   Wireframe.md  frontend/src/*.tsx   6/6 매칭 확인              │                        │
-│   SDD.md        **/tests/*.ts        (3단계 매칭)                └── NO → 재시도 (최대 5회)│
-│   HANDOFF.md                                                                             │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+> **상세 플로우**: 섹션 0.5 "전체 파이프라인 플로우 (Phase 기반 HITL)" 참조
 
 ---
 
 ## 3. 역할 정의
 
-### 3.1 Orchestrator (orchestrator.js)
+### 3.1 Orchestrator (orchestrator.js) - 워크플로우 제어 모듈
+
+> **⚠️ 주의**: Orchestrator는 LLM Agent가 아닙니다. (섹션 0 용어 정의 참조)
 
 | 항목     | 내용                                                |
 | -------- | --------------------------------------------------- |
+| **타입** | JavaScript 클래스 (NOT LLM Agent)                   |
 | **역할** | 전체 제어 + 보안 게이트웨이                         |
-| **담당** | 입력 검증, 에이전트 실행, 재시도 관리, 로그 저장    |
+| **담당** | PRD 파싱, Agent 호출, HITL 관리, 재시도, 로그 저장  |
 | **보안** | Rate Limiting, Path Traversal 방지, 입력 새니타이징 |
+| **호출** | Leader, SubAgent, AnalysisAgent를 생성하고 호출     |
 
 ### 3.2 Leader Agent (leader.js)
 
@@ -364,6 +501,50 @@ Output Validation:
 | **보안** | Output Validation (Protected Path 보호)                        |
 | **권한** | `backend/src/*`, `frontend/src/*`, `mcp-server/*` 수정 가능    |
 | **제약** | `.claude/{rules, workflows, context}/*`, `orchestrator/` 수정 금지 |
+
+### 3.4 AnalysisAgent (데이터 분석가)
+
+> **Phase A 전담**: 모든 데이터베이스 분석 작업은 AnalysisAgent를 통해서만 수행됩니다.
+
+| 항목       | 내용                                                              |
+| ---------- | ----------------------------------------------------------------- |
+| **역할**   | 데이터 분석가 (Data Analyst)                                      |
+| **Phase**  | Phase A (Analysis)                                                |
+| **담당**   | SQL 쿼리 작성/실행, 데이터 추출, 분석 리포트 생성                 |
+| **Skill**  | `query`, `profiler`                                               |
+| **보안**   | SELECT 쿼리만 허용, INSERT/UPDATE/DELETE 금지                    |
+| **권한**   | `docs/cases/{caseId}/analysis/*` 쓰기 가능                        |
+| **제약**   | 프로덕션 DB 직접 수정 금지, 로컬 작업만 허용                      |
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  AnalysisAgent 작업 흐름                                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  INPUT                                                                      │
+│  ├── PRD (분석 요구사항)                                                     │
+│  ├── DOMAIN_SCHEMA.md (테이블/컬럼 정의)                                     │
+│  └── DB_ACCESS_POLICY.md (접근 권한)                                        │
+│                                                                             │
+│  PROCESS                                                                    │
+│  ├── 1. PRD에서 분석 목표 추출                                               │
+│  ├── 2. DOMAIN_SCHEMA.md 참조하여 SQL 작성                                   │
+│  ├── 3. Query Skill로 SQL 실행                                              │
+│  ├── 4. 결과 검증 (행 수, 스키마 일치)                                       │
+│  └── 5. 분석 리포트 생성                                                     │
+│                                                                             │
+│  OUTPUT                                                                     │
+│  ├── docs/cases/{caseId}/analysis/query.sql                                 │
+│  ├── docs/cases/{caseId}/analysis/result.json                               │
+│  └── docs/cases/{caseId}/analysis/report.md                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**⚠️ 핵심 원칙**: Leader Agent는 DB에 직접 접속하지 않습니다.
+- 데이터 분석이 필요한 경우, Orchestrator가 AnalysisAgent를 Phase A에서 먼저 실행
+- AnalysisAgent의 분석 결과는 `docs/cases/{caseId}/analysis/`에 저장
+- Leader는 Phase B에서 이 분석 결과를 참조하여 설계 진행
 
 ---
 
@@ -550,14 +731,15 @@ Coding
 ## 7. 파일 구조
 
 ```
-Medi-Notion/
+ATO-System-B/
 ├── .claude/
 │   ├── rules/ ───────────── 🔴 READ ONLY (Constraint Layer)
 │   │   ├── CODE_STYLE.md
 │   │   ├── DOMAIN_SCHEMA.md
-│   │   ├── QUALITY_GATES.md
 │   │   ├── DB_ACCESS_POLICY.md
-│   │   └── VALIDATION_GUIDE.md
+│   │   ├── VALIDATION_GUIDE.md
+│   │   ├── TDD_WORKFLOW.md
+│   │   └── ANALYSIS_GUIDE.md
 │   │
 │   ├── workflows/ ───────── 🔴 READ ONLY (Process Layer)
 │   │   ├── AGENT_ARCHITECTURE.md  ← 현재 문서
@@ -582,44 +764,40 @@ Medi-Notion/
 │   │
 │   ├── agents/
 │   │   ├── leader.js        # Leader Agent
-│   │   ├── subagent.js      # Sub-agent (Claude Native)
+│   │   ├── subagent.js      # Sub-agent
+│   │   ├── analysis-agent.js # AnalysisAgent
 │   │   ├── prd-analyzer.js  # PRD Gap Check
 │   │   └── output-validator.js # 산출물 검증
 │   │
+│   ├── skills/              # Skill 정의 (v2.5.0 네이밍)
+│   │   ├── query/           # SQL 쿼리 생성
+│   │   ├── profiler/        # 프로파일 분석
+│   │   ├── designer/        # 시각화 (MD→HTML)
+│   │   ├── doc-sync/        # Notion 동기화
+│   │   ├── coder/           # 코드 구현
+│   │   ├── reviewer/        # 품질 검증
+│   │   └── viewer/          # 웹 뷰어 API
+│   │
 │   ├── providers/           # Multi-LLM Provider
-│   │   ├── base.js
-│   │   ├── anthropic.js
-│   │   ├── openai.js
-│   │   ├── gemini.js
-│   │   ├── factory.js
-│   │   └── index.js
+│   │   └── ...
 │   │
-│   ├── utils/               # 보안 유틸리티
-│   │   ├── audit-logger.js
-│   │   ├── rulebook-validator.js
-│   │   ├── handoff-validator.js
-│   │   └── index.js
-│   │
-│   ├── viewer/              # 결과 뷰어 (v3.3.0)
-│   │   └── server.js        # Express 서버 (localhost:3000)
-│   │
-│   ├── tests/
-│   │   └── security.test.js
-│   │
-│   └── logs/                # 실행 로그
-│       └── audit/
+│   └── utils/               # 유틸리티
+│       └── ...
 │
-├── docs/<task-id>/          # 설계 문서 (자동 생성)
+├── workspace/
+│   ├── logs/                # 실행 로그 ✅
+│   └── sessions/            # 세션 데이터
+│
+├── docs/cases/{caseId}/     # 케이스별 산출물 (통합)
+│   ├── PRD.md               # 스냅샷
 │   ├── IA.md
-│   ├── Wireframe.md
 │   ├── SDD.md
-│   └── HANDOFF.md
+│   ├── HANDOFF.md
+│   └── analysis/            # 분석 결과
 │
-├── backend/src/             # 백엔드 API (Sub-agent 작업 영역)
-│   └── {feature}/
+├── backend/src/             # 백엔드 API
 │
-└── frontend/src/            # 프론트엔드 컴포넌트 (Sub-agent 작업 영역)
-    └── features/{feature}/
+└── frontend/src/            # 프론트엔드
 ```
 
 ---
@@ -678,8 +856,8 @@ Orchestrator는 다음 메트릭을 자동 추적합니다:
 로그 출력:
 
 ```
-orchestrator/logs/<task-id>.json       # 실행 메트릭
-orchestrator/logs/audit/audit-*.jsonl  # 보안 감사 로그
+workspace/logs/<task-id>.json          # 실행 메트릭
+workspace/logs/audit/audit-*.jsonl     # 보안 감사 로그
 ```
 
 ---
@@ -701,7 +879,7 @@ orchestrator/logs/audit/audit-*.jsonl  # 보안 감사 로그
 | 문서                     | 역할                     |
 | ------------------------ | ------------------------ |
 | `CLAUDE.md`              | 팀 헌법, Safety Rules    |
-| `QUALITY_GATES.md`       | Leader의 검증 기준       |
+| `VALIDATION_GUIDE.md`    | Leader의 검증 기준       |
 | `DOMAIN_SCHEMA.md`       | 데이터베이스 스키마      |
 | `orchestrator/README.md` | Orchestrator 상세 가이드 |
 
@@ -711,11 +889,16 @@ orchestrator/logs/audit/audit-*.jsonl  # 보안 감사 로그
 
 | 버전  | 날짜       | 변경 내용                                                                      |
 | ----- | ---------- | ------------------------------------------------------------------------------ |
+| 2.6.2 | 2025-12-24 | Phase A 다이어그램 수정: Reviewer Skill 위치를 Query Skill 직후로 이동, 쿼리 결과 검증 후 리포트 생성 흐름으로 변경 |
+| 2.6.1 | 2025-12-24 | Agent-Skill 권한 매트릭스 업데이트: Leader→reviewer, SubAgent→doc-sync, User(HITL)→viewer 추가, 사용 시점 설명 추가 |
+| 2.6.0 | 2025-12-24 | 공통 Skill (Reviewer, Viewer, Doc-Sync) 표 추가, 다이어그램에 Cross-Phase Skill 흐름 반영 (HITL↔Viewer, 품질검증↔Reviewer, Phase완료↔Doc-Sync) |
+| 2.5.1 | 2025-12-24 | Phase 표 Agent/Skill 분리, Mermaid 다이어그램 Skill 참조 수정, 섹션 3.4 query→Query Skill 업데이트 |
+| 2.5.0 | 2025-12-24 | Skill 네이밍 리팩토링: agent 접미사 제거 (query-agent→query, code-agent→coder 등), 시스템 다이어그램 Skill 업데이트 |
+| 2.4.0 | 2025-12-24 | 문서 정리: 섹션2 중복 제거, 파일구조 ATO-System-B로 수정, 로그경로 workspace/logs로 수정, QUALITY_GATES→VALIDATION_GUIDE 수정 |
+| 2.3.0 | 2025-12-24 | AnalysisAgent 역할 공식화 (섹션 3.4), Skill-Agent 매핑 테이블 추가 (섹션 0.6), Phase 기반 파이프라인 현행화 |
 | 2.0.0 | 2025-12-19 | Agent 로딩 설정 섹션 추가 (섹션 0), 섹션별 선택적 로딩 전략                    |
-| 1.8.0 | 2025-12-17 | Output Validation → Review 연동, 3단계 PRD 매칭, CTE 탐지 개선, 결과 뷰어 추가 |
-| 1.7.0 | 2025-12-17 | MCP 제거, Orchestrator 중심 아키텍처, Multi-LLM Provider, 보안 v3.2.0          |
-| 1.6.0 | 2025-12-17 | (백업: AGENT_ARCHITECTURE_v1.6.0.md)                                           |
-| 1.2.0 | 2025-12-17 | Orchestrator 섹션 추가                                                         |
+| 1.8.0 | 2025-12-17 | Output Validation → Review 연동, 3단계 PRD 매칭                                |
+| 1.7.0 | 2025-12-17 | MCP 제거, Orchestrator 중심 아키텍처, Multi-LLM Provider                       |
 
 ---
 

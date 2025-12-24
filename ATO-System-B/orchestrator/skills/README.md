@@ -1,7 +1,8 @@
 # Orchestrator Skills
 
-> **버전**: 1.1.0
-> **최종 수정**: 2025-12-23
+> **버전**: 2.5.0
+> **최종 수정**: 2025-12-24
+> **변경 이력**: 네이밍 리팩토링 - agent 접미사 제거
 
 ---
 
@@ -10,22 +11,36 @@
 Skills는 Orchestrator Agent들의 역할과 능력을 정의하는 모듈입니다.
 각 Skill은 `SKILL.md` 파일과 선택적으로 구현 코드(`index.js`)를 포함합니다.
 
+> **네이밍 규칙 (v2.5.0)**: Skill 이름에서 `-agent` 접미사 제거. `agent`는 LLM 기반 실행 주체에만 사용.
+
 ---
 
 ## Skill 목록
 
-| Skill | 역할 | 상태 | 구현 위치 |
-|-------|------|------|----------|
-| **code-agent** | 설계 문서 기반 코드 구현 | ✅ 완료 | `skills/code-agent/index.js` → `agents/code-agent.js` |
-| **design-agent** | 시각화 고도화 (Mermaid → HTML) | ✅ 완료 | `skills/design-agent/index.js` |
-| **query-agent** | SQL 쿼리 생성/실행 | ✅ 완료 | `skills/query-agent/index.js` |
-| **profile-agent** | 회원 프로필 분석 | ✅ 완료 | `skills/profile-agent/index.js` |
-| **review-agent** | 산출물 품질 검증 | ✅ 완료 | `skills/review-agent/index.js` |
-| **doc-agent** | 로컬 ↔ Notion 동기화 | ✅ 완료 | `skills/doc-agent/index.js` |
-| **viewer-agent** | 웹 뷰어 API | ✅ 완료 | `skills/viewer-agent/index.js` → `viewer/server.js` |
+| Skill | 역할 | 버전 | 상태 | 팩토리 패턴 |
+|-------|------|------|------|------------|
+| **query** | SQL 쿼리 생성/실행 | v1.2.0 | ✅ 완료 | ✅ |
+| **coder** | 설계 문서 기반 코드 구현 | v1.3.0 | ✅ 완료 | ✅ |
+| **designer** | 시각화 고도화 (Mermaid → HTML) | v2.2.0 | ✅ 완료 | ✅ |
+| **doc-sync** | 로컬 ↔ Notion 동기화 | v2.1.0 | ✅ 완료 | ✅ |
+| **profiler** | 회원 프로필 분석 | v1.2.0 | ✅ 완료 | ✅ |
+| **reviewer** | 산출물 품질 검증 | v1.2.0 | ✅ 완료 | ✅ |
+| **viewer** | 웹 뷰어 API | v1.5.0 | ✅ 완료 | ✅ |
 
 > ⚠️ **참고**: `agents/design-agent.js`는 "문서 생성" 담당 (PRD → IA/Wireframe/SDD)이고,
-> `skills/design-agent/index.js`는 "시각화" 담당 (MD → HTML)입니다. 이름은 같지만 역할이 다릅니다.
+> `skills/designer/index.js`는 "시각화" 담당 (MD → HTML)입니다. 이름은 다르지만 관련 기능입니다.
+
+### 레거시 매핑 (하위 호환성)
+
+| 기존 이름 (Deprecated) | 새 이름 |
+| :--------------------- | :------ |
+| query-agent | query |
+| code-agent | coder |
+| design-agent | designer |
+| doc-agent | doc-sync |
+| profile-agent | profiler |
+| review-agent | reviewer |
+| viewer-agent | viewer |
 
 ---
 
@@ -37,44 +52,44 @@ skills/
 ├── skill-loader.js      # SkillLoader 클래스
 ├── skill-registry.js    # SkillRegistry (동적 로딩)
 │
-├── code-agent/
-│   ├── SKILL.md         # 코드 구현 전문가 정의
-│   └── index.js         # CodeAgentSkill (래퍼)
+├── query/
+│   ├── SKILL.md         # SQL 쿼리 전문가 정의
+│   ├── index.js         # QuerySkill 구현
+│   └── resources/
+│       └── SQL_PATTERNS.md
 │
-├── design-agent/
+├── coder/
+│   ├── SKILL.md         # 코드 구현 전문가 정의
+│   └── index.js         # CoderSkill (래퍼)
+│
+├── designer/
 │   ├── SKILL.md         # 시각화 고도화 전문가 정의
-│   ├── index.js         # DesignAgent 구현 (v2.0.0)
+│   ├── index.js         # DesignerSkill 구현 (v2.2.0)
 │   └── resources/       # HTML 템플릿
 │       ├── IA_TEMPLATE.md
 │       └── WF_TEMPLATE.md
 │
-├── query-agent/
-│   ├── SKILL.md         # SQL 쿼리 전문가 정의
-│   ├── index.js         # QueryAgent 구현
-│   └── resources/
-│       └── SQL_PATTERNS.md
+├── doc-sync/
+│   ├── SKILL.md         # 문서 동기화 전문가 정의
+│   ├── index.js         # DocSyncSkill 구현
+│   └── sync.js          # 동기화 핵심 로직
 │
-├── profile-agent/
+├── profiler/
 │   ├── SKILL.md         # 프로필 분석 전문가 정의
-│   ├── index.js         # ProfileAgent 구현
+│   ├── index.js         # ProfilerSkill 구현
 │   └── resources/
 │       └── SEGMENT_RULES.md
 │
-├── review-agent/
+├── reviewer/
 │   ├── SKILL.md         # 품질 검증 전문가 정의
-│   ├── index.js         # ReviewAgent 구현
+│   ├── index.js         # ReviewerSkill 구현
 │   └── resources/
 │       ├── PRD_CHECKLIST.md
 │       └── QUALITY_RULES.md
 │
-├── doc-agent/
-│   ├── SKILL.md         # 문서 동기화 전문가 정의
-│   ├── index.js         # DocAgent 구현
-│   └── sync.js          # 동기화 핵심 로직
-│
-└── viewer-agent/
+└── viewer/
     ├── SKILL.md         # 뷰어 API 정의
-    └── index.js         # ViewerAgent 구현
+    └── index.js         # ViewerSkill 구현
 ```
 
 ---
@@ -109,17 +124,23 @@ skills/
 처리 흐름
 ```
 
-### index.js 구조
+### index.js 구조 (팩토리 패턴)
+
+모든 Skill 클래스는 **팩토리 패턴**을 따릅니다.
 
 ```javascript
-export class {SkillName}Agent {
+import { SkillLoader } from '../skill-loader.js';
+
+export class {SkillName}Skill {
   constructor(config = {}) {
-    this.projectRoot = config.projectRoot;
-    this.skillLoader = new SkillLoader(...);
+    this.projectRoot = config.projectRoot || process.cwd();
+    this.skillLoader = new SkillLoader(path.join(__dirname, '..'));
+    this.skill = null;
   }
 
   async initialize() {
     this.skill = await this.skillLoader.loadSkill('{skill-name}');
+    console.log('[{SkillName}Skill] Initialized with SKILL.md');
     return this;
   }
 
@@ -128,7 +149,42 @@ export class {SkillName}Agent {
     return output;
   }
 }
+
+// 팩토리 패턴 기본 내보내기 (SkillRegistry 호환)
+export default {
+  create: (config = {}) => new {SkillName}Skill(config),
+  meta: {
+    name: '{skill-name}',
+    version: 'x.x.x',
+    description: '역할 설명',
+    category: 'analyst | builder | guardian | utility | implementation',
+    dependencies: ['SkillLoader'],
+    status: 'active'
+  }
+};
+
+// Named export (직접 import 호환)
+export { {SkillName}Skill };
 ```
+
+### SkillRegistry 로딩 규칙
+
+SkillRegistry는 다음 규칙으로 Skill 클래스를 찾습니다:
+
+```javascript
+// skill-registry.js
+// 클래스명 = PascalCase(skillType) + 'Skill'
+const baseClassName = skillType.split('-').map(part =>
+  part.charAt(0).toUpperCase() + part.slice(1)
+).join('');
+const className = baseClassName + 'Skill';
+// 예: 'reviewer' → 'ReviewerSkill'
+// 예: 'doc-sync' → 'DocSyncSkill'
+
+SkillClass = module[className] || module.default;
+```
+
+**주의**: Named export 이름은 반드시 위 규칙을 따라야 합니다.
 
 ---
 
@@ -140,12 +196,12 @@ import { SkillLoader } from './skill-loader.js';
 const loader = new SkillLoader(path.join(__dirname, 'skills'));
 
 // SKILL.md 로드
-const skill = await loader.loadSkill('query-agent');
+const skill = await loader.loadSkill('query');
 
 // skill 구조
 {
-  name: 'query-agent',
-  version: '1.0.0',
+  name: 'query',
+  version: '1.2.0',
   role: 'SQL 쿼리 생성 및 데이터 분석',
   content: '전체 SKILL.md 내용'
 }
@@ -157,13 +213,12 @@ const skill = await loader.loadSkill('query-agent');
 
 | Agent Class | Skill | 호출 방법 |
 |-------------|-------|----------|
-| `LeaderAgent` | design-agent (plan) | `leader.plan(prd)` |
-| `LeaderAgent` | review-agent (review) | `leader.review(outputs)` |
-| `CodeAgent` | code-agent | `codeAgent.implement(design)` |
-| `AnalysisAgent` | query-agent | `analysisAgent.analyze(prd)` |
-| `QueryAgent` | query-agent | `queryAgent.analyze(input)` |
-| `ProfileAgent` | profile-agent | `profileAgent.analyzeProfiles(input)` |
-| `ReviewAgent` | review-agent | `reviewAgent.validate(input)` |
+| `LeaderAgent` | designer (visualize) | `leader.visualize(docs)` |
+| `LeaderAgent` | doc-sync | `leader.sync(docs)` |
+| `SubAgent` | coder | `subAgent.implement(handoff)` |
+| `AnalysisAgent` | query | `analysisAgent.analyze(prd)` |
+| `AnalysisAgent` | profiler | `analysisAgent.analyzeProfiles(input)` |
+| `OutputValidator` | reviewer | `validator.validate(outputs)` |
 
 ---
 
@@ -178,16 +233,42 @@ const skill = await loader.loadSkill('query-agent');
    - 위 템플릿 참고
    - 버전, 역할, 상태 명시
 
-3. **index.js 구현** (선택)
-   - 독립 실행이 필요한 경우
-   - 기존 Agent 확장인 경우 생략 가능
+3. **index.js 구현 (팩토리 패턴 필수)**
+   ```javascript
+   // 필수 구조
+   export class {SkillName}Skill { ... }
+
+   export default {
+     create: (config) => new {SkillName}Skill(config),
+     meta: { name, version, description, category, dependencies, status }
+   };
+
+   export { {SkillName}Skill };  // Named export 필수
+   ```
 
 4. **SkillLoader 연동**
    ```javascript
-   this.skill = await this.skillLoader.loadSkill('{skill-name}');
+   constructor(config = {}) {
+     this.skillLoader = new SkillLoader(path.join(__dirname, '..'));
+     this.skill = null;
+   }
+
+   async initialize() {
+     this.skill = await this.skillLoader.loadSkill('{skill-name}');
+     return this;
+   }
    ```
 
-5. **테스트 작성**
+5. **SkillRegistry 등록 확인**
+   ```javascript
+   // skill-registry.js의 SkillType enum에 추가
+   export const SkillType = {
+     // ...existing skills...
+     '{SKILL_NAME}': '{skill-name}'
+   };
+   ```
+
+6. **테스트 작성**
    ```bash
    touch orchestrator/skills/{skill-name}/{skill-name}.test.js
    ```
@@ -197,7 +278,7 @@ const skill = await loader.loadSkill('query-agent');
 ## 주의사항
 
 - SKILL.md는 **읽기 전용**으로 취급 (버전 관리)
-- Agent 구현 변경 시 SKILL.md 버전 업데이트
+- Skill 구현 변경 시 SKILL.md 버전 업데이트
 - resources/ 폴더는 템플릿, 예제 코드 용도
 
 ---

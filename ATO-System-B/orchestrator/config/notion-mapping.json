@@ -109,7 +109,7 @@
     },
     "PROJECT_STACK.md": {
       "notionPageId": "2d187960-3bef-81b5-b356-eb136b1f049e",
-      "localPath": ".claude/rules/PROJECT_STACK.md",
+      "localPath": ".claude/project/PROJECT_STACK.md",
       "category": "01. Guides",
       "mutability": "controlled",
       "syncEnabled": true
