@@ -45,7 +45,9 @@ export class SkillLoader {
     if (isEnabled('SECURITY_PATH_VALIDATION')) {
       const pathValidator = getPathValidator();
       // Skills는 내부 시스템 경로이므로 validateInternalPath() 사용
-      const relativePath = path.relative(process.cwd(), skillPath).replace(/\\/g, '/');
+      // 프로젝트 루트 기준으로 상대 경로 계산 (process.cwd()는 orchestrator/ 내부일 수 있음)
+      const projectRoot = path.resolve(__dirname, '../..');
+      const relativePath = path.relative(projectRoot, skillPath).replace(/\\/g, '/');
       const validateResult = pathValidator.validateInternalPath(relativePath);
       if (!validateResult.valid) {
         const logger = getAuditLogger();
