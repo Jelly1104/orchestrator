@@ -1223,6 +1223,25 @@ export class Orchestrator {
 
       console.log(`\n✅ Phase A 완료: ${analysisResult.success ? '성공' : '부분 성공'}`);
 
+      // [Fix v4.3.3] Empty Analysis Guard - 빈 분석 결과 경고
+      const hasValidInsights = analysisResult.insights?.insights?.length > 0 ||
+                               analysisResult.insights?.patterns?.length > 0;
+      const hasMockData = analysisResult.data?.some(d => d.mock === true);
+      const totalRows = analysisResult.data?.reduce((sum, d) => sum + (d.rowCount || 0), 0) || 0;
+
+      if (totalRows === 0 || !hasValidInsights) {
+        console.warn('\n⚠️━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.warn('⚠️ [Empty Analysis Guard] 분석 결과가 비어있습니다!');
+        console.warn('⚠️━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.warn(`   - 총 반환 행: ${totalRows}`);
+        console.warn(`   - 인사이트 존재: ${hasValidInsights ? '있음' : '없음'}`);
+        console.warn(`   - Mock 모드: ${hasMockData ? '예 (DB 연결 실패)' : '아니오'}`);
+        console.warn('');
+        console.warn('⛔ Phase B로 진행하지만, Leader Agent는 "빈 데이터"를 기반으로 설계합니다.');
+        console.warn('   실제 데이터 분석을 원하면 DB 연결을 확인하세요.');
+        console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      }
+
       // ========== Phase B: Design (분석 결과 기반) ==========
       console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('📋 [Phase B] Design 시작 (분석 결과 기반)...');
@@ -1584,6 +1603,7 @@ export class Orchestrator {
 
   /**
    * 분석 결과를 PRD에 추가하여 풍부화
+   * [Fix v4.3.3] 데이터 없음 명시적 표시
    */
   enrichPRDWithAnalysis(originalPrd, analysisResult) {
     let enriched = originalPrd;
@@ -1591,15 +1611,47 @@ export class Orchestrator {
     // 분석 컨텍스트 섹션 추가
     enriched += `\n\n---\n## 분석 결과 컨텍스트 (자동 생성)\n\n`;
 
+    // [Fix v4.3.3] 분석 결과 유효성 체크
+    const hasInsights = analysisResult.insights?.insights?.length > 0;
+    const hasPatterns = analysisResult.insights?.patterns?.length > 0;
+    const hasRecommendations = analysisResult.insights?.recommendations?.length > 0;
+    const hasSummary = analysisResult.summary &&
+                       (analysisResult.summary.totalRows > 0 || analysisResult.summary.queriesTotal > 0);
+    const hasMockData = analysisResult.data?.some(d => d.mock === true);
+
+    // 데이터가 전혀 없는 경우 명시적으로 표시
+    if (!hasInsights && !hasPatterns && !hasRecommendations && !hasSummary) {
+      enriched += `### ⚠️ 분석 결과 없음\n\n`;
+      enriched += `Phase A(Analysis)에서 유의미한 데이터를 수집하지 못했습니다.\n\n`;
+
+      if (hasMockData) {
+        enriched += `**원인**: DB 연결 실패로 Mock 모드에서 실행됨\n`;
+        enriched += `**영향**: 실제 데이터 기반 설계가 불가능합니다. 일반적인 설계 원칙에 따라 진행하세요.\n\n`;
+      } else {
+        enriched += `**원인**: 쿼리 실행 결과가 비어있음\n`;
+        enriched += `**영향**: 데이터 기반 최적화 없이 PRD 요구사항만으로 설계를 진행합니다.\n\n`;
+      }
+
+      enriched += `---\n\n`;
+      enriched += `> 💡 **Leader Agent 지침**: 분석 데이터가 없으므로 PRD의 요구사항과 도메인 지식을 기반으로 설계하세요.\n\n`;
+
+      return enriched;
+    }
+
     // 쿼리 결과 요약
     if (analysisResult.summary) {
       enriched += `### 데이터 분석 요약\n`;
-      enriched += `- 실행된 쿼리: ${analysisResult.summary.queriesSuccess}/${analysisResult.summary.queriesTotal}\n`;
-      enriched += `- 총 데이터 행: ${analysisResult.summary.totalRows}\n\n`;
+      enriched += `- 실행된 쿼리: ${analysisResult.summary.successCount || 0}/${analysisResult.summary.totalQueries || 0}\n`;
+      enriched += `- 총 데이터 행: ${analysisResult.summary.totalRows || 0}\n`;
+
+      if (hasMockData) {
+        enriched += `- ⚠️ **Mock 모드**: DB 연결 실패로 실제 데이터 없음\n`;
+      }
+      enriched += `\n`;
     }
 
     // 인사이트
-    if (analysisResult.insights?.insights?.length > 0) {
+    if (hasInsights) {
       enriched += `### 발견된 인사이트\n`;
       for (const insight of analysisResult.insights.insights) {
         enriched += `- **${insight.finding}**: ${insight.implication}\n`;
@@ -1608,7 +1660,7 @@ export class Orchestrator {
     }
 
     // 패턴
-    if (analysisResult.insights?.patterns?.length > 0) {
+    if (hasPatterns) {
       enriched += `### 식별된 패턴\n`;
       for (const pattern of analysisResult.insights.patterns) {
         enriched += `- **${pattern.name}** (${pattern.significance}): ${pattern.description}\n`;
@@ -1617,7 +1669,7 @@ export class Orchestrator {
     }
 
     // 제안사항
-    if (analysisResult.insights?.recommendations?.length > 0) {
+    if (hasRecommendations) {
       enriched += `### 제안사항\n`;
       for (const rec of analysisResult.insights.recommendations) {
         enriched += `- [${rec.priority}] ${rec.action} - ${rec.expectedImpact}\n`;

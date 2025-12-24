@@ -399,24 +399,158 @@ export class AnalysisAgent {
 
   async executeQueries(queries) {
     const results = [];
+
+    // [Fix v4.3.3] 실제 DB 연결 시도
+    let dbConnection = null;
+    let useRealDB = false;
+
+    try {
+      // MySQL2 동적 import (설치되어 있을 경우)
+      const mysql = await import('mysql2/promise').catch(() => null);
+
+      if (mysql && this.dbConfig) {
+        console.log(`  [DB] 연결 시도: ${this.dbConfig.host}:${this.dbConfig.port}/${this.dbConfig.database}`);
+
+        dbConnection = await mysql.default.createConnection({
+          host: this.dbConfig.host,
+          port: this.dbConfig.port,
+          database: this.dbConfig.database,
+          user: this.dbConfig.user,
+          password: this.dbConfig.password,
+          connectTimeout: 10000,
+        });
+
+        console.log(`  [DB] ✅ 연결 성공`);
+        useRealDB = true;
+      }
+    } catch (dbError) {
+      console.warn(`  [DB] ⚠️ 연결 실패: ${dbError.message}`);
+      console.warn(`  [DB] Mock 모드로 전환 (실제 데이터 없음)`);
+    }
+
     for (const query of queries) {
-      // ✅ [Fix] query.name이 undefined일 경우 대비
       const queryName = query.name || "unnamed_query";
       console.log(`  - 실행 중: ${queryName}`);
 
-      results.push({
+      const result = {
         name: queryName,
         sql: query.sql,
-        data: [], // Mock Data
+        data: [],
         rowCount: 0,
-        success: true,
-      });
+        success: false,
+        error: null,
+      };
+
+      if (useRealDB && dbConnection) {
+        try {
+          // 실제 쿼리 실행 (SELECT만 허용)
+          if (!query.sql.trim().toUpperCase().startsWith('SELECT')) {
+            throw new Error('SELECT 쿼리만 허용됩니다');
+          }
+
+          const [rows] = await dbConnection.execute(query.sql);
+          result.data = Array.isArray(rows) ? rows.slice(0, 1000) : []; // 최대 1000행
+          result.rowCount = result.data.length;
+          result.success = true;
+          console.log(`    ✅ ${result.rowCount}행 반환`);
+        } catch (queryError) {
+          result.error = queryError.message;
+          result.success = false;
+          console.log(`    ❌ 쿼리 오류: ${queryError.message}`);
+        }
+      } else {
+        // Mock 모드: DB 연결 없이 SQL 파일만 생성
+        result.success = true;
+        result.data = [];
+        result.rowCount = 0;
+        result.mock = true;
+        console.log(`    ⚠️ Mock 모드 (데이터 없음)`);
+      }
+
+      results.push(result);
     }
+
+    // DB 연결 종료
+    if (dbConnection) {
+      await dbConnection.end();
+      console.log(`  [DB] 연결 종료`);
+    }
+
     return results;
   }
 
   async interpretResults(results, requirements) {
-    return { patterns: [], insights: [], recommendations: [] };
+    // [Fix v4.3.3] 실제 데이터 기반 인사이트 생성
+    const insights = {
+      patterns: [],
+      insights: [],
+      recommendations: [],
+      dataAvailable: false,
+    };
+
+    // 실제 데이터가 있는지 확인
+    const resultsWithData = results.filter(r => r.success && r.rowCount > 0);
+
+    if (resultsWithData.length === 0) {
+      console.log(`  [Interpret] ⚠️ 분석할 데이터가 없습니다 (Mock 모드)`);
+      insights.insights.push({
+        finding: "데이터 수집 실패",
+        implication: "DB 연결이 불가능하여 Mock 모드로 실행되었습니다. 실제 데이터 분석을 위해 DB 연결을 확인하세요.",
+      });
+      return insights;
+    }
+
+    insights.dataAvailable = true;
+    console.log(`  [Interpret] 📊 ${resultsWithData.length}개 쿼리 결과 분석 중...`);
+
+    // 각 쿼리 결과에서 기본 통계 추출
+    for (const result of resultsWithData) {
+      if (result.data.length > 0) {
+        const sampleRow = result.data[0];
+        const columns = Object.keys(sampleRow);
+
+        insights.patterns.push({
+          name: result.name,
+          description: `${result.rowCount}행 반환, 컬럼: ${columns.slice(0, 5).join(', ')}${columns.length > 5 ? '...' : ''}`,
+          significance: result.rowCount > 100 ? "high" : "medium",
+        });
+
+        // 숫자형 컬럼 통계
+        for (const col of columns) {
+          const values = result.data.map(row => row[col]).filter(v => typeof v === 'number');
+          if (values.length > 0) {
+            const sum = values.reduce((a, b) => a + b, 0);
+            const avg = sum / values.length;
+            insights.insights.push({
+              finding: `${result.name}.${col} 평균값`,
+              implication: `평균: ${avg.toFixed(2)}, 총합: ${sum}, 건수: ${values.length}`,
+            });
+          }
+        }
+      }
+    }
+
+    // 총 데이터 행 수에 따른 권장사항
+    const totalRows = resultsWithData.reduce((sum, r) => sum + r.rowCount, 0);
+    if (totalRows > 10000) {
+      insights.recommendations.push({
+        priority: "HIGH",
+        action: "대용량 데이터 페이징 처리 필요",
+        expectedImpact: "성능 향상 및 UI 응답성 개선",
+      });
+    }
+
+    if (resultsWithData.length > 3) {
+      insights.recommendations.push({
+        priority: "MEDIUM",
+        action: "쿼리 결과 캐싱 고려",
+        expectedImpact: "반복 조회 시 응답 시간 단축",
+      });
+    }
+
+    console.log(`  [Interpret] ✅ 인사이트 ${insights.insights.length}개, 패턴 ${insights.patterns.length}개, 권장사항 ${insights.recommendations.length}개`);
+
+    return insights;
   }
 
   async generateOutputs(queries, results, insights, prd) {
@@ -438,15 +572,73 @@ export class AnalysisAgent {
       console.log(`    - results/${filename}`);
     }
 
-    // 리포트 생성
+    // [Fix v4.3.3] 풍부한 리포트 생성
     const reportPath = path.join(this.outputDir, "analysis_report.md");
-    fs.writeFileSync(
-      reportPath,
-      `# Analysis Report\n\nTask: ${prd.objective || "N/A"}`,
-      "utf-8"
-    );
+    let reportContent = `# Analysis Report\n\n`;
+    reportContent += `**생성 시각**: ${new Date().toISOString()}\n`;
+    reportContent += `**Task**: ${prd.objective || "(Objective)"}\n\n`;
+
+    // 쿼리 실행 요약
+    reportContent += `## 1. 쿼리 실행 요약\n\n`;
+    reportContent += `| 쿼리명 | 상태 | 반환 행 |\n`;
+    reportContent += `|--------|------|--------|\n`;
+
+    const totalRows = results.reduce((sum, r) => sum + (r.rowCount || 0), 0);
+    const successCount = results.filter(r => r.success).length;
+
+    for (const result of results) {
+      const status = result.mock ? "⚠️ Mock" : (result.success ? "✅ 성공" : "❌ 실패");
+      reportContent += `| ${result.name} | ${status} | ${result.rowCount || 0} |\n`;
+    }
+
+    reportContent += `\n**총 ${results.length}개 쿼리 중 ${successCount}개 성공, 총 ${totalRows}행 반환**\n\n`;
+
+    // 인사이트 섹션
+    if (insights) {
+      reportContent += `## 2. 발견된 인사이트\n\n`;
+
+      if (insights.insights && insights.insights.length > 0) {
+        for (const insight of insights.insights) {
+          reportContent += `### ${insight.finding}\n`;
+          reportContent += `${insight.implication}\n\n`;
+        }
+      } else {
+        reportContent += `(인사이트 없음 - 데이터 분석 결과가 없거나 Mock 모드로 실행됨)\n\n`;
+      }
+
+      // 패턴 섹션
+      if (insights.patterns && insights.patterns.length > 0) {
+        reportContent += `## 3. 식별된 패턴\n\n`;
+        for (const pattern of insights.patterns) {
+          reportContent += `- **${pattern.name}** (${pattern.significance}): ${pattern.description}\n`;
+        }
+        reportContent += `\n`;
+      }
+
+      // 권장사항 섹션
+      if (insights.recommendations && insights.recommendations.length > 0) {
+        reportContent += `## 4. 권장사항\n\n`;
+        for (const rec of insights.recommendations) {
+          reportContent += `- [${rec.priority}] **${rec.action}**: ${rec.expectedImpact}\n`;
+        }
+        reportContent += `\n`;
+      }
+    }
+
+    // DB 연결 상태
+    const hasMock = results.some(r => r.mock);
+    if (hasMock) {
+      reportContent += `## ⚠️ 주의사항\n\n`;
+      reportContent += `이 리포트는 **Mock 모드**로 생성되었습니다. DB 연결이 불가능하여 실제 데이터를 조회하지 못했습니다.\n\n`;
+      reportContent += `실제 데이터 분석을 위해 다음을 확인하세요:\n`;
+      reportContent += `- DB 연결 정보 (host, port, user, password)\n`;
+      reportContent += `- 네트워크 접근 권한\n`;
+      reportContent += `- mysql2 패키지 설치 여부: \`npm install mysql2\`\n`;
+    }
+
+    fs.writeFileSync(reportPath, reportContent, "utf-8");
     outputs.push({ type: "REPORT", path: reportPath });
-    console.log(`    - analysis_report.md`);
+    console.log(`    - analysis_report.md (${reportContent.length} bytes)`);
 
     return outputs;
   }
