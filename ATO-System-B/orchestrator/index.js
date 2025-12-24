@@ -98,19 +98,71 @@ function extractCaseIdFromPRD(prdContent) {
 }
 
 /**
- * HITL Blocking Prompt (v4.3.0)
- * Phase 완료 후 사용자 승인 대기
+ * PRD에서 제목 추출 (작업 설명 강화용)
+ * [Fix v4.3.1] 짧은 작업 설명으로 인한 산출물 품질 저하 방지
  */
-async function triggerHITLCheckpoint(taskId, currentPhase) {
+function extractTitleFromPRD(prdContent) {
+  // "# PRD: 제목" 형식
+  const titleMatch = prdContent.match(/# PRD[:\s]*(.+)/);
+  if (titleMatch) {
+    return titleMatch[1].trim();
+  }
+
+  // "## 1. 목적" 섹션에서 추출
+  const objectiveMatch = prdContent.match(/## 1\. 목적[^]*?\*\*([^*]+)\*\*/);
+  if (objectiveMatch) {
+    return objectiveMatch[1].trim().substring(0, 100);
+  }
+
+  return null;
+}
+
+/**
+ * HITL Blocking Prompt (v4.3.1)
+ * Phase 완료 후 사용자 승인 대기
+ *
+ * @param {string} taskId - 작업 ID
+ * @param {object} options - 체크포인트 옵션
+ * @param {string} options.phase - 현재 Phase (예: 'Phase A', 'Phase B', 'Final')
+ * @param {string} options.description - 체크포인트 설명
+ * @param {string} options.nextAction - Y 선택 시 다음 동작 설명
+ * @param {string[]} options.completedPhases - 완료된 Phase 목록
+ */
+async function triggerHITLCheckpoint(taskId, options = {}) {
+  // 하위 호환성: 문자열로 전달된 경우 처리
+  if (typeof options === "string") {
+    options = { phase: "Final", description: options };
+  }
+
+  const {
+    phase = "Final",
+    description = "실행 완료 - 결과 검토",
+    nextAction = null,
+    completedPhases = [],
+  } = options;
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
   console.log(`\n${"─".repeat(60)}`);
-  console.log(`👤 HITL 체크포인트: ${currentPhase}`);
+  console.log(`👤 HITL 체크포인트`);
   console.log(`${"─".repeat(60)}`);
-  console.log(`   [Y] 승인 - 다음 단계 진행`);
+  console.log(`   📍 현재 Phase: ${phase}`);
+  console.log(`   📋 상태: ${description}`);
+
+  if (completedPhases.length > 0) {
+    console.log(`   ✅ 완료된 Phase: ${completedPhases.join(" → ")}`);
+  }
+
+  console.log(`${"─".repeat(60)}`);
+
+  if (nextAction) {
+    console.log(`   [Y] 승인 → ${nextAction}`);
+  } else {
+    console.log(`   [Y] 승인 - 작업 완료 확인`);
+  }
   console.log(`   [N] 거부 - 피드백 입력 후 재실행 (Not Implemented)`);
   console.log(`   [S] 중단 - 작업 종료`);
 
@@ -120,7 +172,11 @@ async function triggerHITLCheckpoint(taskId, currentPhase) {
       const action = answer.trim().toUpperCase();
 
       if (action === "Y") {
-        console.log("🚀 승인 확인. 다음 Phase로 진입합니다...\n");
+        if (nextAction) {
+          console.log(`🚀 승인 확인. ${nextAction}...\n`);
+        } else {
+          console.log("✅ 승인 완료. 작업이 정상적으로 종료됩니다.\n");
+        }
         resolve(true);
       } else if (action === "S") {
         console.log("🛑 사용자에 의해 작업이 중단되었습니다.");
@@ -355,14 +411,19 @@ async function main() {
       // Task ID를 Case ID로 설정 (Orchestrator에 전달)
       options.taskId = caseId;
 
-      // [New] 작업 설명이 비어있으면 PRD 기반으로 자동 생성
+      // [Fix v4.3.1] 작업 설명 강화 - PRD 제목을 포함하여 LLM이 PRD를 무시하지 않도록 함
+      const prdTitle = extractTitleFromPRD(prdContent);
 
-      if (!options.taskDescription) {
-        options.taskDescription = `PRD 기반 작업 실행: ${path.basename(
-          options.prdPath
-        )}`;
-
+      if (!options.taskDescription || options.taskDescription.length < 10) {
+        // 작업 설명이 없거나 너무 짧으면 PRD 제목으로 자동 생성
+        options.taskDescription = prdTitle
+          ? `[PRD] ${prdTitle}`
+          : `PRD 기반 작업 실행: ${path.basename(options.prdPath)}`;
         console.log(`ℹ️ 작업 설명 자동 생성: "${options.taskDescription}"`);
+      } else if (prdTitle && !options.taskDescription.includes(prdTitle)) {
+        // 작업 설명이 있어도 PRD 제목을 보강 (LLM 컨텍스트 강화)
+        options.taskDescription = `[PRD: ${prdTitle}] ${options.taskDescription}`;
+        console.log(`ℹ️ 작업 설명 보강: "${options.taskDescription}"`);
       }
 
       console.log(`📄 PRD 로드: ${options.prdPath}`);
@@ -457,16 +518,30 @@ async function main() {
       console.log(result.review.feedback.substring(0, 500));
     }
 
-    // [New v4.3.0] HITL Blocking Prompt
+    // [Fix v4.3.1] HITL Blocking Prompt - Phase 정보 포함
     if (result.success) {
-      const continueNext = await triggerHITLCheckpoint(
-        result.taskId,
-        "실행 완료 - 결과 검토"
-      );
+      // 완료된 Phase 목록 구성
+      const completedPhases = [];
+      if (result.pipeline === "mixed") {
+        completedPhases.push("Phase A (Analysis)", "Phase B (Design)");
+      } else if (result.pipeline === "analysis") {
+        completedPhases.push("Phase A (Analysis)");
+      } else if (result.pipeline === "design" || result.planning) {
+        completedPhases.push("Phase B (Design)");
+      }
+
+      const continueNext = await triggerHITLCheckpoint(result.taskId, {
+        phase: "Final",
+        description: "모든 Phase 완료 - 산출물 검토",
+        completedPhases: completedPhases,
+        nextAction: null, // 최종 체크포인트이므로 다음 동작 없음
+      });
+
+      console.log("\n📋 산출물 위치:");
+      console.log(`   - 설계 문서: docs/cases/${result.taskId}/`);
+      console.log(`   - 분석 결과: docs/cases/${result.taskId}/analysis/`);
+
       if (!continueNext) {
-        console.log("\n📋 산출물 위치:");
-        console.log(`   - 설계 문서: docs/cases/${result.taskId}/`);
-        console.log(`   - 분석 결과: docs/cases/${result.taskId}/analysis/`);
         process.exit(0);
       }
     }
