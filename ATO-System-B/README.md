@@ -82,6 +82,44 @@ DB_PASSWORD=your_password            # DB 비밀번호
 DB_NAME=ato_system                   # 데이터베이스명
 ```
 
+## Orchestrator 사용법
+
+### PRD 작성
+
+```bash
+# PRD 템플릿 위치
+docs/cases/<기능명>/PRD.md
+
+# PRD 가이드 참조
+.claude/workflows/PRD_GUIDE.md
+```
+
+### PRD 기반 실행
+
+```bash
+cd orchestrator
+
+# 기본 실행
+node index.js --prd ../docs/cases/case1-notice-list/PRD.md "공지사항 목록 구현"
+
+# 옵션
+node index.js --prd <PRD경로> "작업 설명"     # PRD 파일 지정
+node index.js --task-id <id> "작업 설명"      # 작업 ID 지정
+node index.js --no-save "작업 설명"           # dry-run (저장 안함)
+node index.js --max-retries 5 "작업 설명"     # 재시도 횟수 (기본: 3)
+node index.js --help                          # 도움말
+```
+
+### 실행 결과 확인
+
+```bash
+# Viewer 실행 (실행 로그 시각화)
+cd orchestrator && npm run viewer
+# 브라우저: http://localhost:3001
+```
+
+---
+
 ## 명령어 레퍼런스
 
 ### 개발 모드
