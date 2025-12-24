@@ -33,23 +33,75 @@ ATO-System-B/
 
 ## 시작하기
 
+### 사전 요구사항
+
+- Node.js 18+
+- npm 9+
+- MySQL 8.0+
+
+### 환경 변수 설정
+
+```bash
+# .env 파일 생성 (각 디렉토리별)
+cp .env.example .env
+
+# 필수 환경 변수
+ANTHROPIC_API_KEY=your_api_key
+NOTION_API_KEY=your_notion_key
+DB_HOST=localhost
+DB_USER=ai_readonly
+DB_PASSWORD=your_password
+DB_NAME=ato_system
+```
+
 ### 설치
 
 ```bash
+# 루트 의존성
 npm install
+
+# 각 모듈별 설치
+cd orchestrator && npm install
+cd ../backend && npm install
+cd ../frontend && npm install
+cd ../mcp-server && npm install
 ```
 
-### 개발 서버 실행
+## 실행 명령어
+
+### 개발 모드
+
+| 모듈 | 명령어 | 설명 |
+|------|--------|------|
+| **Frontend** | `cd frontend && npm run dev` | Vite 개발 서버 (HMR) |
+| **Backend** | `cd backend && npm run dev` | Express 개발 서버 (tsx watch) |
+| **Orchestrator** | `cd orchestrator && npm start` | AI 오케스트레이션 엔진 |
+| **MCP Server** | `cd mcp-server && npm start` | 실시간 통신 서버 |
+| **Viewer** | `cd orchestrator && npm run viewer` | 실행 결과 뷰어 |
+
+### 테스트
+
+| 모듈 | 명령어 | 설명 |
+|------|--------|------|
+| **Orchestrator** | `cd orchestrator && npm test` | Vitest 단위 테스트 |
+| **Backend** | `cd backend && npm test` | API 테스트 |
+| **Coverage** | `npm run test:coverage` | 커버리지 리포트 |
+
+### 빌드
+
+| 모듈 | 명령어 | 설명 |
+|------|--------|------|
+| **Frontend** | `cd frontend && npm run build` | 프로덕션 빌드 |
+| **Backend** | `cd backend && npm run build` | TypeScript 컴파일 |
+
+### 린트
 
 ```bash
-# 프론트엔드
-cd frontend && npm run dev
-
-# 백엔드
-cd backend && npm run dev
-
 # Orchestrator
-cd orchestrator && npm start
+cd orchestrator && npm run lint
+
+# Backend
+cd backend && npm run lint
 ```
 
 ## 문서 체계
