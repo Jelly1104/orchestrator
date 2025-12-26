@@ -5,9 +5,11 @@
  * - 정량적 PRD 처리: SQL 생성 → 실행 → 결과 수집
  * - 혼합 PRD의 Phase A: 데이터 분석 → 인사이트 도출
  *
- * @version 1.0.4
+ * @version 1.1.0
  * @since 2025-12-22 (Fix: JSON Normalization)
  * @updated 2025-12-24 - .env 환경변수 지원, Option C Hybrid 기반
+ * @updated 2025-12-26 - [P0-1] SELECT * 금지 규칙 및 DOMAIN_SCHEMA 기반 컬럼 화이트리스트 추가
+ * @updated 2025-12-26 - [P2-1] Query Library Hybrid Search 도입 (Milestone 3)
  */
 
 import fs from "fs";
@@ -15,6 +17,8 @@ import path from "path";
 import { execSync } from "child_process";
 import { ProviderFactory } from "../providers/index.js";
 import { ReviewerSkill } from "../skills/reviewer/index.js";
+import { SQLValidator } from "../security/sql-validator.js";
+import { QueryLibrary } from "../skills/query/library/query-library.js";
 
 // ========== 보안 상수 ==========
 const SECURITY_LIMITS = {
@@ -158,6 +162,15 @@ export class AnalysisAgent {
     ];
     this.useFallback = config.useFallback !== false;
 
+    // P1-3: 세션별 토큰 사용량 추적
+    this._sessionUsage = { inputTokens: 0, outputTokens: 0 };
+
+    // P2-1: Query Library 초기화 (Milestone 3)
+    this.queryLibrary = new QueryLibrary({
+      libraryPath: path.join(this.projectRoot, 'orchestrator', 'skills', 'query', 'library')
+    });
+    this._queryLibraryInitialized = false;
+
     this._initProvider();
   }
 
@@ -215,13 +228,38 @@ export class AnalysisAgent {
       return { ...result, provider: this.provider.getName() };
     };
 
-    return await Promise.race([apiCall(), timeoutPromise]);
+    const result = await Promise.race([apiCall(), timeoutPromise]);
+
+    // P1-3: 세션별 토큰 사용량 누적
+    if (result?.usage) {
+      this._sessionUsage.inputTokens += result.usage.inputTokens || result.usage.input_tokens || 0;
+      this._sessionUsage.outputTokens += result.usage.outputTokens || result.usage.output_tokens || 0;
+    }
+
+    return result;
+  }
+
+  /**
+   * P1-3: 세션 토큰 사용량 초기화
+   */
+  _resetSessionUsage() {
+    this._sessionUsage = { inputTokens: 0, outputTokens: 0 };
+  }
+
+  /**
+   * P1-3: 세션 토큰 사용량 반환
+   */
+  _getSessionUsage() {
+    return { ...this._sessionUsage };
   }
 
   // ========== 메인 분석 함수 ==========
 
   async analyze(prd, taskId = null, options = {}) {
     console.log("\n[AnalysisAgent] ========== 분석 시작 ==========");
+
+    // P1-3: 세션 토큰 사용량 초기화
+    this._resetSessionUsage();
 
     // [Fix v4.3.0] Case-Centric 경로 지원: options.outputDir 우선 사용
     if (options.outputDir) {
@@ -247,6 +285,8 @@ export class AnalysisAgent {
       errors: [],
       taskId: taskId,
       outputDir: this.outputDir,
+      // P1-3: 토큰 사용량 추적
+      usage: { inputTokens: 0, outputTokens: 0 },
     };
 
     try {
@@ -285,6 +325,64 @@ export class AnalysisAgent {
 
       // 디버깅: 생성된 쿼리 이름 확인
       queries.forEach((q) => console.log(`    > ${q.name}`));
+
+      // Step 3.5: SQL 검증 게이트 (P0-3)
+      console.log("\n[Step 3.5] SQL 검증 게이트 (P0-3)...");
+      const sqlValidator = new SQLValidator({ strictMode: true });
+      const validationResult = sqlValidator.validateAll(queries);
+
+      if (!validationResult.allValid) {
+        console.error(`  ❌ SQL 검증 실패: ${validationResult.blockedCount}/${validationResult.totalQueries} 쿼리 차단`);
+
+        // 위반 사항 로깅
+        for (const result of validationResult.results) {
+          if (!result.valid) {
+            console.error(`    - ${result.name}: ${result.summary}`);
+            for (const v of result.violations) {
+              console.error(`      [${v.severity}] ${v.message}`);
+            }
+          }
+        }
+
+        // 재시도 가능 여부 확인
+        const canRetry = validationResult.results.every(r => r.valid || r.canRetry);
+
+        if (!canRetry) {
+          // CRITICAL 위반 - 즉시 중단
+          results.success = false;
+          results.errors.push(`SQL 검증 실패 (CRITICAL): ${validationResult.blockedCount}개 쿼리 차단`);
+          results.sqlValidation = validationResult;
+          console.log("\n[AnalysisAgent] ========== SQL 검증 실패 - 조기 종료 ==========\n");
+          return results;
+        }
+
+        // ERROR 위반 - 피드백 반영 재생성 시도
+        console.log("  → LLM 피드백 반영 재생성 시도...");
+        const regeneratedQueries = await this._regenerateQueriesWithFeedback(
+          requirements,
+          validationResult.results.filter(r => !r.valid)
+        );
+
+        if (regeneratedQueries.length > 0) {
+          // 재검증
+          const revalidation = sqlValidator.validateAll(regeneratedQueries);
+          if (revalidation.allValid) {
+            console.log("  ✅ 재생성 쿼리 검증 통과");
+            queries.length = 0;
+            queries.push(...regeneratedQueries);
+          } else {
+            console.error("  ❌ 재생성 쿼리도 검증 실패 - 진행 불가");
+            results.success = false;
+            results.errors.push(`SQL 재생성 후에도 검증 실패`);
+            results.sqlValidation = revalidation;
+            return results;
+          }
+        }
+      } else {
+        console.log(`  ✅ SQL 검증 통과: ${validationResult.totalQueries}개 쿼리 모두 안전`);
+      }
+
+      results.sqlValidation = validationResult;
 
       // Step 4: SQL 실행
       console.log("\n[Step 4] SQL 실행...");
@@ -344,6 +442,9 @@ export class AnalysisAgent {
       results.errors.push(error.message);
     }
 
+    // P1-3: 세션 토큰 사용량을 결과에 복사
+    results.usage = this._getSessionUsage();
+
     console.log("\n[AnalysisAgent] ========== 분석 완료 ==========\n");
     return results;
   }
@@ -365,6 +466,58 @@ export class AnalysisAgent {
 
       return { name, sql, description };
     });
+  }
+
+  /**
+   * [P0-3] 검증 실패 쿼리 재생성 (피드백 반영)
+   */
+  async _regenerateQueriesWithFeedback(requirements, failedResults) {
+    const feedbackPrompt = `
+## 쿼리 재생성 요청
+
+이전에 생성한 SQL 쿼리가 보안 검증에 실패했습니다.
+아래 위반 사항을 수정하여 다시 생성하세요.
+
+### 위반 사항:
+${failedResults.map(r => `
+- **${r.name}**:
+${r.violations.map(v => `  - [${v.severity}] ${v.message}`).join('\n')}
+`).join('\n')}
+
+### 필수 수정 사항:
+1. SELECT * 대신 필요한 컬럼만 명시적으로 나열
+2. 민감 컬럼 (U_PASSWD, U_EMAIL, U_NAME, U_SID, U_TEL 등) 제거
+3. 대용량 테이블 (USER_LOGIN, COMMENT, BOARD_MUZZIMA) 조회 시 LIMIT 추가
+
+### 허용된 컬럼 (DOMAIN_SCHEMA.md 기준):
+- USERS: U_ID, U_KIND, U_ALIVE, U_REG_DATE
+- USER_DETAIL: U_ID, U_MAJOR_CODE_1, U_MAJOR_CODE_2, U_WORK_TYPE_1
+- CODE_MASTER: CODE_TYPE, CODE_VALUE, CODE_NAME, CODE_ORDER, USE_FLAG
+
+위 규칙을 준수하여 쿼리를 재생성하세요.
+`;
+
+    const systemPrompt = `당신은 SQL 전문가입니다.
+보안 검증에 실패한 쿼리를 수정하여 재생성합니다.
+반드시 JSON 포맷으로 응답하세요: { "queries": [{ "name": "...", "sql": "..." }] }
+SELECT * 절대 금지. 민감 컬럼 조회 금지. 한국어 설명 금지.`;
+
+    const userMessage = `${feedbackPrompt}
+
+원래 요구사항:
+${requirements.objective}
+
+테이블:
+${JSON.stringify(requirements.tables)}`;
+
+    try {
+      const response = await this._sendMessage(systemPrompt, userMessage);
+      const regenerated = this._parseQueriesFromResponse(response.content);
+      return this._normalizeQueries(regenerated);
+    } catch (error) {
+      console.error(`  [Regenerate] 재생성 실패: ${error.message}`);
+      return [];
+    }
   }
 
   _convertStringPRDtoObject(prdText) {
@@ -395,11 +548,17 @@ export class AnalysisAgent {
   }
 
   parseAnalysisRequirements(prd) {
+    // [P2-1 Fix] originalText를 문자열로 보장
+    let originalText = prd.originalText || prd;
+    if (typeof originalText !== 'string') {
+      originalText = JSON.stringify(originalText);
+    }
+
     const requirements = {
       objective: prd.objective || prd.목적 || "",
       tables: [],
       constraints: prd.constraints || ["SELECT only"],
-      originalText: prd.originalText || prd,
+      originalText: originalText,
     };
     requirements.tables = this.inferTablesFromPRD(prd);
     return requirements;
@@ -440,10 +599,114 @@ export class AnalysisAgent {
     return result;
   }
 
+  /**
+   * [P2-1] Hybrid Search 기반 쿼리 생성 (Milestone 3)
+   *
+   * Flow:
+   * 1. Query Library 초기화 (최초 1회)
+   * 2. 질문 의도 분석 → 라이브러리 매칭 시도
+   * 3. 매칭 성공 → 템플릿 로드 및 파라미터 주입 [Source: Library]
+   * 4. 매칭 실패 → LLM 동적 생성 [Source: Generated]
+   */
   async generateQueries(requirements) {
-    const systemPrompt = `당신은 SQL 전문가입니다. 
-    반드시 JSON 포맷으로 응답하세요: { "queries": [{ "name": "...", "sql": "..." }] }
-    한국어 설명 금지.`;
+    // Step 1: Query Library 초기화 (최초 1회)
+    if (!this._queryLibraryInitialized) {
+      try {
+        await this.queryLibrary.initialize();
+        this._queryLibraryInitialized = true;
+      } catch (error) {
+        console.warn(`[AnalysisAgent] Query Library 초기화 실패: ${error.message}`);
+      }
+    }
+
+    // Step 2: Hybrid Search - 라이브러리 매칭 시도
+    // [Fix] originalText를 우선 사용하여 PRD 전체 내용을 검색
+    const querySource = requirements.originalText || requirements.objective || '';
+    console.log(`  [Hybrid Search] 검색 대상 텍스트 길이: ${querySource.length}자`);
+    const match = this.queryLibrary.findMatchingTemplate(querySource);
+
+    if (match) {
+      // Step 3: 매칭 성공 → 템플릿에서 쿼리 로드 [Source: Library]
+      console.log(`  📚 [Source: Library] Using template: ${match.template.file}`);
+
+      // 파라미터 추출 (PRD에서 날짜 등 파싱)
+      const params = this._extractQueryParams(requirements);
+
+      const libraryQueries = this.queryLibrary.loadQueries(match.key, params);
+
+      if (libraryQueries.length > 0) {
+        console.log(`  ✅ ${libraryQueries.length}개 쿼리 로드 완료 (Library)`);
+        return libraryQueries;
+      }
+
+      console.log(`  ⚠️ 템플릿 로드 실패, LLM 생성으로 전환`);
+    }
+
+    // Step 4: 매칭 실패 → LLM 동적 생성 [Source: Generated]
+    console.log(`  🤖 [Source: Generated] LLM 동적 SQL 생성`);
+    return await this._generateQueriesWithLLM(requirements);
+  }
+
+  /**
+   * PRD에서 쿼리 파라미터 추출
+   */
+  _extractQueryParams(requirements) {
+    const params = {};
+    const text = requirements.originalText || '';
+
+    // 날짜 파라미터 추출 (YYYY-MM-DD 형식)
+    const dateMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      params.since_date = dateMatch[1];
+    }
+
+    // 기본값 설정
+    if (!params.since_date) {
+      // 기본값: 1년 전
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      params.since_date = oneYearAgo.toISOString().split('T')[0];
+    }
+
+    return params;
+  }
+
+  /**
+   * LLM 기반 동적 SQL 생성 (기존 로직)
+   */
+  async _generateQueriesWithLLM(requirements) {
+    // [P0-1] SELECT * 금지 및 DOMAIN_SCHEMA 기반 SQL 생성 규칙 (v4.3.14)
+    const SQL_GENERATION_RULES = `
+## SQL 생성 필수 규칙 (DOMAIN_SCHEMA.md 준수)
+
+### 1. SELECT * 절대 금지 ❌
+- "SELECT *" 사용 금지. 항상 필요한 컬럼만 명시적으로 나열하세요.
+- 예시 (잘못됨): SELECT * FROM USERS
+- 예시 (올바름): SELECT U_ID, U_KIND, U_ALIVE FROM USERS
+
+### 2. 허용된 컬럼만 사용 (DOMAIN_SCHEMA.md 기준)
+- USERS: U_ID, U_KIND, U_ALIVE, U_REG_DATE (U_EMAIL, U_NAME 조회 금지)
+- USER_DETAIL: U_ID, U_MAJOR_CODE_1, U_MAJOR_CODE_2, U_WORK_TYPE_1, U_OFFICE_ZIP, U_HOSPITAL_NAME, U_CAREER_YEAR
+- CODE_MASTER: CODE_TYPE, CODE_VALUE, CODE_NAME, CODE_ORDER, USE_FLAG
+- USER_LOGIN: U_ID, LOGIN_DATE (LOGIN_IP 조회 금지, 최근 3개월만)
+- COMMENT: COMMENT_IDX, BOARD_IDX, SVC_CODE, REG_DATE (U_ID는 집계용만)
+- BOARD_MUZZIMA: BOARD_IDX, CTG_CODE, TITLE, READ_CNT, AGREE_CNT, REG_DATE
+
+### 3. 민감 컬럼 조회 절대 금지 ❌
+- 금지 컬럼: U_PASSWD, U_PASSWD_ENC, U_EMAIL, U_NAME, U_SID, U_SID_ENC, U_TEL, U_IP, LOGIN_IP, U_JUMIN
+- 위 컬럼이 포함된 쿼리는 실행이 차단됩니다.
+
+### 4. 대용량 테이블 LIMIT 필수
+- USER_LOGIN (2267만행): WHERE 조건 + LIMIT 1000 필수
+- COMMENT (1826만행): BOARD_IDX 조건 + LIMIT 1000 필수
+- BOARD_MUZZIMA (337만행): LIMIT 1000 필수
+`;
+
+    const systemPrompt = `당신은 SQL 전문가입니다.
+${SQL_GENERATION_RULES}
+
+반드시 JSON 포맷으로 응답하세요: { "queries": [{ "name": "...", "sql": "..." }] }
+한국어 설명 금지. 위 규칙을 위반하면 쿼리가 차단됩니다.`;
 
     const userMessage = `요구사항:\n${
       requirements.objective
@@ -452,7 +715,13 @@ export class AnalysisAgent {
     }`;
 
     const response = await this._sendMessage(systemPrompt, userMessage);
-    return this._parseQueriesFromResponse(response.content);
+    const queries = this._parseQueriesFromResponse(response.content);
+
+    // [P2-1] 소스 태깅 추가
+    return queries.map(q => ({
+      ...q,
+      source: 'generated'
+    }));
   }
 
   _parseQueriesFromResponse(content) {
@@ -502,7 +771,9 @@ export class AnalysisAgent {
 
     for (const query of queries) {
       const queryName = query.name || "unnamed_query";
-      console.log(`  - 실행 중: ${queryName}`);
+      // [P2-1] 쿼리 소스 로깅 (Library vs Generated)
+      const sourceTag = query.source === 'library' ? '📚 Library' : '🤖 Generated';
+      console.log(`  - 실행 중: ${queryName} [${sourceTag}]`);
 
       const result = {
         name: queryName,
@@ -511,6 +782,7 @@ export class AnalysisAgent {
         rowCount: 0,
         success: false,
         error: null,
+        source: query.source || 'unknown',  // P2-1: 소스 추적
       };
 
       if (useRealDB && dbConnection) {
@@ -624,25 +896,49 @@ export class AnalysisAgent {
 
   async interpretResults(results, requirements) {
     // [Fix v4.3.4] Option C Hybrid: 코드 레벨 통계 + LLM 비즈니스 인사이트
+    // [Hotfix] 3-Way State Handling (PO 지시 2025-12-26)
     const insights = {
       patterns: [],
       insights: [],
       recommendations: [],
       llmInsights: null,  // LLM 생성 비즈니스 인사이트
       dataAvailable: false,
+      state: null,  // 'success_with_data' | 'success_no_data' | 'connection_failure'
     };
 
-    // 실제 데이터가 있는지 확인
+    // [Hotfix] 3-Way State 판별
+    const mockResults = results.filter(r => r.mock === true);
+    const successResults = results.filter(r => r.success && !r.mock);
     const resultsWithData = results.filter(r => r.success && r.rowCount > 0);
 
-    if (resultsWithData.length === 0) {
-      console.log(`  [Interpret] ⚠️ 분석할 데이터가 없습니다 (Mock 모드)`);
+    // State 1: ❌ Connection Failure (Mock 모드)
+    if (mockResults.length > 0 && successResults.length === 0) {
+      insights.state = 'connection_failure';
+      console.log(`  [Interpret] ❌ DB 연결 실패 (Mock 모드로 전환됨)`);
       insights.insights.push({
-        finding: "데이터 수집 실패",
-        implication: "DB 연결이 불가능하여 Mock 모드로 실행되었습니다. 실제 데이터 분석을 위해 DB 연결을 확인하세요.",
+        finding: "DB 연결 실패",
+        implication: "❌ DB 연결이 불가능하여 Mock 모드로 실행되었습니다. VPN/방화벽/권한 설정을 확인하세요.",
+        action: "IT팀/DBA에 연결 상태 점검 요청",
       });
       return insights;
     }
+
+    // State 2: ⚠️ Success but No Data
+    if (resultsWithData.length === 0 && successResults.length > 0) {
+      insights.state = 'success_no_data';
+      console.log(`  [Interpret] ⚠️ DB 연결 성공, 쿼리 실행 완료 - 조건에 맞는 데이터 없음 (0 rows)`);
+      insights.insights.push({
+        finding: "데이터 없음 (조건 불일치)",
+        implication: "✅ DB 연결 및 쿼리 실행은 성공했으나, 조건에 맞는 데이터가 없습니다 (0 rows 반환).",
+        action: "WHERE 조건 완화 또는 데이터 존재 여부 확인 필요",
+      });
+      // 빈 결과도 분석 완료로 간주 (Mock 모드 아님)
+      insights.dataAvailable = false;
+      return insights;
+    }
+
+    // State 3: ✅ Success with Data
+    insights.state = 'success_with_data';
 
     insights.dataAvailable = true;
     console.log(`  [Interpret] 📊 ${resultsWithData.length}개 쿼리 결과 분석 중...`);
@@ -854,16 +1150,31 @@ ${JSON.stringify(codeStats, null, 2)}
       }
     }
 
-    // DB 연결 상태
+    // [Hotfix] 3-Way State 기반 주의사항 메시지
     const hasMock = results.some(r => r.mock);
-    if (hasMock) {
-      reportContent += `## ⚠️ 주의사항\n\n`;
-      reportContent += `이 리포트는 **Mock 모드**로 생성되었습니다. DB 연결이 불가능하여 실제 데이터를 조회하지 못했습니다.\n\n`;
-      reportContent += `실제 데이터 분석을 위해 다음을 확인하세요:\n`;
+    const hasRealSuccess = results.some(r => r.success && !r.mock);
+    const hasData = results.some(r => r.rowCount > 0);
+
+    if (hasMock && !hasRealSuccess) {
+      // State 1: ❌ Connection Failure
+      reportContent += `## ❌ DB 연결 실패\n\n`;
+      reportContent += `이 리포트는 **Mock 모드**로 생성되었습니다. DB 연결이 불가능했습니다.\n\n`;
+      reportContent += `**확인 사항:**\n`;
       reportContent += `- DB 연결 정보 (host, port, user, password)\n`;
-      reportContent += `- 네트워크 접근 권한\n`;
-      reportContent += `- mysql2 패키지 설치 여부: \`npm install mysql2\`\n`;
+      reportContent += `- VPN/방화벽 설정\n`;
+      reportContent += `- mysql2 패키지 설치: \`npm install mysql2\`\n`;
+      reportContent += `\n**조치:** IT팀/DBA에 연결 상태 점검을 요청하세요.\n`;
+    } else if (hasRealSuccess && !hasData) {
+      // State 2: ⚠️ Success but No Data
+      reportContent += `## ⚠️ 데이터 없음\n\n`;
+      reportContent += `✅ **DB 연결 및 쿼리 실행은 성공**했으나, 조건에 맞는 데이터가 없습니다 (0 rows).\n\n`;
+      reportContent += `**가능한 원인:**\n`;
+      reportContent += `- WHERE 조건이 너무 엄격함\n`;
+      reportContent += `- 해당 테이블에 실제 데이터가 없음\n`;
+      reportContent += `- 조회 권한은 있으나 데이터 접근 제한\n`;
+      reportContent += `\n**조치:** 쿼리 조건을 완화하거나 데이터 존재 여부를 확인하세요.\n`;
     }
+    // State 3: ✅ Success with Data - 별도 메시지 불필요
 
     fs.writeFileSync(reportPath, reportContent, "utf-8");
     outputs.push({ type: "REPORT", path: reportPath });

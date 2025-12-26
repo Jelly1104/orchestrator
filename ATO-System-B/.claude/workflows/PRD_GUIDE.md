@@ -1,10 +1,9 @@
 # PRD 통합 가이드 v2.0
 
-> **문서 버전**: 2.0.5
-> **최종 업데이트**: 2025-12-23
+> **문서 버전**: 2.0.6
+> **최종 업데이트**: 2025-12-26
 > **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
-> **물리적 경로**: `.claude/workflows/PRD_GUIDE.md`
-> **관리자**: 미래전략실 (ATO Team)
+> **물리적 경로**: `.claude/workflows/PRD_GUIDE.md` > **관리자**: 미래전략실 (ATO Team)
 > **통합 대상**: PRD_TEMPLATE_V2.md, PRD_TYPE_PIPELINE.md, PRD_REFERENCE_MAP.md
 
 ## 📋 PRDAnalyzer 로딩 설정
@@ -121,6 +120,42 @@ mixed:
 - QUANTITATIVE → analysis 또는 mixed
 - QUALITATIVE → design 또는 code
 - MIXED → mixed
+
+```mermaid
+graph TD
+    %% 사용자 및 진입점
+    User([User / CLI]) -->|Task & PRD| ORC[🤖 Orchestrator]
+
+    %% Phase 0: 라우팅
+    ORC -->|Analyze Intent| Router{Pipeline Router}
+
+    %% 1. Analysis Pipeline
+    Router -->|Quantitative| ANA[📊 AnalysisAgent]
+    ANA -->|Query Skill| DB[(Legacy DB)]
+    ANA -->|Insight Report| Result_Analysis([Analysis Report])
+
+    %% 2. Design/Mixed Pipeline
+    Router -->|Qualitative / Mixed| LDR_Plan[🧠 Leader Agent<br/>Planning Mode]
+
+    %% 3. Implementation Pipeline
+    LDR_Plan -->|Handoff| SUB_Router{Skill Router}
+
+    subgraph "Sub-Agent Execution Layer"
+        SUB_Router -->|Code Generation| CODE[💻 Coder Skill]
+        SUB_Router -->|Visual Design| DSGN[🎨 Designer Skill]
+        SUB_Router -->|Documentation| DOC[📝 Doc-Sync Skill]
+    end
+
+    %% 4. Review & Merge
+    CODE & DSGN & DOC -->|Artifacts| LDR_Rev[🧐 Leader Agent<br/>Review Mode]
+    LDR_Rev -->|Validation| REV[🛡️ Reviewer Skill]
+
+    REV -- Pass --> HITL[📢 HITL Approval]
+    REV -- Fail --> Feedback[Feedback Loop]
+    Feedback --> SUB_Router
+
+    HITL -->|Approved| End([Deployment / Merge])
+```
 
 ---
 
@@ -384,14 +419,14 @@ deliverables:
 
 ## 8. 관련 문서
 
-| 문서 | 물리적 경로 | 역할 |
-|------|------------|------|
-| `CLAUDE.md` | `.claude/CLAUDE.md` | 프로젝트 헌법 |
-| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md` | **HITL 체크포인트** 섹션 |
-| `DOMAIN_SCHEMA.md` | `.claude/rules/DOMAIN_SCHEMA.md` | 테이블/컬럼 정의 (정량적 PRD 필수 참조) |
-| `DB_ACCESS_POLICY.md` | `.claude/rules/DB_ACCESS_POLICY.md` | DB 접근 권한 정책 |
-| `VALIDATION_GUIDE.md` | `.claude/rules/VALIDATION_GUIDE.md` | 산출물 검증 기준 |
-| `PROJECT_STACK.md` | `.claude/project/PROJECT_STACK.md` | 기술 스택 정의 |
+| 문서                    | 물리적 경로                               | 역할                                    |
+| ----------------------- | ----------------------------------------- | --------------------------------------- |
+| `CLAUDE.md`             | `.claude/CLAUDE.md`                       | 프로젝트 헌법                           |
+| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md` | **HITL 체크포인트** 섹션                |
+| `DOMAIN_SCHEMA.md`      | `.claude/rules/DOMAIN_SCHEMA.md`          | 테이블/컬럼 정의 (정량적 PRD 필수 참조) |
+| `DB_ACCESS_POLICY.md`   | `.claude/rules/DB_ACCESS_POLICY.md`       | DB 접근 권한 정책                       |
+| `VALIDATION_GUIDE.md`   | `.claude/rules/VALIDATION_GUIDE.md`       | 산출물 검증 기준                        |
+| `PROJECT_STACK.md`      | `.claude/project/PROJECT_STACK.md`        | 기술 스택 정의                          |
 
 ---
 

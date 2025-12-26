@@ -92,7 +92,6 @@ const INJECTION_PATTERNS = [
   /secret[_\s]?key/gi,
   /password/gi,
   /credential/gi,
-  /\.env\b/gi,
 ];
 
 // 위험 문자열 (정확한 매칭) - 항상 차단
@@ -107,13 +106,17 @@ const DANGEROUS_STRINGS_ALWAYS_BLOCK = [
 ];
 
 // 위험 문자열 (코드 컨텍스트에서는 허용) - Warning만 로깅
+// process.env 단순 참조는 정상적인 개발 패턴이므로 제외하고,
+// 별도 정규식으로 대입 시도만 차단한다.
 const DANGEROUS_STRINGS_CODE_CONTEXT = [
-  'process.env',
   'child_process',
   'fs.writeFileSync',
   'fs.rmSync',
   'fs.unlinkSync',
 ];
+
+// 환경변수 쓰기 시도 차단 (읽기는 허용)
+const ENV_WRITE_PATTERN = /process\.env\s*[.\[]\s*["']?[A-Za-z0-9_]+["']?]?\s*=/g;
 
 // 레거시 호환용 (기존 코드 지원)
 const DANGEROUS_STRINGS = [
@@ -205,7 +208,17 @@ export class InputValidator {
       }
     }
 
-    // 4. 위험 문자열 검사 (코드 컨텍스트에서는 완화)
+    // 4. 환경변수 쓰기 시도 차단 (읽기는 허용)
+    const envWriteMatches = inputStr.match(ENV_WRITE_PATTERN) || [];
+    if (envWriteMatches.length > 0) {
+      violations.push({
+        type: 'ENV_WRITE_ATTEMPT',
+        message: 'Environment variable overwrite detected (process.env assignment is blocked)',
+        matches: envWriteMatches.slice(0, 3),
+      });
+    }
+
+    // 5. 위험 문자열 검사 (코드 컨텍스트에서는 완화)
     const dangerousMatches = this._checkDangerousStrings(inputStr, { isGeneratedCode, isAgentOutput });
     if (dangerousMatches.length > 0) {
       const { alwaysBlock, codeContextOnly } = dangerousMatches;

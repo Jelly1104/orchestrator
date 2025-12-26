@@ -30,7 +30,21 @@
  * - 동적 스킬 로딩
  * - 스킬 기반 에이전트 조회
  *
- * @version 4.0.0
+ * P1-1: Phase B Reviewer (v4.1.0):
+ * - 설계 문서 품질 검증 추가
+ * - ReviewerSkill을 Phase B 완료 후 호출
+ *
+ * P1-2: Auto-Routing (v4.2.0):
+ * - PRD type 기반 파이프라인 자동 선택
+ * - QUANTITATIVE → Analysis, QUALITATIVE → Design, MIXED → Mixed
+ * - 명시적 라우팅 결정 로깅
+ *
+ * P2-2: Doc-Sync (v4.3.0):
+ * - Phase B 완료 후 Notion 문서 동기화 자동 호출
+ * - Reviewer PASS 시에만 동기화 실행
+ *
+ * @version 4.3.0
+ * @updated 2025-12-26 - [P2-2] Doc-Sync Notion 자동 동기화 추가 (Milestone 3)
  */
 
 import fs from 'fs';
@@ -53,6 +67,12 @@ import { getKillSwitch } from './security/kill-switch.js';
 import { getRateLimiter } from './security/rate-limiter.js';
 import { getSecurityMonitor, EVENT_TYPES } from './security/security-monitor.js';
 import { getAuditLogger } from './utils/audit-logger.js';
+
+// P1-1: Phase B Reviewer 연동
+import { ReviewerSkill } from './skills/reviewer/index.js';
+
+// P2-2: Doc-Sync 연동 (Milestone 3)
+import { DocSyncSkill } from './skills/doc-sync/index.js';
 
 // Phase 0: Session Store 연동 (Pause/Resume 지원)
 const require = createRequire(import.meta.url);
@@ -84,8 +104,9 @@ export class Orchestrator {
     this.logDir = path.join(this.projectRoot, 'workspace/logs');
 
     // [New] Case-Centric Path Helpers (v4.3.0)
-    // 모든 산출물을 docs/cases/{taskId}/ 하위에 통합 저장
-    this.caseOutputDir = (taskId) => path.join(this.projectRoot, 'docs/cases', taskId);
+    // [Fix v4.3.14] 모든 산출물을 docs/cases/{caseId}/ 하위에 통합 저장
+    // extractCaseId()로 날짜/타임스탬프 제거하여 Phase A/B/C 산출물이 같은 폴더에 저장되도록 함
+    this.caseOutputDir = (taskId) => path.join(this.projectRoot, 'docs/cases', this.extractCaseId(taskId));
     this.analysisDir = (taskId) => path.join(this.caseOutputDir(taskId), 'analysis');
     this.visualsDir = (taskId) => path.join(this.caseOutputDir(taskId), 'visuals');
 
@@ -609,15 +630,19 @@ export class Orchestrator {
     let result = null;
 
     try {
-      // ========== Phase 0: PRD v2 유형 판별 ==========
-      console.log('🔍 [Phase 0] PRD 유형 판별...');
+      // ========== Phase 0: PRD v2 유형 판별 (P1-2: Auto-Routing) ==========
+      console.log('🔍 [Phase 0] PRD 유형 판별 및 파이프라인 자동 선택...');
 
       const prdClassification = this.prdAnalyzer.classifyPRDv2(prdContent);
       const prdType = prdClassification?.type || 'QUALITATIVE';
       const pipeline = prdClassification?.pipeline || 'design';
 
+      // P1-2: 명시적 라우팅 결정 로깅
+      const routingDecision = this._determineRoutingDecision(prdType, pipeline, options);
+
       console.log(`   - PRD 유형: ${prdType}`);
-      console.log(`   - 파이프라인: ${pipeline}`);
+      console.log(`   - 추론된 파이프라인: ${pipeline}`);
+      console.log(`   - 라우팅 결정: ${routingDecision.selectedPipeline} (${routingDecision.reason})`);
 
       // ========== HITL: PRD_REVIEW 체크포인트 (Graceful Exit 패턴) ==========
       // PRD Gap Check 결과가 불완전할 경우 사람의 검토 필요
@@ -651,17 +676,25 @@ export class Orchestrator {
         }
       }
 
-      // ========== 유형별 파이프라인 분기 ==========
-      if (pipeline === 'analysis' || prdType === 'QUANTITATIVE') {
+      // ========== P1-2: 유형별 파이프라인 Auto-Routing ==========
+      // routingDecision 기반으로 파이프라인 선택 (명시적 결정)
+      const selectedPipeline = routingDecision.selectedPipeline;
+
+      if (selectedPipeline === 'analysis') {
+        console.log('\n🔀 [Auto-Routing] QUANTITATIVE → Analysis Pipeline');
+        console.log('   ⚡ AnalysisAgent 단독 실행 (LeaderAgent 건너뜀)\n');
         return await this.runAnalysisPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
-      if (pipeline === 'mixed' || prdType === 'MIXED') {
+      if (selectedPipeline === 'mixed') {
+        console.log('\n🔀 [Auto-Routing] MIXED → Mixed Pipeline');
+        console.log('   ⚡ AnalysisAgent + LeaderAgent 순차 실행\n');
         return await this.runMixedPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
-      // 기본: design 파이프라인 (기존 로직)
-      // mode 옵션 확인 (design only 모드 지원)
+      // QUALITATIVE → Design 파이프라인 (기본)
+      console.log('\n🔀 [Auto-Routing] QUALITATIVE → Design Pipeline');
+      console.log('   ⚡ LeaderAgent 중심 실행 (AnalysisAgent 건너뜀)');
       const isDesignOnly = options.mode === 'design';
       console.log(`   → Design 파이프라인 실행 ${isDesignOnly ? '(설계 문서 전용)' : '(설계+구현)'}\n`);
 
@@ -671,6 +704,8 @@ export class Orchestrator {
 
       const planResult = await this.leader.plan(sanitizedDescription, prdContent);
       metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      // P1-3: Phase B 토큰 추적 (Design Pipeline)
+      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
 
       sdd = planResult.sdd;
 
@@ -1077,6 +1112,8 @@ export class Orchestrator {
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
       parsedPRD.type = 'QUANTITATIVE';
       parsedPRD.pipeline = 'analysis';
+      // [P2-1] Query Library를 위해 원본 텍스트 보존
+      parsedPRD.originalText = prdContent;
 
       // DB 연결 정보 추가 (옵션 또는 PRD에서)
       if (options.dbConfig) {
@@ -1133,6 +1170,11 @@ export class Orchestrator {
       });
 
       metrics.endPhase('analysis', analysisResult.success ? 'success' : 'fail');
+
+      // P1-3: Phase A 토큰 추적
+      if (analysisResult.usage) {
+        metrics.addPhaseTokens('phase_a', analysisResult.usage.inputTokens, analysisResult.usage.outputTokens);
+      }
 
       // 결과 로그 저장
       const report = metrics.generateReport();
@@ -1209,6 +1251,8 @@ export class Orchestrator {
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
       parsedPRD.type = 'MIXED';
       parsedPRD.pipeline = 'mixed';
+      // [P2-1] Query Library를 위해 원본 텍스트 보존
+      parsedPRD.originalText = prdContent;
 
       if (options.dbConfig) {
         parsedPRD.dbConnection = options.dbConfig;
@@ -1220,6 +1264,11 @@ export class Orchestrator {
         outputDir: analysisOutputPath
       });
       metrics.endPhase('analysis', analysisResult.success ? 'success' : 'partial');
+
+      // P1-3: Phase A 토큰 추적
+      if (analysisResult.usage) {
+        metrics.addPhaseTokens('phase_a', analysisResult.usage.inputTokens, analysisResult.usage.outputTokens);
+      }
 
       console.log(`\n✅ Phase A 완료: ${analysisResult.success ? '성공' : '부분 성공'}`);
 
@@ -1254,6 +1303,8 @@ export class Orchestrator {
 
       const planResult = await this.leader.plan(taskDescription, enrichedPrdContent);
       metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      // P1-3: Phase B 토큰 추적
+      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
       metrics.endPhase('design', 'success');
 
       // 설계 문서 저장
@@ -1261,13 +1312,91 @@ export class Orchestrator {
         await this.savePlanningDocs(taskId, planResult);
       }
 
+      // ========== Phase B Reviewer (P1-1) ==========
+      console.log('\n[Phase B] Reviewer Skill: 설계 문서 품질 검증...');
+      const phaseBReviewResult = await this._validateDesignDocuments(planResult, prdContent);
+
+      if (!phaseBReviewResult.passed) {
+        console.warn(`  ⚠️ Phase B Reviewer FAIL (${phaseBReviewResult.score}/100)`);
+        console.warn(`  → ${phaseBReviewResult.summary}`);
+
+        // 피드백과 함께 계속 진행 (재생성은 하지 않음 - 단순 경고)
+        metrics.addError('design_review', phaseBReviewResult.summary);
+      } else {
+        console.log(`  ✅ Phase B Reviewer PASS (${phaseBReviewResult.score}/100)`);
+
+        // [P2-2] Doc-Sync: Reviewer PASS 시 Notion 동기화 (Milestone 3)
+        await this._triggerDocSync(taskId);
+      }
+
+      // 리뷰 결과를 planResult에 추가
+      planResult.reviewResult = phaseBReviewResult;
+
       console.log('\n✅ Phase B 완료');
+
+      // ========== Phase C: Code Implementation (Milestone 5) ==========
+      let codeResult = null;
+
+      // Phase B Reviewer PASS 시에만 Phase C 실행
+      if (phaseBReviewResult.passed && planResult.handoff) {
+        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('⚙️  [Phase C] Code Implementation 시작...');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        metrics.startPhase('coding');
+
+        try {
+          // SubAgent 초기화 (CoderSkill 소유)
+          const subAgent = new SubAgent({
+            projectRoot: this.projectRoot,
+            ...this.providerConfig
+          });
+          if (subAgent.initialize) {
+            await subAgent.initialize();
+          }
+
+          // HANDOFF 기반 코드 생성
+          codeResult = await subAgent.execute({
+            caseId: taskId,
+            taskId,
+            projectRoot: this.projectRoot,
+            designDocs: {
+              ia: planResult.ia,
+              wireframe: planResult.wireframe,
+              sdd: planResult.sdd
+            },
+            handoff: planResult.handoff
+          });
+
+          // P1-3: Phase C 토큰 추적
+          if (codeResult?.usage) {
+            metrics.addPhaseTokens('phase_c', codeResult.usage.inputTokens, codeResult.usage.outputTokens);
+          }
+
+          if (codeResult?.success) {
+            const fileCount = codeResult.files ? Object.keys(codeResult.files).length : 0;
+            console.log(`\n✅ Phase C 완료: ${fileCount}개 파일 생성`);
+            metrics.endPhase('coding', 'success');
+          } else {
+            console.warn('\n⚠️ Phase C: 코드 생성 결과 없음');
+            metrics.endPhase('coding', 'partial');
+          }
+
+        } catch (codeError) {
+          console.error('\n❌ Phase C 에러:', codeError.message);
+          metrics.addError('coding', codeError.message);
+          metrics.endPhase('coding', 'fail');
+        }
+      } else {
+        console.log('\n⏭️  Phase C 스킵 (Phase B Reviewer FAIL 또는 HANDOFF 누락)');
+      }
 
       // 결과 통합
       const report = metrics.generateReport();
       await this.saveLog(taskId, report, {
         analysis: analysisResult,
-        planning: planResult
+        planning: planResult,
+        coding: codeResult
       });
 
       console.log('\n🎉 Mixed 파이프라인 완료');
@@ -1292,6 +1421,12 @@ export class Orchestrator {
           sdd: planResult.sdd,
           handoff: planResult.handoff
         },
+        // Phase C 결과 (Milestone 5)
+        coding: codeResult ? {
+          files: codeResult.files,
+          report: codeResult.report,
+          generatedFiles: codeResult.metadata?.generatedFiles || []
+        } : null,
         metrics: report
       };
 
@@ -1720,6 +1855,147 @@ export class Orchestrator {
     const maskedLogData = this.maskSensitiveData(logData);
     fs.writeFileSync(logPath, maskedLogData);
     console.log(`\n📝 로그 저장: ${logPath}`);
+  }
+
+  // ========== Phase B Reviewer (P1-1) ==========
+
+  /**
+   * 설계 문서 품질 검증 (Phase B Reviewer)
+   * @param {Object} planResult - Leader Agent 설계 결과
+   * @param {string} prdContent - PRD 원문
+   * @returns {Object} { passed, score, summary, issues }
+   */
+  async _validateDesignDocuments(planResult, prdContent) {
+    try {
+      const reviewer = new ReviewerSkill({
+        projectRoot: this.projectRoot
+      });
+      await reviewer.initialize();
+
+      // 설계 문서 내용 추출
+      const designDocuments = {
+        ia: planResult.ia || '',
+        wireframe: planResult.wireframe || '',
+        sdd: planResult.sdd || '',
+        handoff: planResult.handoff || ''
+      };
+
+      // 문서 존재 여부 확인
+      const docCount = Object.values(designDocuments).filter(d => d && d.length > 0).length;
+      if (docCount === 0) {
+        return {
+          passed: false,
+          score: 0,
+          summary: '설계 문서가 생성되지 않음',
+          issues: [{ severity: 'HIGH', description: '4개 설계 문서 모두 비어있음' }]
+        };
+      }
+
+      // ReviewerSkill 호출 (design_documents 스코프)
+      const reviewResult = await reviewer.validate({
+        prd: { content: prdContent },
+        outputs: designDocuments,
+        validationScope: ['structure', 'completeness', 'prd_match']
+      });
+
+      // 추가 검증: 문서 구조 확인
+      const structureIssues = this._checkDesignDocumentStructure(designDocuments);
+
+      // 최종 점수 계산
+      let finalScore = reviewResult.score || 70;
+
+      // 문서 개수에 따른 가산/감점
+      finalScore += (docCount - 2) * 10; // 4개면 +20, 3개면 +10, 2개면 0
+
+      // 구조 이슈 감점
+      finalScore -= structureIssues.length * 5;
+
+      const passed = finalScore >= 80;
+
+      return {
+        passed,
+        score: Math.max(0, Math.min(100, finalScore)),
+        summary: passed
+          ? `설계 문서 품질 검증 통과 (${docCount}/4 문서 생성)`
+          : `설계 문서 품질 미달 (${structureIssues.length}개 구조 이슈)`,
+        docCount,
+        issues: [...(reviewResult.issues || []), ...structureIssues],
+        details: reviewResult.details || {}
+      };
+
+    } catch (error) {
+      console.warn(`  [Phase B Reviewer] 검증 중 오류: ${error.message}`);
+
+      // Fallback: 기본 검증
+      return this._fallbackDesignValidation(planResult);
+    }
+  }
+
+  /**
+   * 설계 문서 구조 확인
+   */
+  _checkDesignDocumentStructure(documents) {
+    const issues = [];
+
+    // IA.md 구조 확인
+    if (documents.ia && !documents.ia.includes('#')) {
+      issues.push({
+        severity: 'MEDIUM',
+        category: 'structure',
+        description: 'IA.md에 마크다운 헤딩이 없음'
+      });
+    }
+
+    // Wireframe.md 구조 확인
+    if (documents.wireframe && !documents.wireframe.includes('```')) {
+      issues.push({
+        severity: 'LOW',
+        category: 'structure',
+        description: 'Wireframe.md에 ASCII 다이어그램이 없음'
+      });
+    }
+
+    // SDD.md 구조 확인 (API 정의 포함 여부)
+    if (documents.sdd && !documents.sdd.toLowerCase().includes('api')) {
+      issues.push({
+        severity: 'MEDIUM',
+        category: 'completeness',
+        description: 'SDD.md에 API 정의가 없음'
+      });
+    }
+
+    // HANDOFF.md 구조 확인 (작업 지시 포함 여부)
+    if (documents.handoff && documents.handoff.length < 500) {
+      issues.push({
+        severity: 'MEDIUM',
+        category: 'completeness',
+        description: 'HANDOFF.md가 너무 짧음 (< 500자)'
+      });
+    }
+
+    return issues;
+  }
+
+  /**
+   * Fallback 설계 문서 검증
+   */
+  _fallbackDesignValidation(planResult) {
+    const docs = [planResult.ia, planResult.wireframe, planResult.sdd, planResult.handoff];
+    const docCount = docs.filter(d => d && d.length > 0).length;
+
+    const score = (docCount / 4) * 100;
+    const passed = docCount >= 3; // 최소 3개 문서 필요
+
+    return {
+      passed,
+      score: Math.round(score),
+      summary: passed
+        ? `Fallback 검증 통과 (${docCount}/4 문서)`
+        : `Fallback 검증 실패 (${docCount}/4 문서)`,
+      docCount,
+      issues: [],
+      fallback: true
+    };
   }
 
   // ========== 실행 완료 보고 템플릿 (v3.3.0) ==========
@@ -2216,6 +2492,84 @@ export class Orchestrator {
    * @param {Array} queries - 생성된 쿼리 목록
    * @returns {Array} - 위험 쿼리 목록
    */
+  /**
+   * P1-2: 라우팅 결정 로직
+   * PRD 유형에 따라 적절한 파이프라인을 선택하고 결정 사유를 반환
+   *
+   * @param {string} prdType - QUANTITATIVE | QUALITATIVE | MIXED
+   * @param {string} pipeline - analysis | design | mixed
+   * @param {Object} options - 실행 옵션 (mode, pipeline 오버라이드)
+   * @returns {{ selectedPipeline: string, reason: string }}
+   */
+  _determineRoutingDecision(prdType, pipeline, options = {}) {
+    // 1. CLI 옵션으로 명시적 파이프라인 지정된 경우 (최우선)
+    if (options.pipeline && options.pipeline !== 'auto') {
+      return {
+        selectedPipeline: options.pipeline,
+        reason: `CLI 옵션 명시 (--pipeline ${options.pipeline})`
+      };
+    }
+
+    // 2. PRD 파일에 pipeline 필드가 명시된 경우
+    if (pipeline && pipeline !== 'design') {
+      return {
+        selectedPipeline: pipeline,
+        reason: `PRD pipeline 필드 명시 (pipeline: ${pipeline})`
+      };
+    }
+
+    // 3. PRD type 기반 자동 추론
+    const typeToReason = {
+      'QUANTITATIVE': 'PRD type: QUANTITATIVE → 데이터 분석 전용',
+      'QUALITATIVE': 'PRD type: QUALITATIVE → 설계 문서 생성',
+      'MIXED': 'PRD type: MIXED → 분석 후 설계'
+    };
+
+    const typeToPipeline = {
+      'QUANTITATIVE': 'analysis',
+      'QUALITATIVE': 'design',
+      'MIXED': 'mixed'
+    };
+
+    return {
+      selectedPipeline: typeToPipeline[prdType] || 'design',
+      reason: typeToReason[prdType] || 'PRD type 미지정 → 기본값 design'
+    };
+  }
+
+  /**
+   * [P2-2] Doc-Sync 트리거 (Milestone 3)
+   *
+   * Phase B Reviewer가 PASS한 경우 자동으로 Notion 동기화
+   *
+   * @param {string} taskId - 케이스 ID
+   */
+  async _triggerDocSync(taskId) {
+    try {
+      console.log(`\n[Doc-Sync] Uploading documents to Notion...`);
+
+      const docSync = new DocSyncSkill({
+        projectRoot: this.projectRoot
+      });
+      await docSync.initialize();
+
+      const syncResult = await docSync.syncCase(taskId, {
+        projectRoot: this.projectRoot
+      });
+
+      if (syncResult.summary.uploaded > 0) {
+        console.log(`[Doc-Sync] ✅ ${syncResult.summary.uploaded}개 문서 동기화 완료 (${syncResult.mode} 모드)`);
+      }
+
+      return syncResult;
+
+    } catch (error) {
+      console.warn(`[Doc-Sync] ⚠️ 동기화 실패: ${error.message}`);
+      // 동기화 실패가 전체 파이프라인을 중단시키지 않도록 경고만 출력
+      return { error: error.message };
+    }
+  }
+
   _detectDangerousQueries(queries) {
     const dangerous = [];
     const dangerousPatterns = [

@@ -1,9 +1,8 @@
 # AGENT_ARCHITECTURE.md
 
-> **문서 버전**: 2.6.3
-> **최종 업데이트**: 2025-12-24
-> **물리적 경로**: `.claude/workflows/AGENT_ARCHITECTURE.md`
-> **변경 이력**: Provider 스트리밍 지원 추가, OpenAI 모델 gpt-4o로 변경
+> **문서 버전**: 2.6.4
+> **최종 업데이트**: 2025-12-26
+> **물리적 경로**: `.claude/workflows/AGENT_ARCHITECTURE.md` > **변경 이력**: Provider 스트리밍 지원 추가, OpenAI 모델 gpt-4o로 변경
 > **상위 문서**: `CLAUDE.md` > **대상 Agent**: Leader, SubAgent, AnalysisAgent, OutputValidator
 > **참고**: Orchestrator는 Agent가 아닌 워크플로우 제어 모듈입니다 (JavaScript 클래스)
 
@@ -16,18 +15,18 @@
 
 ### 0.1 섹션별 로딩 대상
 
-| 섹션                          | 대상                | 필수 여부 |
-| ----------------------------- | ------------------- | --------- |
-| 섹션 1 (아키텍처 개요)        | 사용자/개발자 참조  | -         |
-| 섹션 2 (협업 사이클)          | 참조용              | 선택      |
-| 섹션 3.1 (Orchestrator 역할)  | 사용자/개발자 참조  | -         |
-| 섹션 3.2 (Leader 역할)        | Leader Agent        | 필수      |
-| 섹션 3.3 (SubAgent 역할)      | SubAgent            | 필수      |
-| 섹션 3.4 (AnalysisAgent 역할) | AnalysisAgent       | 필수      |
-| 섹션 4 (Multi-LLM Provider)   | 사용자/개발자 참조  | -         |
-| 섹션 5 (보안 아키텍처)        | 모든 Agent          | 권장      |
-| 섹션 6 (Handoff 프로토콜)     | Leader, SubAgent    | 필수      |
-| 섹션 7-10 (사용법 등)         | 사용자 참조용       | -         |
+| 섹션                          | 대상               | 필수 여부 |
+| ----------------------------- | ------------------ | --------- |
+| 섹션 1 (아키텍처 개요)        | 사용자/개발자 참조 | -         |
+| 섹션 2 (협업 사이클)          | 참조용             | 선택      |
+| 섹션 3.1 (Orchestrator 역할)  | 사용자/개발자 참조 | -         |
+| 섹션 3.2 (Leader 역할)        | Leader Agent       | 필수      |
+| 섹션 3.3 (SubAgent 역할)      | SubAgent           | 필수      |
+| 섹션 3.4 (AnalysisAgent 역할) | AnalysisAgent      | 필수      |
+| 섹션 4 (Multi-LLM Provider)   | 사용자/개발자 참조 | -         |
+| 섹션 5 (보안 아키텍처)        | 모든 Agent         | 권장      |
+| 섹션 6 (Handoff 프로토콜)     | Leader, SubAgent   | 필수      |
+| 섹션 7-10 (사용법 등)         | 사용자 참조용      | -         |
 
 ### 0.2 로딩 우선순위
 
@@ -45,25 +44,25 @@
 
 > LLM 기반 Agent만 토큰을 소비합니다. Orchestrator는 코드 모듈이므로 제외.
 
-| Agent               | 로딩 섹션            | 예상 토큰 |
-| ------------------- | -------------------- | --------- |
-| **Leader**          | 섹션 3.2, 섹션 6     | ~800      |
-| **SubAgent**        | 섹션 3.3, 섹션 6     | ~600      |
-| **AnalysisAgent**   | 섹션 3.4             | ~500      |
-| **OutputValidator** | 섹션 5.1 Layer 3     | ~300      |
+| Agent               | 로딩 섹션        | 예상 토큰 |
+| ------------------- | ---------------- | --------- |
+| **Leader**          | 섹션 3.2, 섹션 6 | ~800      |
+| **SubAgent**        | 섹션 3.3, 섹션 6 | ~600      |
+| **AnalysisAgent**   | 섹션 3.4         | ~500      |
+| **OutputValidator** | 섹션 5.1 Layer 3 | ~300      |
 
 ### 0.3.1 Agent별 출력 토큰 제한 (maxTokens)
 
 > LLM 응답의 최대 출력 토큰 수입니다. 설계 문서 생성 등 대용량 출력이 필요한 경우 적절히 설정해야 합니다.
 
-| Agent               | 기본값 (maxTokens) | 용도                              | 비고                     |
-| ------------------- | ------------------ | --------------------------------- | ------------------------ |
-| **Leader**          | 32,768             | 4개 설계 문서 생성 (IA, WF, SDD, HANDOFF) | v4.3.12에서 16384→32768 확장 |
-| **SubAgent**        | 8,192              | 코드 생성, 문서 보완              | -                        |
-| **CodeAgent**       | 8,192              | 코드 구현                         | -                        |
-| **AnalysisAgent**   | 8,192              | SQL 생성, 결과 해석               | -                        |
-| **QueryAgent**      | 4,096              | SQL 쿼리 생성                     | 간결한 쿼리 출력         |
-| **DesignAgent**     | 32,768             | 설계 문서 생성                    | Claude Sonnet 4: 64K 지원 |
+| Agent             | 기본값 (maxTokens) | 용도                                      | 비고                         |
+| ----------------- | ------------------ | ----------------------------------------- | ---------------------------- |
+| **Leader**        | 32,768             | 4개 설계 문서 생성 (IA, WF, SDD, HANDOFF) | v4.3.12에서 16384→32768 확장 |
+| **SubAgent**      | 8,192              | 코드 생성, 문서 보완                      | -                            |
+| **CodeAgent**     | 8,192              | 코드 구현                                 | -                            |
+| **AnalysisAgent** | 8,192              | SQL 생성, 결과 해석                       | -                            |
+| **QueryAgent**    | 4,096              | SQL 쿼리 생성                             | 간결한 쿼리 출력             |
+| **DesignAgent**   | 32,768             | 설계 문서 생성                            | Claude Sonnet 4: 64K 지원    |
 
 ⚠️ **주의**: `maxTokens`가 부족하면 응답이 중간에 잘려 설계 문서 누락 발생 가능
 
@@ -112,6 +111,7 @@ workspace/logs/{task-id}.json      # 실행 로그
 > ⚠️ **Deprecated**: `workspace/analysis/{task-id}/`는 `docs/cases/{caseId}/analysis/`로 통합되었습니다.
 
 **caseId 추출 규칙**:
+
 - `case5-dormancy-20251223` → `case5-dormancy` (날짜 8자리 제거)
 - `case5-dormancy-1766037994472` → `case5-dormancy` (타임스탬프 13자리 제거)
 
@@ -129,20 +129,20 @@ workspace/logs/{task-id}.json      # 실행 로그
 
 ### Phase 개요
 
-| Phase | 이름 | 담당 Agent | 사용 Skill | 설명 | 구현 상태 |
-|-------|------|------------|------------|------|-----------|
-| **Phase A** | Analysis | AnalysisAgent | query, profiler | DB 분석, SQL 쿼리 실행, 데이터 추출 | ✅ 구현됨 |
-| **Phase B** | Design | Leader | designer | IA.md, Wireframe.md, SDD.md, HANDOFF.md 생성 | ✅ 구현됨 |
-| **Phase C** | Code Implementation | SubAgent | coder | HANDOFF.md 기반 코드 구현 | ⏳ 미구현 |
-| **Phase D** | Security Layer | Orchestrator (내부) | - | 입력 검증, 프롬프트 인젝션 방어 | ✅ 구현됨 |
+| Phase       | 이름                | 담당 Agent          | 사용 Skill      | 설명                                         | 구현 상태 |
+| ----------- | ------------------- | ------------------- | --------------- | -------------------------------------------- | --------- |
+| **Phase A** | Analysis            | AnalysisAgent       | query, profiler | DB 분석, SQL 쿼리 실행, 데이터 추출          | ✅ 구현됨 |
+| **Phase B** | Design              | Leader              | designer        | IA.md, Wireframe.md, SDD.md, HANDOFF.md 생성 | ✅ 구현됨 |
+| **Phase C** | Code Implementation | SubAgent            | coder           | HANDOFF.md 기반 코드 구현                    | ⏳ 미구현 |
+| **Phase D** | Security Layer      | Orchestrator (내부) | -               | 입력 검증, 프롬프트 인젝션 방어              | ✅ 구현됨 |
 
 ### 공통 Skill (Cross-Phase)
 
-| Skill | 사용 시점 | 호출 주체 | 설명 | 구현 상태 |
-|-------|----------|----------|------|-----------|
-| **reviewer** | Phase 산출물 완료 후 | Leader | 품질 검증 (80점 미만 시 재작업) | ✅ 구현됨 |
-| **viewer** | HITL 체크포인트 | User (웹 대시보드) | 실시간 모니터링, 승인/거부/피드백 | ✅ 구현됨 |
-| **doc-sync** | Phase 완료 후 | Leader → SubAgent | Notion 동기화 (산출물 업로드) | ✅ 구현됨 |
+| Skill        | 사용 시점            | 호출 주체          | 설명                              | 구현 상태 |
+| ------------ | -------------------- | ------------------ | --------------------------------- | --------- |
+| **reviewer** | Phase 산출물 완료 후 | Leader             | 품질 검증 (80점 미만 시 재작업)   | ✅ 구현됨 |
+| **viewer**   | HITL 체크포인트      | User (웹 대시보드) | 실시간 모니터링, 승인/거부/피드백 | ✅ 구현됨 |
+| **doc-sync** | Phase 완료 후        | Leader → SubAgent  | Notion 동기화 (산출물 업로드)     | ✅ 구현됨 |
 
 ### 파이프라인 타입
 
@@ -174,7 +174,7 @@ graph TD
     F --> G[Query Skill: SQL 실행]
     G --> G1[Reviewer Skill: 쿼리 결과 검증]
     G1 -- FAIL --> F
-    G1 -- PASS --> H{결과 이상?}
+    G1 -- PASS --> H{결과 검증}
     H -- 이상 --> I[🧑 HITL: 쿼리 검토]
     I -.-> I1[Viewer Skill: 대시보드]
     H -- 정상 --> J[분석 리포트 생성]
@@ -195,7 +195,7 @@ graph TD
     O2 --> P{Phase C 필요?}
     O -- 수정요청 --> M
 
-    %% Phase C: Code Implementation (미구현)
+    %% Phase C: Code Implementation
     P -- Yes --> Q[Phase C: SubAgent 구현]
     P -- No --> U
     Q --> R[Coder Skill: 코드 작성]
@@ -231,13 +231,13 @@ graph TD
 
 ### HITL 체크포인트 요약
 
-| 체크포인트    | Phase | 트리거 조건                                  | 인간 액션                    |
-| ------------- | ----- | -------------------------------------------- | ---------------------------- |
+| 체크포인트    | Phase   | 트리거 조건                                  | 인간 액션                    |
+| ------------- | ------- | -------------------------------------------- | ---------------------------- |
 | **PRD 보완**  | 진입 전 | PRD Gap Check 불완전 (필수 항목 누락)        | PRD 필수 항목 보완 후 재시작 |
-| **쿼리 검토** | A    | SQL 결과 이상 (0행, 타임아웃, 스키마 불일치) | 쿼리 수정 또는 승인          |
-| **설계 승인** | B    | IA/Wireframe/SDD 생성 완료                   | 설계 검토 및 승인/수정요청   |
-| **수동 수정** | C    | 3회 연속 Review FAIL                         | 직접 수정 또는 방향 조정     |
-| **배포 승인** | C    | 프론트엔드 배포 필요 시                      | 최종 배포 승인               |
+| **쿼리 검토** | A       | SQL 결과 이상 (0행, 타임아웃, 스키마 불일치) | 쿼리 수정 또는 승인          |
+| **설계 승인** | B       | IA/Wireframe/SDD 생성 완료                   | 설계 검토 및 승인/수정요청   |
+| **수동 수정** | C       | 3회 연속 Review FAIL                         | 직접 수정 또는 방향 조정     |
+| **배포 승인** | C       | 프론트엔드 배포 필요 시                      | 최종 배포 승인               |
 
 ### 자동 중단 트리거
 
@@ -291,15 +291,15 @@ Phase C (Output Validation):
 
 ### Skill 목록 및 호출 Agent
 
-| Skill | Version | 호출 Agent | Phase | 주요 기능 |
-|-------|---------|------------|-------|-----------|
-| **query** | v1.2.0 | AnalysisAgent | A | SQL 쿼리 작성 및 실행, 데이터 추출 |
-| **profiler** | v1.2.0 | AnalysisAgent | A | 사용자 프로파일 분석, 세그먼트 분류 |
-| **designer** | v2.2.0 | Leader | B | 시각화 고도화 (Mermaid → HTML) |
-| **doc-sync** | v2.1.0 | Leader | B | 로컬 ↔ Notion 동기화 |
-| **coder** | v1.3.0 | SubAgent | C | 코드 구현 (backend/frontend) |
-| **reviewer** | v1.2.0 | OutputValidator | C | 산출물 품질 검증, PASS/FAIL |
-| **viewer** | v1.5.0 | (Orchestrator) | - | 웹 뷰어 API (LLM 미사용) |
+| Skill        | Version | 호출 Agent      | Phase | 주요 기능                           |
+| ------------ | ------- | --------------- | ----- | ----------------------------------- |
+| **query**    | v1.2.0  | AnalysisAgent   | A     | SQL 쿼리 작성 및 실행, 데이터 추출  |
+| **profiler** | v1.2.0  | AnalysisAgent   | A     | 사용자 프로파일 분석, 세그먼트 분류 |
+| **designer** | v2.2.0  | Leader          | B     | 시각화 고도화 (Mermaid → HTML)      |
+| **doc-sync** | v2.1.0  | Leader          | B     | 로컬 ↔ Notion 동기화                |
+| **coder**    | v1.3.0  | SubAgent        | C     | 코드 구현 (backend/frontend)        |
+| **reviewer** | v1.2.0  | OutputValidator | C     | 산출물 품질 검증, PASS/FAIL         |
+| **viewer**   | v1.5.0  | (Orchestrator)  | -     | 웹 뷰어 API (LLM 미사용)            |
 
 > **참고**: viewer는 순수 JavaScript 유틸리티로, LLM Agent가 아닙니다.
 
@@ -480,6 +480,62 @@ Phase C (Output Validation):
 
 > **상세 플로우**: 섹션 0.5 "전체 파이프라인 플로우 (Phase 기반 HITL)" 참조
 
+```mermaid
+graph TD
+    %% 1. 메인 진입점
+    User((👤 User)) -->|Task/PRD| ORC[🤖 Orchestrator<br/>Control Tower]
+
+    %% 2. 오케스트레이터
+    subgraph "Orchestrator Core (v4.0.0)"
+        ORC -->|1. Route| Router{Pipeline<br/>Router}
+        ORC -->|4. Loop| LoopCheck{Retry / HITL}
+    end
+
+    %% 3. 리더 에이전트
+    subgraph "🧠 Leader Agent (Brain)"
+        L_Plan[Planning Mode<br/>Designer Skill]
+        L_Review[Review Mode<br/>Reviewer Skill]
+
+        Router -->|Design/Default| L_Plan
+        L_Plan -->|IA/Wireframe/SDD/HANDOFF| Handoff[📋 HANDOFF.md]
+    end
+
+    %% 4. 서브 에이전트 (Skills Execution)
+    subgraph "🛠️ Sub-agents (Skill-Centric)"
+        direction TB
+
+        Handoff --> Registry[Skill Registry]
+
+        Registry -->|Implementation| Code[⚙️ Coder Skill]
+        Registry -->|Data Analysis| Analysis[📊 Query/Profiler Skill]
+        Registry -->|Visualization| Design[🎨 Designer Skill]
+
+        Code --> Output[📦 Artifacts]
+        Analysis --> Output
+        Design --> Output
+    end
+
+    %% 5. 검증 루프
+    Output -->|Validation Request| L_Review
+
+    L_Review -->|Pass (Score >= 80)| LoopCheck
+    L_Review -->|Fail (Feedback)| Code
+
+    LoopCheck -- Success --> Done(✅ Complete)
+    LoopCheck -- Fail/Retry --> Registry
+    LoopCheck -- HITL --> Human[🧑 Human Approval]
+    Human -->|Approve| Done
+    Human -->|Reject/Fix| L_Plan
+
+    %% 스타일링
+    style ORC fill:#333,stroke:#fff,stroke-width:4px,color:#fff
+    style L_Plan fill:#f9f,stroke:#333,stroke-width:2px
+    style L_Review fill:#f9f,stroke:#333,stroke-width:2px
+    style Code fill:#e1f5fe,stroke:#333
+    style Analysis fill:#e1f5fe,stroke:#333
+    style Design fill:#e1f5fe,stroke:#333
+```
+
 ---
 
 ## 3. 역할 정의
@@ -508,28 +564,28 @@ Phase C (Output Validation):
 
 ### 3.3 Sub-agent (subagent.js)
 
-| 항목     | 내용                                                           |
-| -------- | -------------------------------------------------------------- |
-| **역할** | 구현자                                                         |
-| **Mode** | Coding Mode                                                    |
-| **담당** | 코드 작성, 테스트 작성                                         |
-| **보안** | Output Validation (Protected Path 보호)                        |
-| **권한** | `backend/src/*`, `frontend/src/*`, `mcp-server/*` 수정 가능    |
+| 항목     | 내용                                                               |
+| -------- | ------------------------------------------------------------------ |
+| **역할** | 구현자                                                             |
+| **Mode** | Coding Mode                                                        |
+| **담당** | 코드 작성, 테스트 작성                                             |
+| **보안** | Output Validation (Protected Path 보호)                            |
+| **권한** | `backend/src/*`, `frontend/src/*`, `mcp-server/*` 수정 가능        |
 | **제약** | `.claude/{rules, workflows, context}/*`, `orchestrator/` 수정 금지 |
 
 ### 3.4 AnalysisAgent (데이터 분석가)
 
 > **Phase A 전담**: 모든 데이터베이스 분석 작업은 AnalysisAgent를 통해서만 수행됩니다.
 
-| 항목       | 내용                                                              |
-| ---------- | ----------------------------------------------------------------- |
-| **역할**   | 데이터 분석가 (Data Analyst)                                      |
-| **Phase**  | Phase A (Analysis)                                                |
-| **담당**   | SQL 쿼리 작성/실행, 데이터 추출, 분석 리포트 생성                 |
-| **Skill**  | `query`, `profiler`                                               |
-| **보안**   | SELECT 쿼리만 허용, INSERT/UPDATE/DELETE 금지                    |
-| **권한**   | `docs/cases/{caseId}/analysis/*` 쓰기 가능                        |
-| **제약**   | 프로덕션 DB 직접 수정 금지, 로컬 작업만 허용                      |
+| 항목      | 내용                                              |
+| --------- | ------------------------------------------------- |
+| **역할**  | 데이터 분석가 (Data Analyst)                      |
+| **Phase** | Phase A (Analysis)                                |
+| **담당**  | SQL 쿼리 작성/실행, 데이터 추출, 분석 리포트 생성 |
+| **Skill** | `query`, `profiler`                               |
+| **보안**  | SELECT 쿼리만 허용, INSERT/UPDATE/DELETE 금지     |
+| **권한**  | `docs/cases/{caseId}/analysis/*` 쓰기 가능        |
+| **제약**  | 프로덕션 DB 직접 수정 금지, 로컬 작업만 허용      |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -557,6 +613,7 @@ Phase C (Output Validation):
 ```
 
 **⚠️ 핵심 원칙**: Leader Agent는 DB에 직접 접속하지 않습니다.
+
 - 데이터 분석이 필요한 경우, Orchestrator가 AnalysisAgent를 Phase A에서 먼저 실행
 - AnalysisAgent의 분석 결과는 `docs/cases/{caseId}/analysis/`에 저장
 - Leader는 Phase B에서 이 분석 결과를 참조하여 설계 진행
@@ -611,7 +668,7 @@ const orchestrator = new Orchestrator({
   useFallback: true, // Fallback 활성화
   providerConfig: {
     anthropic: { model: "claude-sonnet-4-20250514", useStreaming: true },
-    openai: { model: "gpt-4o" },  // gpt-4-turbo (4K) → gpt-4o (16K)
+    openai: { model: "gpt-4o" }, // gpt-4-turbo (4K) → gpt-4o (16K)
     gemini: { model: "gemini-pro" },
   },
 });
@@ -621,16 +678,19 @@ const orchestrator = new Orchestrator({
 
 > **배경**: 32768+ 토큰 요청 시 10분 이상 소요 가능 → Anthropic API는 스트리밍 필수
 
-| Provider | 스트리밍 | 최대 출력 토큰 | 비고 |
-|----------|---------|---------------|------|
-| **Anthropic** | ✅ 기본 활성 | 64,000 | 장시간 작업에 필수 (10분+ 시 타임아웃 방지) |
-| **OpenAI** | ❌ 미지원 | 16,384 (gpt-4o) | 모델별 토큰 제한 자동 적용 |
-| **Gemini** | ❌ 미지원 | 8,192 | Fallback 용도 |
+| Provider      | 스트리밍     | 최대 출력 토큰  | 비고                                        |
+| ------------- | ------------ | --------------- | ------------------------------------------- |
+| **Anthropic** | ✅ 기본 활성 | 64,000          | 장시간 작업에 필수 (10분+ 시 타임아웃 방지) |
+| **OpenAI**    | ❌ 미지원    | 16,384 (gpt-4o) | 모델별 토큰 제한 자동 적용                  |
+| **Gemini**    | ❌ 미지원    | 8,192           | Fallback 용도                               |
 
 **스트리밍 비활성화** (작은 요청용):
+
 ```javascript
 providerConfig: {
-  anthropic: { useStreaming: false }  // 기본값: true
+  anthropic: {
+    useStreaming: false;
+  } // 기본값: true
 }
 ```
 
@@ -920,19 +980,19 @@ workspace/logs/audit/audit-*.jsonl     # 보안 감사 로그
 
 ## 📝 변경 이력
 
-| 버전  | 날짜       | 변경 내용                                                                      |
-| ----- | ---------- | ------------------------------------------------------------------------------ |
-| 2.6.3 | 2025-12-24 | [Fix v4.3.13] AnthropicProvider 스트리밍 지원 추가 (32K+ 토큰 요청 시 필수), OpenAI 기본 모델 gpt-4-turbo→gpt-4o 변경 (16K 토큰 지원) |
-| 2.6.2 | 2025-12-24 | Phase A 다이어그램 수정: Reviewer Skill 위치를 Query Skill 직후로 이동, 쿼리 결과 검증 후 리포트 생성 흐름으로 변경 |
-| 2.6.1 | 2025-12-24 | Agent-Skill 권한 매트릭스 업데이트: Leader→reviewer, SubAgent→doc-sync, User(HITL)→viewer 추가, 사용 시점 설명 추가 |
+| 버전  | 날짜       | 변경 내용                                                                                                                                      |
+| ----- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.6.3 | 2025-12-24 | [Fix v4.3.13] AnthropicProvider 스트리밍 지원 추가 (32K+ 토큰 요청 시 필수), OpenAI 기본 모델 gpt-4-turbo→gpt-4o 변경 (16K 토큰 지원)          |
+| 2.6.2 | 2025-12-24 | Phase A 다이어그램 수정: Reviewer Skill 위치를 Query Skill 직후로 이동, 쿼리 결과 검증 후 리포트 생성 흐름으로 변경                            |
+| 2.6.1 | 2025-12-24 | Agent-Skill 권한 매트릭스 업데이트: Leader→reviewer, SubAgent→doc-sync, User(HITL)→viewer 추가, 사용 시점 설명 추가                            |
 | 2.6.0 | 2025-12-24 | 공통 Skill (Reviewer, Viewer, Doc-Sync) 표 추가, 다이어그램에 Cross-Phase Skill 흐름 반영 (HITL↔Viewer, 품질검증↔Reviewer, Phase완료↔Doc-Sync) |
-| 2.5.1 | 2025-12-24 | Phase 표 Agent/Skill 분리, Mermaid 다이어그램 Skill 참조 수정, 섹션 3.4 query→Query Skill 업데이트 |
-| 2.5.0 | 2025-12-24 | Skill 네이밍 리팩토링: agent 접미사 제거 (query-agent→query, code-agent→coder 등), 시스템 다이어그램 Skill 업데이트 |
-| 2.4.0 | 2025-12-24 | 문서 정리: 섹션2 중복 제거, 파일구조 ATO-System-B로 수정, 로그경로 workspace/logs로 수정, QUALITY_GATES→VALIDATION_GUIDE 수정 |
-| 2.3.0 | 2025-12-24 | AnalysisAgent 역할 공식화 (섹션 3.4), Skill-Agent 매핑 테이블 추가 (섹션 0.6), Phase 기반 파이프라인 현행화 |
-| 2.0.0 | 2025-12-19 | Agent 로딩 설정 섹션 추가 (섹션 0), 섹션별 선택적 로딩 전략                    |
-| 1.8.0 | 2025-12-17 | Output Validation → Review 연동, 3단계 PRD 매칭                                |
-| 1.7.0 | 2025-12-17 | MCP 제거, Orchestrator 중심 아키텍처, Multi-LLM Provider                       |
+| 2.5.1 | 2025-12-24 | Phase 표 Agent/Skill 분리, Mermaid 다이어그램 Skill 참조 수정, 섹션 3.4 query→Query Skill 업데이트                                             |
+| 2.5.0 | 2025-12-24 | Skill 네이밍 리팩토링: agent 접미사 제거 (query-agent→query, code-agent→coder 등), 시스템 다이어그램 Skill 업데이트                            |
+| 2.4.0 | 2025-12-24 | 문서 정리: 섹션2 중복 제거, 파일구조 ATO-System-B로 수정, 로그경로 workspace/logs로 수정, QUALITY_GATES→VALIDATION_GUIDE 수정                  |
+| 2.3.0 | 2025-12-24 | AnalysisAgent 역할 공식화 (섹션 3.4), Skill-Agent 매핑 테이블 추가 (섹션 0.6), Phase 기반 파이프라인 현행화                                    |
+| 2.0.0 | 2025-12-19 | Agent 로딩 설정 섹션 추가 (섹션 0), 섹션별 선택적 로딩 전략                                                                                    |
+| 1.8.0 | 2025-12-17 | Output Validation → Review 연동, 3단계 PRD 매칭                                                                                                |
+| 1.7.0 | 2025-12-17 | MCP 제거, Orchestrator 중심 아키텍처, Multi-LLM Provider                                                                                       |
 
 ---
 

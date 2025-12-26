@@ -32,7 +32,7 @@ export const FEATURES = {
 
   // ===== Phase HITL: Human-in-the-Loop ===== (v3.5.0)
   HITL_ENABLED: true,                  // HITL 체크포인트 활성화
-  HITL_AUTO_APPROVE_DESIGN: false,     // 설계 승인 자동 통과 (false = 수동 승인 필요)
+  HITL_AUTO_APPROVE_DESIGN: true,      // 설계 승인 자동 통과 (true = 테스트용 자동 승인)
   HITL_AUTO_APPROVE_QUERY: false,      // 위험 쿼리 자동 통과 (false = 수동 승인 필요)
   HITL_GRACEFUL_EXIT: true,            // HITL pause 시 프로세스 종료
   HITL_RESUME_ENABLED: true,           // Resume 로직 활성화

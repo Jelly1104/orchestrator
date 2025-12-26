@@ -1,0 +1,1 @@
+SELECT U_ALIVE, COUNT(*) as status_count FROM USERS GROUP BY U_ALIVE

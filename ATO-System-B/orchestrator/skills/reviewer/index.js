@@ -3,15 +3,16 @@
  *
  * output-validator.js 기능을 확장하여 종합적인 품질 검증 수행
  *
- * @version 1.2.0
+ * @version 2.0.0
  * @since 2025-12-19
  * @updated 2025-12-24 - 네이밍 리팩토링 (ReviewAgent → ReviewerSkill)
+ * @updated 2025-12-26 - BaseSkill 상속으로 아키텍처 표준화 (Milestone 4)
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { SkillLoader } from '../skill-loader.js';
+import { BaseSkill } from '../base/BaseSkill.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,22 +32,42 @@ const PASS_CRITERIA = {
   minPrdMatchRate: 0.80
 };
 
-export class ReviewerSkill {
+export class ReviewerSkill extends BaseSkill {
   constructor(config = {}) {
-    this.projectRoot = config.projectRoot || process.cwd();
-
-    // SkillLoader로 SKILL.md 로드
-    this.skillLoader = new SkillLoader(path.join(__dirname, '..'));
-    this.skill = null;
+    // BaseSkill 초기화
+    super({
+      name: 'ReviewerSkill',
+      version: '2.0.0',
+      projectRoot: config.projectRoot,
+      requiredParams: ['outputs'],
+      debug: config.debug
+    });
   }
 
   /**
    * 초기화 - SKILL.md 로드
    */
   async initialize() {
+    await super.initialize(path.join(__dirname, '..'));
     this.skill = await this.skillLoader.loadSkill('reviewer');
-    console.log('[ReviewerSkill] Initialized with SKILL.md');
     return this;
+  }
+
+  /**
+   * 실행 메서드 (BaseSkill 인터페이스 구현)
+   *
+   * @param {Object} params - 실행 파라미터
+   * @param {Object} params.prd - PRD 정보
+   * @param {Object} params.outputs - 산출물 (IA, Wireframe, SDD 등)
+   * @param {string[]} params.validationScope - 검증 범위
+   * @returns {Promise<Object>} 검증 결과
+   */
+  async execute(params) {
+    // outputs 필수 검증
+    if (!params?.outputs) {
+      throw new Error('ReviewerSkill: outputs는 필수입니다.');
+    }
+    return await this.review(params);
   }
 
   /**
@@ -58,11 +79,11 @@ export class ReviewerSkill {
    * @param {string[]} input.validationScope - 검증 범위
    * @returns {Promise<Object>} 검증 결과
    */
-  async validate(input) {
+  async review(input) {
     const { prd, outputs, validationScope = ['syntax', 'semantic', 'prd_match', 'cross_ref'] } = input;
 
-    console.log('[ReviewerSkill] Starting validation');
-    console.log(`  Scope: ${validationScope.join(', ')}`);
+    this.log('Starting validation');
+    this.log(`  Scope: ${validationScope.join(', ')}`);
 
     const details = {};
     const issues = [];
@@ -124,6 +145,12 @@ export class ReviewerSkill {
     const passed = score >= PASS_CRITERIA.minScore &&
                    highIssues <= PASS_CRITERIA.maxHighIssues &&
                    prdMatchRate >= PASS_CRITERIA.minPrdMatchRate;
+
+    if (passed) {
+      this.success(`Validation passed with score ${Math.round(score)}`);
+    } else {
+      this.warn(`Validation failed with score ${Math.round(score)}`);
+    }
 
     return {
       passed,
@@ -311,7 +338,6 @@ export class ReviewerSkill {
 
     // IA → Wireframe 정합성
     if (ia && wireframe) {
-      // IA의 화면이 Wireframe에 반영되었는지
       const iaScreens = ia.match(/##\s*\d+\.\s*(.+)/g) || [];
       const wireframeScreens = wireframe.toLowerCase();
 
@@ -335,12 +361,11 @@ export class ReviewerSkill {
 
     // Wireframe → SDD 정합성
     if (wireframe && sdd) {
-      // Wireframe의 컴포넌트가 SDD에 정의되었는지
       const components = wireframe.match(/\[([^\]]+)\]/g) || [];
       const sddLower = sdd.toLowerCase();
 
       let matched = 0;
-      for (const comp of components.slice(0, 10)) { // 최대 10개만 검사
+      for (const comp of components.slice(0, 10)) {
         const compName = comp.replace(/[\[\]]/g, '').toLowerCase();
         if (sddLower.includes(compName.substring(0, 4))) {
           matched++;
@@ -426,11 +451,11 @@ export class ReviewerSkill {
 export default {
   create: (config = {}) => new ReviewerSkill(config),
   meta: {
-    name: 'reviewer',
-    version: '1.2.0',
-    description: '산출물 품질 검증 및 PRD 정합성 확인',
+    name: 'ReviewerSkill',
+    version: '2.0.0',
+    description: '산출물 품질 검증 및 PRD 정합성 확인 (BaseSkill 기반)',
     category: 'guardian',
-    dependencies: ['SkillLoader'],
+    dependencies: ['BaseSkill', 'SkillLoader'],
     status: 'active'
   }
 };

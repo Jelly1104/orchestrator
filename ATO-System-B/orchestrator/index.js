@@ -46,13 +46,11 @@ const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
 
-// .env 파일 로드 (orchestrator 폴더 내)
-
-dotenv.config({ path: path.join(__dirname, ".env") });
-
 // 프로젝트 루트 (orchestrator 폴더의 부모)
-
 const PROJECT_ROOT = path.resolve(__dirname, "..");
+
+// .env 파일 로드 (프로젝트 루트에서 로드)
+dotenv.config({ path: path.join(PROJECT_ROOT, ".env"), override: true });
 
 /**
  * PRD 스냅샷 전략 (v4.3.0)

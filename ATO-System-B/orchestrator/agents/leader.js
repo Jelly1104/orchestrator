@@ -15,7 +15,7 @@
  * - SkillLoader 연동
  * - review-agent 스킬 기반 프롬프트 동적 로딩
  *
- * @version 4.0.0
+ * @version 4.0.1
  * @since 2025-12-22
  */
 
@@ -143,19 +143,25 @@ export class LeaderAgent {
    * @param {number} maxLength - 최대 길이
    * @param {Object} options - 검증 옵션
    * @param {boolean} options.warnOnly - 차단 대신 경고만 (PRD 등 신뢰 컨텐츠용)
+   * @param {boolean} options.isGeneratedCode - LLM 생성 코드 여부 (process.env 등 허용)
    */
   sanitizeUserInput(input, maxLength, options = {}) {
     if (!input || typeof input !== "string") return "";
 
-    const { warnOnly = false } = options;
+    const { warnOnly = false, isGeneratedCode = false } = options;
 
     // Security Layer 활성화 시 InputValidator 사용
     if (isEnabled("SECURITY_INPUT_VALIDATION")) {
       const inputValidator = getInputValidator();
-      // PRD, 문서 등 신뢰 컨텐츠는 warnOnly로 처리 (SQL 키워드 등 허용)
-      const result = inputValidator.validate(input, 'DOCUMENT_CONTENT', { warnOnly });
+      // [Fix v4.0.1] isGeneratedCode: LLM 생성 코드는 process.env 등 정상 패턴 허용
+      // warnOnly: PRD, 문서 등 신뢰 컨텐츠는 경고만 (SQL 키워드 등 허용)
+      const result = inputValidator.validate(input, 'DOCUMENT_CONTENT', {
+        warnOnly,
+        isGeneratedCode,
+        isAgentOutput: isGeneratedCode  // Agent 출력물로도 처리
+      });
 
-      if (!result.valid && !warnOnly) {
+      if (!result.valid && !warnOnly && !isGeneratedCode) {
         const securityMonitor = getSecurityMonitor();
         securityMonitor.report(EVENT_TYPES.INPUT_VALIDATION_FAIL, {
           agent: "LeaderAgent",
@@ -168,8 +174,8 @@ export class LeaderAgent {
         );
       }
 
-      // warnOnly면 원본 반환, 아니면 sanitized 반환
-      return warnOnly ? input.substring(0, maxLength) : (result.sanitized || input.substring(0, maxLength));
+      // isGeneratedCode 또는 warnOnly면 원본 반환, 아니면 sanitized 반환
+      return (warnOnly || isGeneratedCode) ? input.substring(0, maxLength) : (result.sanitized || input.substring(0, maxLength));
     }
 
     // 레거시 방식 (fallback)
@@ -561,14 +567,17 @@ PRD에 산출물 체크리스트가 있으면 반드시 해당 항목들을 모�
   async review(code, sdd, testResults = "", options = {}) {
     const { useSkillPrompt = true } = options;
 
-    // 보안: 입력 검증 (코드와 SDD는 내부 생성물이지만 길이 제한 적용)
+    // 보안: 입력 검증 (코드와 SDD는 내부 생성물이므로 isGeneratedCode: true)
+    // [Fix v4.0.1] process.env 등 정상 코드 패턴이 False Positive로 차단되는 문제 해결
     const sanitizedCode = this.sanitizeUserInput(
       code,
-      SECURITY_LIMITS.MAX_CODE_LENGTH
+      SECURITY_LIMITS.MAX_CODE_LENGTH,
+      { isGeneratedCode: true }
     );
     const sanitizedSdd = this.sanitizeUserInput(
       sdd,
-      SECURITY_LIMITS.MAX_SDD_LENGTH
+      SECURITY_LIMITS.MAX_SDD_LENGTH,
+      { warnOnly: true }
     );
 
     const context = await this.loadReviewContext();

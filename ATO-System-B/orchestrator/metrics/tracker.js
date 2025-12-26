@@ -2,6 +2,13 @@
  * MetricsTracker - 시간/토큰 사용량 추적
  *
  * Orchestrator 실행 시 각 단계별 메트릭을 수집합니다.
+ *
+ * P1-3: Phase A/B 토큰 분리 추적 (v1.1.0)
+ * - phase_a_usage: AnalysisAgent (데이터 분석)
+ * - phase_b_usage: LeaderAgent (설계 문서 생성)
+ *
+ * @version 1.1.0
+ * @updated 2025-12-26 - [P1-3] Phase A/B 토큰 분리 추적 추가
  */
 
 export class MetricsTracker {
@@ -12,6 +19,12 @@ export class MetricsTracker {
     this.tokens = {
       leader: { input: 0, output: 0 },
       subagent: { input: 0, output: 0 }
+    };
+    // P1-3: Phase별 토큰 분리 추적
+    this.phaseUsage = {
+      phase_a: { input: 0, output: 0, agent: 'AnalysisAgent' },
+      phase_b: { input: 0, output: 0, agent: 'LeaderAgent' },
+      phase_c: { input: 0, output: 0, agent: 'CodeAgent' }
     };
     this.retryCount = 0;
     this.errors = [];
@@ -54,6 +67,46 @@ export class MetricsTracker {
       this.tokens[agent].input += inputTokens || 0;
       this.tokens[agent].output += outputTokens || 0;
     }
+  }
+
+  /**
+   * P1-3: Phase별 토큰 사용량 추가
+   * @param {string} phase - Phase 이름 (phase_a, phase_b, phase_c)
+   * @param {number} inputTokens - 입력 토큰 수
+   * @param {number} outputTokens - 출력 토큰 수
+   */
+  addPhaseTokens(phase, inputTokens, outputTokens) {
+    if (this.phaseUsage[phase]) {
+      this.phaseUsage[phase].input += inputTokens || 0;
+      this.phaseUsage[phase].output += outputTokens || 0;
+    }
+  }
+
+  /**
+   * P1-3: Phase별 토큰 사용량 조회
+   * @returns {{ phase_a_usage: Object, phase_b_usage: Object, phase_c_usage: Object }}
+   */
+  getPhaseUsage() {
+    return {
+      phase_a_usage: {
+        agent: this.phaseUsage.phase_a.agent,
+        input: this.phaseUsage.phase_a.input,
+        output: this.phaseUsage.phase_a.output,
+        total: this.phaseUsage.phase_a.input + this.phaseUsage.phase_a.output
+      },
+      phase_b_usage: {
+        agent: this.phaseUsage.phase_b.agent,
+        input: this.phaseUsage.phase_b.input,
+        output: this.phaseUsage.phase_b.output,
+        total: this.phaseUsage.phase_b.input + this.phaseUsage.phase_b.output
+      },
+      phase_c_usage: {
+        agent: this.phaseUsage.phase_c.agent,
+        input: this.phaseUsage.phase_c.input,
+        output: this.phaseUsage.phase_c.output,
+        total: this.phaseUsage.phase_c.input + this.phaseUsage.phase_c.output
+      }
+    };
   }
 
   /**
@@ -126,6 +179,7 @@ export class MetricsTracker {
   generateReport() {
     const totalDuration = this.getTotalDuration();
     const totalTokens = this.getTotalTokens();
+    const phaseUsage = this.getPhaseUsage();
 
     return {
       taskId: this.taskId,
@@ -151,6 +205,8 @@ export class MetricsTracker {
         },
         grandTotal: totalTokens.total
       },
+      // P1-3: Phase별 토큰 사용량
+      phaseUsage: phaseUsage,
       errors: this.errors
     };
   }
@@ -176,10 +232,28 @@ export class MetricsTracker {
       console.log(`   ${statusIcon} ${phase}: ${data.durationFormatted}`);
     }
 
-    console.log('\n🎫 토큰 사용량:');
+    console.log('\n🎫 토큰 사용량 (에이전트별):');
     console.log(`   Leader Agent:  ${report.tokens.leader.total.toLocaleString()} (in: ${report.tokens.leader.input.toLocaleString()}, out: ${report.tokens.leader.output.toLocaleString()})`);
     console.log(`   Sub-agent:     ${report.tokens.subagent.total.toLocaleString()} (in: ${report.tokens.subagent.input.toLocaleString()}, out: ${report.tokens.subagent.output.toLocaleString()})`);
     console.log(`   Total:         ${report.tokens.grandTotal.toLocaleString()}`);
+
+    // P1-3: Phase별 토큰 사용량 출력
+    console.log('\n📊 토큰 사용량 (Phase별):');
+    const phaseA = report.phaseUsage.phase_a_usage;
+    const phaseB = report.phaseUsage.phase_b_usage;
+    const phaseC = report.phaseUsage.phase_c_usage;
+    if (phaseA.total > 0) {
+      console.log(`   Phase A (${phaseA.agent}): ${phaseA.total.toLocaleString()} (in: ${phaseA.input.toLocaleString()}, out: ${phaseA.output.toLocaleString()})`);
+    }
+    if (phaseB.total > 0) {
+      console.log(`   Phase B (${phaseB.agent}): ${phaseB.total.toLocaleString()} (in: ${phaseB.input.toLocaleString()}, out: ${phaseB.output.toLocaleString()})`);
+    }
+    if (phaseC.total > 0) {
+      console.log(`   Phase C (${phaseC.agent}): ${phaseC.total.toLocaleString()} (in: ${phaseC.input.toLocaleString()}, out: ${phaseC.output.toLocaleString()})`);
+    }
+    if (phaseA.total === 0 && phaseB.total === 0 && phaseC.total === 0) {
+      console.log('   (Phase별 추적 데이터 없음)');
+    }
 
     if (report.errors.length > 0) {
       console.log('\n❌ 에러 목록:');

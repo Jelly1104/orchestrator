@@ -1,0 +1,1 @@
+SELECT U_KIND, COUNT(*) as active_count FROM USERS WHERE U_ALIVE = 'Y' GROUP BY U_KIND ORDER BY active_count DESC

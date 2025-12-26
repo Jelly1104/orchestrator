@@ -1,8 +1,8 @@
 # DB_ACCESS_POLICY.md
 
-> **버전**: 1.1.2
-> **최종 수정**: 2025-12-23
-> **변경 이력**: 로그 경로 AGENT_ARCHITECTURE.md와 동기화
+> **버전**: 1.2.0
+> **최종 수정**: 2025-12-26
+> **변경 이력**: [P0-2] 민감 컬럼 블랙리스트 추가, SELECT * 금지 정책 명시
 > **물리적 경로**: `.claude/rules/DB_ACCESS_POLICY.md` > **목적**: AI Agent의 데이터베이스 접근 정책
 > **상위 문서**: `CLAUDE.md`
 
@@ -26,15 +26,25 @@ GRANT ...          -- 권한 부여 금지
 REVOKE ...         -- 권한 회수 금지
 ```
 
-### 1.2 허용 (✅ ALLOWED)
+### 1.2 SELECT * 금지 (🔴 FORBIDDEN)
 
 ```sql
--- SELECT 쿼리만 허용 (읽기 전용)
+-- SELECT * 사용 금지 (P0-1 보안 정책)
+-- 이유: 17개+ 민감 컬럼 노출 위험 (U_PASSWD_ENC, U_EMAIL, U_SID_ENC 등)
 
-SELECT * FROM table WHERE condition;
+❌ SELECT * FROM USERS WHERE condition;     -- 금지
+✅ SELECT U_ID, U_KIND, U_ALIVE FROM USERS; -- 허용 (명시적 컬럼)
+```
+
+### 1.3 허용 (✅ ALLOWED)
+
+```sql
+-- SELECT 쿼리만 허용 (읽기 전용, 명시적 컬럼 선택 필수)
+
+SELECT column1, column2 FROM table WHERE condition;
 SELECT COUNT(*) FROM table;
 SELECT column FROM table GROUP BY column;
-SELECT ... JOIN ... ON ...;
+SELECT a.col, b.col FROM table_a a JOIN table_b b ON a.id = b.id;
 SHOW TABLES;
 DESCRIBE table;
 EXPLAIN SELECT ...;
@@ -107,6 +117,44 @@ function sanitizeQuery(sql) {
 
 > **역할 분리**: 민감 데이터의 정의(What)는 `DOMAIN_SCHEMA.md`의 **보안 및 접근 제어** 섹션을 참조하세요.
 > 이 섹션은 민감 데이터의 처리 방법(How)을 다룹니다.
+
+### 4.0 민감 컬럼 블랙리스트 (🚨 CRITICAL - P0-2)
+
+다음 컬럼은 **모든 쿼리에서 조회 금지**입니다. 쿼리 검증 게이트에서 자동 차단됩니다.
+
+| 컬럼명 | 테이블 | 민감도 | 사유 |
+|--------|--------|--------|------|
+| `U_PASSWD` | USERS | 🚨 Extreme | 암호화 전 비밀번호 |
+| `U_PASSWD_ENC` | USERS | 🚨 Extreme | 암호화된 비밀번호 |
+| `U_EMAIL` | USERS | 🔴 High | 개인 식별 정보 |
+| `U_NAME` | USERS | 🔴 High | 실명 정보 |
+| `U_SID` | USERS | 🚨 Extreme | 주민등록번호 |
+| `U_SID_ENC` | USERS | 🚨 Extreme | 암호화된 주민번호 |
+| `U_TEL` | USERS | 🔴 High | 전화번호 |
+| `U_IP` | USERS | 🟡 Medium | 접속 IP |
+| `LOGIN_IP` | USER_LOGIN | 🟡 Medium | 로그인 IP |
+| `U_JUMIN` | USERS | 🚨 Extreme | 주민번호 (레거시) |
+| `U_PHONE` | USERS | 🔴 High | 전화번호 (레거시) |
+| `U_MOBILE` | USERS | 🔴 High | 휴대폰번호 |
+| `U_CARD_NO` | USERS | 🚨 Extreme | 카드번호 |
+| `U_ACCOUNT_NO` | USERS | 🚨 Extreme | 계좌번호 |
+| `U_LICENSE_NO` | USER_DETAIL | 🔴 High | 면허번호 |
+
+#### 검증 코드 (sql-validator.js)
+
+```javascript
+const SENSITIVE_COLUMNS = [
+  'U_PASSWD', 'U_PASSWD_ENC',
+  'U_EMAIL', 'U_NAME',
+  'U_SID', 'U_SID_ENC', 'U_JUMIN',
+  'U_TEL', 'U_PHONE', 'U_MOBILE',
+  'U_IP', 'LOGIN_IP',
+  'U_CARD_NO', 'U_ACCOUNT_NO',
+  'U_LICENSE_NO'
+];
+
+// 위 컬럼이 SQL에 포함되면 CRITICAL 위반으로 쿼리 차단
+```
 
 ### 4.1 접근 제한 테이블
 
@@ -314,6 +362,7 @@ REVOKE ALL PRIVILEGES ON medigate.* FROM 'ai_readonly'@'%';
 
 | 버전  | 날짜       | 변경 내용                                                         |
 | ----- | ---------- | ----------------------------------------------------------------- |
+| 1.2.0 | 2025-12-26 | [P0-2] 민감 컬럼 블랙리스트 추가, SELECT * 금지 정책 명시 |
 | 1.1.0 | 2025-12-23 | 역할 분리 명확화, 관련 문서 섹션 추가, DOMAIN_SCHEMA.md 참조 연결 |
 | 1.0.1 | 2025-12-22 | 초기 버전                                                         |
 

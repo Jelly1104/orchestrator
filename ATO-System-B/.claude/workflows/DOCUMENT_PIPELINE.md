@@ -1,10 +1,9 @@
 # DOCUMENT_PIPELINE.md
 
-> **문서 버전**: 1.2.4
-> **최종 업데이트**: 2025-12-23
+> **문서 버전**: 1.2.5
+> **최종 업데이트**: 2025-12-26
 > **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
-> **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md`
-> **상위 문서**: `CLAUDE.md` > **대상**: 리더 에이전트
+> **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md` > **상위 문서**: `CLAUDE.md` > **대상**: 리더 에이전트
 
 ---
 
@@ -19,10 +18,53 @@
 
 ## 🔄 전체 파이프라인
 
-```
-Feature Request → PRD → IA/User Flow → SDD → API Spec → TDD Spec → Code Implementation
-                                        ↑
-                              DOMAIN_SCHEMA (필수 참조)
+```mermaid
+flowchart TD
+    %% Nodes
+    Start((Start)) --> PRD_Gen[PRD 생성]
+    PRD_Gen --> GapCheck{Gap Check<br/>Completeness}
+
+    %% HITL 1: 기획 승인
+    GapCheck -- Pass --> PRD_App[📢 HITL: 기획 승인]
+    GapCheck -- Fail --> PRD_Revise[PRD 보완 요청]
+    PRD_Revise --> PRD_Gen
+
+    PRD_App -- Approved --> Design[설계 단계<br/>Leader Agent]
+
+    subgraph "Planning Phase"
+        Design --> IA[IA.md]
+        Design --> Wire[Wireframe.md]
+        Design --> SDD[SDD.md]
+    end
+
+    SDD --> Design_Check{Schema<br/>Validation}
+
+    %% HITL 2: 설계 승인
+    Design_Check -- Valid --> SDD_App[📢 HITL: 설계 승인<br/> Checkpoint 0.5]
+    Design_Check -- Invalid --> SDD_Fix[설계 수정]
+    SDD_Fix --> SDD
+
+    SDD_App -- Approved --> Coding[구현 단계<br/>Sub Agent]
+
+    subgraph "Implementation Phase"
+        Coding --> TDD[Test Code 작성]
+        TDD --> Dev[Functional Code 작성]
+        Dev --> Refactor[Refactoring]
+    end
+
+    Refactor --> Review[품질 검증<br/>Reviewer Skill]
+
+    %% HITL 3: 코드 승인
+    Review -- Pass (Score > 80) --> Merge[📢 HITL: 최종 승인]
+    Review -- Fail --> Fix_Loop[재시도 루프<br/>Max 3회]
+    Fix_Loop --> Coding
+
+    Merge --> End((Deploy))
+
+    %% Styles
+    style PRD_App fill:#f96,stroke:#333,stroke-width:2px,color:white
+    style SDD_App fill:#f96,stroke:#333,stroke-width:2px,color:white
+    style Merge fill:#f96,stroke:#333,stroke-width:2px,color:white
 ```
 
 ---
@@ -181,12 +223,12 @@ paths:
 
 ## 📚 관련 문서
 
-| 문서                    | 물리적 경로                                 | 역할                                        |
-| ----------------------- | ------------------------------------------- | ------------------------------------------- |
-| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md`   | **HITL 체크포인트** 섹션                    |
-| `DOMAIN_SCHEMA.md`      | `.claude/rules/DOMAIN_SCHEMA.md`            | **SDD 작성 시 필수 참조** (DB 구조 확인)    |
-| `TDD_WORKFLOW.md`       | `.claude/rules/TDD_WORKFLOW.md`             | **TDD Spec 작성 시 필수 참조** (규칙/절차)  |
-| `AI_Playbook.md`        | `.claude/context/AI_Playbook.md`            | PRD 작성 시 필수 참조 (비즈니스 목표)       |
+| 문서                    | 물리적 경로                               | 역할                                       |
+| ----------------------- | ----------------------------------------- | ------------------------------------------ |
+| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md` | **HITL 체크포인트** 섹션                   |
+| `DOMAIN_SCHEMA.md`      | `.claude/rules/DOMAIN_SCHEMA.md`          | **SDD 작성 시 필수 참조** (DB 구조 확인)   |
+| `TDD_WORKFLOW.md`       | `.claude/rules/TDD_WORKFLOW.md`           | **TDD Spec 작성 시 필수 참조** (규칙/절차) |
+| `AI_Playbook.md`        | `.claude/context/AI_Playbook.md`          | PRD 작성 시 필수 참조 (비즈니스 목표)      |
 
 ---
 

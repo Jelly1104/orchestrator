@@ -1,0 +1,1 @@
+SELECT COUNT(*) as total_active_users FROM USERS WHERE U_ALIVE = 'Y'
