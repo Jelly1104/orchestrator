@@ -5,41 +5,77 @@
  * - SELECT * 패턴 검출 및 차단 (ERROR)
  * - 민감 컬럼 조회 차단 (CRITICAL)
  * - LIMIT 없는 대용량 테이블 접근 경고
+ * - 접근 제한 테이블 완전 차단 (CRITICAL)
  *
- * @see DB_ACCESS_POLICY.md 섹션 4.0 (민감 컬럼 블랙리스트)
+ * @see DB_ACCESS_POLICY.md (SSOT)
  * @see VALIDATION_GUIDE.md
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2025-12-26
+ * @updated 2025-12-29 - DB_ACCESS_POLICY.md 완전 동기화
  */
 
-// 민감 컬럼 블랙리스트 (DB_ACCESS_POLICY.md 동기화)
+// ============================================================
+// 민감 컬럼 블랙리스트 (DB_ACCESS_POLICY.md 섹션 4 동기화)
+// ============================================================
 export const SENSITIVE_COLUMNS = [
-  // 인증 정보 (Extreme)
+  // 인증 정보 (🚨 Extreme)
   'U_PASSWD', 'U_PASSWD_ENC',
 
-  // 개인 식별 정보 (Extreme/High)
+  // 개인 식별 정보 (🚨 Extreme)
   'U_SID', 'U_SID_ENC', 'U_JUMIN',
+
+  // 개인 식별 정보 (🔴 High)
   'U_EMAIL', 'U_NAME',
 
-  // 연락처 정보 (High)
+  // 연락처 정보 (🔴 High)
   'U_TEL', 'U_PHONE', 'U_MOBILE',
 
-  // 금융 정보 (Extreme)
+  // 금융 정보 (🚨 Extreme)
   'U_CARD_NO', 'U_ACCOUNT_NO',
 
-  // 위치/IP 정보 (Medium)
-  'U_IP', 'LOGIN_IP',
+  // 면허 정보 (🔴 High)
+  'U_LICENSE_NO',
 
-  // 면허 정보 (High)
-  'U_LICENSE_NO'
+  // 위치/IP 정보 (🟡 Medium)
+  'U_IP', 'LOGIN_IP',
 ];
 
+// ============================================================
+// 접근 제한 테이블 (DB_ACCESS_POLICY.md 섹션 5 동기화)
+// ============================================================
+export const BLOCKED_TABLES = [
+  // 🚨 완전 차단
+  'USER_PASSWORD',   // 인증 정보
+  'USER_SESSION',    // 세션 토큰
+  'PAYMENT_INFO',    // 결제 정보
+  'API_KEYS',        // API 키
+];
+
+export const APPROVAL_REQUIRED_TABLES = [
+  // 🔴 승인 필요
+  'ADMIN_LOG',       // 관리자 감사 로그
+];
+
+// ============================================================
 // 대용량 테이블 (LIMIT 필수)
+// ============================================================
 export const LARGE_TABLES = {
   'USER_LOGIN': { rows: 22670000, limit: 1000 },
   'COMMENT': { rows: 18260000, limit: 1000 },
-  'BOARD_MUZZIMA': { rows: 3370000, limit: 1000 }
+  'BOARD_MUZZIMA': { rows: 3370000, limit: 1000 },
 };
+
+// ============================================================
+// 금지 패턴 (DB_ACCESS_POLICY.md 섹션 7.2 동기화)
+// ============================================================
+export const FORBIDDEN_PATTERNS = [
+  /;\s*(INSERT|UPDATE|DELETE)/i,   // 다중 명령문
+  /INTO\s+OUTFILE/i,               // 파일 출력
+  /LOAD\s+DATA/i,                  // 파일 로드
+  /BENCHMARK\s*\(/i,               // 벤치마크 공격
+  /SLEEP\s*\(/i,                   // 시간 지연 공격
+  /@@\w+/i,                        // 시스템 변수 접근
+];
 
 // 위반 심각도
 export const SEVERITY = {
@@ -77,7 +113,6 @@ export class SQLValidator {
     }
 
     const violations = [];
-    const upperSQL = sql.toUpperCase();
 
     // 1. SELECT * 검출 (ERROR - P0-1 핵심)
     if (this._hasSelectStar(sql)) {
@@ -102,7 +137,30 @@ export class SQLValidator {
       });
     }
 
-    // 3. 대용량 테이블 LIMIT 검사 (WARNING)
+    // 3. 접근 제한 테이블 검출 (CRITICAL)
+    const blockedTables = this._findBlockedTables(sql);
+    if (blockedTables.length > 0) {
+      violations.push({
+        type: 'BLOCKED_TABLE_ACCESS',
+        severity: SEVERITY.CRITICAL,
+        message: `접근 제한 테이블 조회 금지: ${blockedTables.join(', ')}`,
+        tables: blockedTables,
+        recommendation: 'DB_ACCESS_POLICY.md 섹션 5 참조'
+      });
+    }
+
+    // 4. 금지 패턴 검출 (CRITICAL)
+    const forbiddenPatternMatch = this._checkForbiddenPatterns(sql);
+    if (forbiddenPatternMatch) {
+      violations.push({
+        type: 'FORBIDDEN_PATTERN',
+        severity: SEVERITY.CRITICAL,
+        message: `금지된 SQL 패턴 감지: ${forbiddenPatternMatch}`,
+        recommendation: 'DB_ACCESS_POLICY.md 섹션 7.2 참조'
+      });
+    }
+
+    // 5. 대용량 테이블 LIMIT 검사 (WARNING)
     const largeTables = this._checkLargeTables(sql);
     for (const table of largeTables) {
       if (!this._hasLimit(sql)) {
@@ -116,7 +174,7 @@ export class SQLValidator {
       }
     }
 
-    // 4. 쓰기 명령어 검출 (CRITICAL)
+    // 6. 쓰기 명령어 검출 (CRITICAL)
     if (this._hasWriteCommand(sql)) {
       violations.push({
         type: 'WRITE_COMMAND_FORBIDDEN',
@@ -183,7 +241,6 @@ export class SQLValidator {
 
   _findSensitiveColumns(sql) {
     const found = [];
-    const upperSQL = sql.toUpperCase();
 
     for (const col of SENSITIVE_COLUMNS) {
       // 단어 경계로 매칭 (부분 매칭 방지)
@@ -194,6 +251,29 @@ export class SQLValidator {
     }
 
     return found;
+  }
+
+  _findBlockedTables(sql) {
+    const found = [];
+    const upperSQL = sql.toUpperCase();
+
+    for (const tableName of BLOCKED_TABLES) {
+      if (upperSQL.includes(tableName)) {
+        found.push(tableName);
+      }
+    }
+
+    return found;
+  }
+
+  _checkForbiddenPatterns(sql) {
+    for (const pattern of FORBIDDEN_PATTERNS) {
+      const match = sql.match(pattern);
+      if (match) {
+        return match[0];
+      }
+    }
+    return null;
   }
 
   _checkLargeTables(sql) {

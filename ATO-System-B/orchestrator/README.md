@@ -155,15 +155,137 @@ curl -X POST http://localhost:3000/api/tasks/{taskId}/approve \
 
 ---
 
+## 🔌 7. Multi-LLM Provider (Fallback Chain)
+
+### 7.1 Provider 구조
+
+```text
+orchestrator/providers/
+├── base.js          # 추상 인터페이스
+├── anthropic.js     # Claude API (Primary)
+├── openai.js        # GPT-4 API (Fallback #1)
+├── gemini.js        # Gemini API (Fallback #2)
+├── factory.js       # Provider Factory + Fallback Chain
+└── index.js         # 통합 내보내기
+```
+
+### 7.2 Fallback Chain
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Provider Fallback Chain                                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│    ┌──────────────┐     FAIL     ┌──────────────┐     FAIL     ┌─────────┐ │
+│    │   Claude     │ ──────────►  │   GPT-4o     │ ──────────►  │ Gemini  │ │
+│    │  (Primary)   │              │ (Fallback 1) │              │ (FB 2)  │ │
+│    │  Streaming   │              │  16K tokens  │              │         │ │
+│    └──────────────┘              └──────────────┘              └─────────┘ │
+│                                                                             │
+│    환경변수:                                                                  │
+│    • ANTHROPIC_API_KEY (Claude)                                             │
+│    • OPENAI_API_KEY (GPT-4o)                                                │
+│    • GOOGLE_API_KEY (Gemini)                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 7.3 Provider 설정
+
+```javascript
+const orchestrator = new Orchestrator({
+  provider: "anthropic",
+  fallbackOrder: ["anthropic", "openai", "gemini"],
+  useFallback: true,
+  providerConfig: {
+    anthropic: { model: "claude-sonnet-4-20250514", useStreaming: true },
+    openai: { model: "gpt-4o" },
+    gemini: { model: "gemini-pro" },
+  },
+});
+```
+
+### 7.4 스트리밍 지원
+
+| Provider      | 스트리밍     | 최대 출력 토큰  | 비고                                        |
+| ------------- | ------------ | --------------- | ------------------------------------------- |
+| **Anthropic** | ✅ 기본 활성 | 64,000          | 장시간 작업에 필수 (10분+ 시 타임아웃 방지) |
+| **OpenAI**    | ❌ 미지원    | 16,384 (gpt-4o) | 모델별 토큰 제한 자동 적용                  |
+| **Gemini**    | ❌ 미지원    | 8,192           | Fallback 용도                               |
+
+---
+
+## ⌨️ 8. CLI 사용법
+
+### 8.1 기본 실행
+
+```bash
+# 기본 사용
+node orchestrator/index.js "로그인 기능 구현"
+
+# PRD 기반 구현
+node orchestrator/index.js --prd docs/PRD.md "기능 구현"
+
+# Dry-run (파일 저장 없이)
+node orchestrator/index.js --no-save "테스트 작업"
+```
+
+### 8.2 옵션
+
+| 옵션                | 설명             | 기본값             |
+| ------------------- | ---------------- | ------------------ |
+| `--prd <path>`      | PRD 파일 경로    | -                  |
+| `--task-id <id>`    | 작업 ID 지정     | `task-{timestamp}` |
+| `--no-save`         | 파일 저장 안 함  | false              |
+| `--max-retries <n>` | 최대 재시도 횟수 | 3 (상한 5)         |
+
+### 8.3 환경 설정
+
+```bash
+# orchestrator/.env
+ANTHROPIC_API_KEY="sk-ant-..."
+OPENAI_API_KEY="sk-..."           # Optional (Fallback)
+GOOGLE_API_KEY="..."              # Optional (Fallback)
+
+ANTHROPIC_MODEL="claude-sonnet-4-20250514"
+MAX_RETRIES=3
+```
+
+---
+
+## 📊 9. 메트릭 추적
+
+Orchestrator는 다음 메트릭을 자동 추적합니다:
+
+| 메트릭               | 설명                                     |
+| -------------------- | ---------------------------------------- |
+| **총 소요 시간**     | 전체 작업 완료까지 걸린 시간             |
+| **단계별 소요 시간** | Planning, Coding, Review 각 단계         |
+| **토큰 사용량**      | Role별 입력/출력 토큰                    |
+| **재시도 횟수**      | Review FAIL로 인한 재시도                |
+| **Provider 사용**    | 어떤 LLM Provider가 사용되었는지         |
+| **보안 이벤트**      | Path Traversal, Prompt Injection 시도 등 |
+
+### 9.1 로그 출력 경로
+
+```text
+workspace/logs/<task-id>.json          # 실행 메트릭
+workspace/logs/audit/audit-*.jsonl     # 보안 감사 로그
+```
+
+---
+
+## 🔄 10. 재시도 정책
+
+| 상황                   | 동작                        |
+| ---------------------- | --------------------------- |
+| Review PASS            | 작업 완료                   |
+| Review FAIL (1~4회)    | 피드백 반영 후 재시도       |
+| Review FAIL (5회 초과) | 작업 중단, 사용자 개입 요청 |
+| API 에러               | Fallback Provider 시도      |
+| 모든 Provider 실패     | 에러 로그 기록, 작업 중단   |
+
+---
+
 **System B Team**
 _Quality is not an act, it is a habit._
-
-```
-
-### 💡 주요 개선 포인트 (Why this is better)
-
-1.  **정확한 경로 반영:** `SYSTEM_MANIFEST.md` v4.0.0에 정의된 Constitution 체계(`.claude/rules/`, `.claude/workflows/`, `.claude/context/`)로 완벽하게 업데이트했습니다.
-2.  **시각적 명료함:** 복잡한 ASCII 아트를 제거하고 Mermaid 다이어그램(코드로 렌더링되거나 텍스트로도 이해 가능한 구조)으로 대체하여 구조를 한눈에 파악하게 했습니다.
-3.  **실행 중심 구성:** 개발자가 가장 먼저 필요로 하는 '설치 및 실행' 섹션을 상단으로 올리고, 뷰어와 오케스트레이터의 실행 순서를 명확히 했습니다.
-4.  **보안 정책 현행화:** `SECURITY_LIMITS` ()와 `AGENT_ARCHITECTURE.md` ()의 보안 계층 정보를 반영하여, 사용자가 지켜야 할 제약 사항을 명확히 했습니다.
-```

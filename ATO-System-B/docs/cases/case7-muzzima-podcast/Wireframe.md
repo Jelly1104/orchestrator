@@ -1,74 +1,72 @@
 # Wireframe.md - 화면 설계
 
-## Phase A: 데이터 추출 화면
+## 1. 시스템 개요
 
-### 1. 관리자 대시보드
+**주의**: 이 프로젝트는 **백엔드 API 전용**으로 Frontend UI가 없습니다.
+결과물은 파일 형태로 저장되며, 향후 TTS 시스템과 연동됩니다.
+
+## 2. 데이터 처리 컴포넌트
+
+### Component A: Best Posts Analyzer
 ```
-┌─────────────────────────────────────┐
-│ 무찌마 일간 베스트 팟캐스트 관리      │
-├─────────────────────────────────────┤
-│ [실행] 베스트 게시물 추출 (24시간)    │
-│                                     │
-│ 추출 결과:                          │
-│ ┌─────────────────────────────────┐ │
-│ │ 1. [개원 9년차 회고] 동의 92개   │ │
-│ │ 2. [신규 치료법] 동의 15개       │ │  
-│ │ 3. [병원 운영 팁] 동의 12개      │ │
-│ │ 4. [학회 후기] 동의 8개          │ │
-│ │ 5. [의료진 고민] 동의 6개        │ │
-│ └─────────────────────────────────┘ │
-│                                     │
-│ [다음] PII 마스킹 처리               │
-└─────────────────────────────────────┘
+Input: BOARD_MUZZIMA 테이블
+Process: 
+- 24시간 내 게시물 필터링
+- (READ_CNT + AGREE_CNT*3) 정렬
+- 상위 5건 선택
+Output: best_posts_raw.json
 ```
 
-### 2. PII 마스킹 검증 화면
+### Component B: PII Masker
 ```
-┌─────────────────────────────────────┐
-│ PII 마스킹 결과 검토                 │
-├─────────────────────────────────────┤
-│ 원본: "김○○ 환자가 내원하여..."      │
-│ 처리: "[환자]가 내원하여..."         │
-│                                     │
-│ 원본: "홍길동 원장님 말씀으로는..."   │
-│ 처리: "[동료의사] 말씀으로는..."     │
-│                                     │
-│ ☑ 환자 정보 마스킹 완료              │
-│ ☑ 의사 실명 마스킹 완료              │
-│ ☑ 병원명 마스킹 완료                 │
-│                                     │
-│ [승인] [재검토]                      │
-└─────────────────────────────────────┘
+Input: 원본 게시물 텍스트
+Process:
+- 환자명 패턴 감지 → ***님
+- 의사 실명 → ***의사
+- 병원명 → ***병원
+- 연락처 → ***-****-****
+Output: masked_content.json
 ```
 
-## Phase B: 콘텐츠 생성 화면
-
-### 3. 대본 생성 미리보기
+### Component C: Script Generator
 ```
-┌─────────────────────────────────────┐
-│ 팟캐스트 대본 미리보기               │
-├─────────────────────────────────────┤
-│ 🎙️ Host: 안녕하세요, 오늘도 무찌마  │
-│         핫이슈를 들고 왔습니다!     │
-│                                     │
-│ 👤 Guest: 네, 오늘은 특히 개원 9년차│
-│          선생님의 회고글이 화제네요  │
-│                                     │
-│ 🎙️ Host: 맞아요, 동의 92개를 받은   │
-│         글인데요...                 │
-│                                     │
-│ 예상 재생시간: 2분 45초              │
-│                                     │
-│ [수정] [승인] [TTS 생성]             │
-└─────────────────────────────────────┘
+Input: 마스킹된 게시물 데이터
+Process:
+- 핵심 내용 요약 (400-550 단어)
+- Host/Guest 대화 형식 변환
+- 구어체 톤앤매너 적용
+Output: Podcast_Script.md
 ```
 
-## 컴포넌트 매핑
+## 3. 데이터 매핑
 
-| UI 컴포넌트 | 데이터 소스 | API |
-|------------|------------|-----|
-| 베스트 게시물 목록 | BOARD_MUZZIMA | GET /api/v1/muzzima/daily-best |
-| 동의수/댓글수 | AGREE_CNT, COMMENT count | 동일 API |
-| 마스킹 결과 | PII 마스킹 엔진 | POST /api/v1/muzzima/sanitize |
-| 대본 텍스트 | GPT 생성 결과 | POST /api/v1/podcast/script |
-| TTS 메타데이터 | 감정태그, 속도 | POST /api/v1/podcast/metadata |
+| Source Field | Processing | Output Field |
+|-------------|------------|-------------|
+| BOARD_MUZZIMA.TITLE | PII 마스킹 | script.topic |
+| BOARD_MUZZIMA.CONTENT | 요약 + 구어체 변환 | script.dialogue |
+| READ_CNT + AGREE_CNT*3 | 인기도 계산 | ranking_score |
+| REG_DATE | 시간 필터링 | publication_time |
+
+## 4. 파일 출력 구조
+
+```
+/output/daily-briefing/YYYY-MM-DD/
+├── best_posts_query.sql          # Phase A
+├── raw_data_summary.json         # Phase A
+├── Podcast_Script.md             # Phase B
+├── Audio_Metadata.json           # Phase B
+└── Content_Safety_Check.md       # Phase B
+```
+
+## 5. 에러 핸들링 플로우
+
+```mermaid
+graph TD
+    A[SQL 실행] --> B{결과 5건?}
+    B -->|Yes| C[PII 마스킹]
+    B -->|No| D[에러: 데이터 부족]
+    C --> E{마스킹 완료?}
+    E -->|Yes| F[스크립트 생성]
+    E -->|No| G[에러: PII 처리 실패]
+    F --> H[HITL 검증 대기]
+```

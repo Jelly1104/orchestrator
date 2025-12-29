@@ -2,216 +2,190 @@
 
 ## 1. 아키텍처 개요
 
-```mermaid
-graph TB
-    subgraph "Phase A: Analysis"
-        A1[AnalysisAgent]
-        A2[SQL Query Engine]
-        A3[PII Masking Engine]
-    end
-    
-    subgraph "Phase B: Generation"
-        B1[LeaderAgent]
-        B2[Content Generator]
-        B3[Metadata Generator]
-    end
-    
-    subgraph "Data Layer"
-        D1[(BOARD_MUZZIMA)]
-        D2[(COMMENT)]
-        D3[Redis Cache]
-    end
-    
-    A1 --> A2 --> D1
-    A2 --> D2
-    A1 --> A3
-    A3 --> B1
-    B1 --> B2
-    B1 --> B3
-    A2 --> D3
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   AnalysisAgent │───▶│   ProcessorCore  │───▶│  ContentEngine  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ MySQL Database  │    │  PII Masking     │    │ Script Generator│
+│ (medigate)      │    │  Service         │    │ (LLM-based)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-## 2. 레거시 스키마 매핑
+## 2. 레거시 스키마 매핑 (Legacy Mapping)
 
-### BOARD_MUZZIMA 테이블 활용
+### 2.1 주요 테이블 매핑
+
+| 개념 | 물리 테이블 | 사용 컬럼 | 제약사항 |
+|------|------------|----------|----------|
+| 인기 게시물 | `BOARD_MUZZIMA` | `BOARD_IDX`, `CTG_CODE`, `U_ID`, `TITLE`, `CONTENT`, `READ_CNT`, `AGREE_CNT`, `REG_DATE` | 대용량 테이블 (337만 행) - 인덱스 필수 |
+| 댓글 수 (선택) | `COMMENT` | `BOARD_IDX`, `SVC_CODE` | 초대용량 테이블 (1,826만 행) - 조회 제한 |
+
+### 2.2 인덱스 활용 전략
+
 ```sql
--- PRD 요구사항: 최근 24시간 베스트 게시물 5건
-SELECT 
-    BOARD_IDX,
-    TITLE,
-    LEFT(CONTENT, 500) as SUMMARY_CONTENT,  -- 텍스트 양 제한
-    AGREE_CNT,                              -- 조회수 대신 동의수 활용
-    REG_DATE
+-- 필수 WHERE 조건 (인덱스 활용)
+WHERE CTG_CODE IN ('BOARD01', 'BOARD02', 'BOARD03')  -- 카테고리 인덱스
+  AND REG_DATE >= NOW() - INTERVAL 24 HOUR           -- 시간 인덱스
+ORDER BY (READ_CNT + AGREE_CNT * 3) DESC
+LIMIT 5
+```
+
+## 3. 데이터 모델 변경
+
+### 3.1 기존 테이블 활용 (신규 테이블 없음)
+
+- ✅ `BOARD_MUZZIMA`: 기존 구조 그대로 사용
+- ✅ `COMMENT`: 선택적 사용 (댓글 수 집계)
+- ❌ 신규 테이블 생성 없음 (레거시 활용 우선)
+
+### 3.2 조회수 데이터 이슈 대응
+
+**⚠️ Risk**: 분석 결과에 따르면 모든 게시물의 `READ_CNT = 0`으로 집계되는 문제 발견
+
+```sql
+-- 임시 대안: AGREE_CNT 가중치 증가로 보정
+SELECT BOARD_IDX, TITLE, 
+       (READ_CNT + AGREE_CNT * 5) AS popularity_score  -- 가중치 3→5로 증가
 FROM BOARD_MUZZIMA 
-WHERE REG_DATE >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-  AND DEL_FLAG = 'N'
-  AND APPROVAL_FLAG = 'Y'
-ORDER BY AGREE_CNT DESC, REG_DATE DESC
+WHERE REG_DATE >= NOW() - INTERVAL 24 HOUR
+ORDER BY popularity_score DESC
 LIMIT 5;
 ```
 
-### COMMENT 테이블 연동 (댓글수 집계)
-```sql
--- 게시글별 댓글수 집계 (대용량 테이블 주의)
-SELECT 
-    b.BOARD_IDX,
-    b.TITLE,
-    b.AGREE_CNT,
-    COALESCE(c.comment_count, 0) as COMMENT_COUNT
-FROM BOARD_MUZZIMA b
-LEFT JOIN (
-    SELECT BOARD_IDX, COUNT(*) as comment_count 
-    FROM COMMENT 
-    WHERE SVC_CODE = 'MUZZIMA'
-      AND DEL_FLAG = 'N'
-    GROUP BY BOARD_IDX
-) c ON b.BOARD_IDX = c.BOARD_IDX
-WHERE b.REG_DATE >= DATE_SUB(NOW(), INTERVAL 24 HOUR);
-```
+## 4. API 설계
 
-## 3. API 설계
+### 4.1 Phase A: Analysis API
 
-### 3.1 베스트 게시물 추출 API
 ```yaml
-GET /api/v1/muzzima/daily-best
-parameters:
-  - name: hours
-    type: integer
-    default: 24
-    description: 추출 시간 범위
-response:
-  type: object
-  properties:
-    success: boolean
-    data:
-      type: array
-      items:
-        properties:
-          board_idx: integer
-          title: string
-          summary_content: string
-          agree_cnt: integer
-          comment_count: integer
-          reg_date: string
+POST /api/v1/daily-briefing/analyze
+Request Body:
+  {
+    "date_range": "24h",
+    "limit": 5,
+    "categories": ["BOARD01", "BOARD02"]
+  }
+
+Response:
+  {
+    "status": "success",
+    "query_execution_time": "2.3s",
+    "results": [
+      {
+        "board_idx": 12345,
+        "title": "은퇴 관련 ***님 질문",
+        "content_preview": "최근 ***병원에서...",
+        "popularity_score": 215,
+        "reg_date": "2025-12-29T10:30:00Z"
+      }
+    ],
+    "pii_masked_count": 15
+  }
 ```
 
-### 3.2 PII 마스킹 API
+### 4.2 Phase B: Content Generation API
+
 ```yaml
-POST /api/v1/muzzima/sanitize
-request:
-  type: object
-  properties:
-    content: string
-    title: string
-response:
-  type: object
-  properties:
-    sanitized_content: string
-    sanitized_title: string
-    pii_detected:
-      type: array
-      items:
-        type: string
+POST /api/v1/daily-briefing/generate
+Request Body:
+  {
+    "analysis_id": "20251229_morning",
+    "script_length": "medium",  # 400-550 words
+    "tone": "professional_casual"
+  }
+
+Response:
+  {
+    "status": "success", 
+    "files_generated": [
+      "Podcast_Script.md",
+      "Audio_Metadata.json", 
+      "Content_Safety_Check.md"
+    ],
+    "word_count": 487,
+    "estimated_duration": "3m 12s"
+  }
 ```
 
-### 3.3 팟캐스트 대본 생성 API
+## 5. PII 처리 시스템
+
+### 5.1 마스킹 패턴
+
+```python
+PII_PATTERNS = {
+    "patient_name": r"([가-힣]{2,4})님|([가-힣]{2,4}) 환자",
+    "doctor_name": r"([가-힣]{2,4}) 의사|닥터 ([가-힣]{2,4})",
+    "hospital_name": r"([가-힣]+)(병원|의원|클리닉|센터)",
+    "phone_number": r"\d{2,3}-\d{3,4}-\d{4}",
+    "address": r"[가-힣]+[시도] [가-힣]+[시군구]"
+}
+
+MASKING_REPLACEMENTS = {
+    "patient_name": "***님",
+    "doctor_name": "***의사", 
+    "hospital_name": "***병원",
+    "phone_number": "***-****-****",
+    "address": "***지역"
+}
+```
+
+## 6. 성능 및 모니터링
+
+### 6.1 성능 목표
+
+| 메트릭 | 목표 | 모니터링 방법 |
+|--------|------|-------------|
+| SQL 실행 시간 | < 3초 | EXPLAIN ANALYZE |
+| PII 마스킹 처리 시간 | < 1초 | 함수 실행 시간 측정 |
+| 전체 파이프라인 | < 30초 | End-to-End 측정 |
+
+### 6.2 에러 처리
+
+```python
+class DailyBriefingError(Exception):
+    pass
+
+class DataInsufficientError(DailyBriefingError):
+    """24시간 내 게시물이 5건 미만인 경우"""
+    pass
+
+class PIIMaskingError(DailyBriefingError):  
+    """PII 마스킹 실패"""
+    pass
+
+class ScriptGenerationError(DailyBriefingError):
+    """팟캐스트 스크립트 생성 실패"""  
+    pass
+```
+
+## 7. Risk 분석
+
+| Risk Level | 항목 | 영향도 | 대응 방안 |
+|-----------|------|--------|----------|
+| 🚨 High | 조회수 데이터 누락 (READ_CNT=0) | 인기도 측정 왜곡 | AGREE_CNT 가중치 증가, 댓글 수 추가 고려 |
+| 🔴 Medium | 대용량 테이블 Full Scan | 성능 저하 | WHERE 조건 인덱스 강제, LIMIT 엄수 |
+| 🟡 Low | PII 미탐지 | 개인정보 노출 | 다중 패턴 검증, Human Review |
+
+## 8. 배포 계획
+
+### 8.1 Phase별 배포
+
 ```yaml
-POST /api/v1/podcast/script
-request:
-  type: object
-  properties:
-    posts:
-      type: array
-      items:
-        properties:
-          title: string
-          content: string
-          engagement: integer
-response:
-  type: object
-  properties:
-    script: string
-    estimated_duration: integer
-    word_count: integer
+Phase A (Analysis):
+  - Database 접근 권한 확보
+  - SQL 쿼리 성능 테스트
+  - PII 마스킹 정확도 검증
+
+Phase B (Generation):  
+  - LLM 모델 연동
+  - 대본 품질 샘플 테스트
+  - HITL 검증 프로세스 구축
 ```
 
-## 4. 데이터 처리 파이프라인
+### 8.2 스케줄링
 
-### Phase A: 데이터 수집
-1. **베스트 게시물 추출**
-   - 인덱스 활용: (CTG_CODE, REG_DATE) 복합 인덱스 필수
-   - 쿼리 최적화: LIMIT 5로 결과 제한
-   - 캐싱: Redis에 1시간 캐시 적용
-
-2. **PII 마스킹**
-   - 환자 정보: "김○○ 환자" → "[환자]"
-   - 의사 실명: "홍길동 원장" → "[동료의사]"
-   - 병원명: "○○병원" → "[의료기관]"
-
-### Phase B: 콘텐츠 생성
-1. **대본 생성 규칙**
-   ```
-   Host: 인사 + 주요 트렌드 소개
-   Guest: 구체적 내용 설명
-   Host: 반응 + 다음 주제 연결
-   Guest: 상세 분석
-   Host: 마무리 + 다음 에피소드 예고
-   ```
-
-2. **메타데이터 생성**
-   ```json
-   {
-     "emotion_tags": ["friendly", "professional"],
-     "speech_rate": 1.2,
-     "pause_duration": 0.5,
-     "voice_style": {
-       "host": "conversational",
-       "guest": "informative"
-     }
-   }
-   ```
-
-## 5. 성능 최적화
-
-### 데이터베이스 최적화
-- **인덱스 활용**: (CTG_CODE, REG_DATE) 복합 인덱스 강제 사용
-- **쿼리 제한**: SELECT * 절대 금지, 필요 컬럼만 명시
-- **메모리 관리**: CONTENT 컬럼은 LEFT() 함수로 제한 조회
-
-### 캐싱 전략
-```
-Redis Key Pattern:
-- daily_best:{date} : 일간 베스트 게시물 (TTL: 1시간)
-- pii_mask:{hash} : PII 마스킹 결과 (TTL: 24시간)
-- podcast:{date} : 완성된 팟캐스트 (TTL: 7일)
-```
-
-## 6. 보안 고려사항
-
-### PII 보호
-- 환자 개인정보 완전 마스킹
-- 의사 실명 익명화
-- 의료기관명 일반화
-- 마스킹 로그 별도 저장 (감사 목적)
-
-### 접근 제어
-- 관리자 권한 필요 API
-- API 키 기반 인증
-- 민감 데이터 접근 로깅
-
-## 7. 모니터링 및 알림
-
-### 성능 모니터링
-- SQL 실행 시간: 3초 이하 목표
-- API 응답 시간: 5초 이하 목표
-- 캐시 히트율: 80% 이상 목표
-
-### 오류 알림
-- DB 쿼리 타임아웃
-- PII 마스킹 실패
-- 대본 생성 실패
-
-## Risk
-- **조회수 데이터 부재**: 분석 결과에 따르면 모든 게시글의 READ_CNT가 0으로 표시됨. 당분간 AGREE_CNT(동의수)를 기준으로 베스트 게시물 선정
-- **대용량 테이블 성능**: COMMENT 테이블(1,826만 행)의 집계 쿼리 성능 이슈 가능성
-- **PII 마스킹 정확도**: 자동 마스킹의 한계로 인한 누락 가능성
+- **실행 주기**: 매일 오전 7시 (KST)
+- **실패 시**: 30분 후 재시도 (최대 3회)
+- **결과 보관**: 30일간 파일 시스템 저장

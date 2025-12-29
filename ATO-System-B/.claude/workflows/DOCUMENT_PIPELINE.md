@@ -1,7 +1,7 @@
 # DOCUMENT_PIPELINE.md
 
-> **문서 버전**: 1.2.5
-> **최종 업데이트**: 2025-12-26
+> **문서 버전**: 1.3.0
+> **최종 업데이트**: 2025-12-29
 > **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
 > **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md` > **상위 문서**: `CLAUDE.md` > **대상**: 리더 에이전트
 
@@ -18,54 +18,12 @@
 
 ## 🔄 전체 파이프라인
 
-```mermaid
-flowchart TD
-    %% Nodes
-    Start((Start)) --> PRD_Gen[PRD 생성]
-    PRD_Gen --> GapCheck{Gap Check<br/>Completeness}
+> **다이어그램**: README.md 섹션 8 참조
 
-    %% HITL 1: 기획 승인
-    GapCheck -- Pass --> PRD_App[📢 HITL: 기획 승인]
-    GapCheck -- Fail --> PRD_Revise[PRD 보완 요청]
-    PRD_Revise --> PRD_Gen
-
-    PRD_App -- Approved --> Design[설계 단계<br/>Leader Agent]
-
-    subgraph "Planning Phase"
-        Design --> IA[IA.md]
-        Design --> Wire[Wireframe.md]
-        Design --> SDD[SDD.md]
-    end
-
-    SDD --> Design_Check{Schema<br/>Validation}
-
-    %% HITL 2: 설계 승인
-    Design_Check -- Valid --> SDD_App[📢 HITL: 설계 승인<br/> Checkpoint 0.5]
-    Design_Check -- Invalid --> SDD_Fix[설계 수정]
-    SDD_Fix --> SDD
-
-    SDD_App -- Approved --> Coding[구현 단계<br/>Sub Agent]
-
-    subgraph "Implementation Phase"
-        Coding --> TDD[Test Code 작성]
-        TDD --> Dev[Functional Code 작성]
-        Dev --> Refactor[Refactoring]
-    end
-
-    Refactor --> Review[품질 검증<br/>Reviewer Skill]
-
-    %% HITL 3: 코드 승인
-    Review -- Pass (Score > 80) --> Merge[📢 HITL: 최종 승인]
-    Review -- Fail --> Fix_Loop[재시도 루프<br/>Max 3회]
-    Fix_Loop --> Coding
-
-    Merge --> End((Deploy))
-
-    %% Styles
-    style PRD_App fill:#f96,stroke:#333,stroke-width:2px,color:white
-    style SDD_App fill:#f96,stroke:#333,stroke-width:2px,color:white
-    style Merge fill:#f96,stroke:#333,stroke-width:2px,color:white
-```
+1. **PRD 입력** → Gap Check → [HITL: 기획 승인]
+2. **Phase A** (Optional): Analyzer가 SQL 실행 → ImpLeader 검증 → 분석 리포트
+3. **Phase B**: Designer가 IA/Wireframe/SDD 작성 → ImpLeader 검증 → Leader가 HANDOFF.md 확정 → [HITL: 설계 승인]
+4. **Phase C**: Coder가 TDD Cycle 실행 → ImpLeader 검증 → [HITL: 배포 승인] → Deploy
 
 ---
 
@@ -90,13 +48,13 @@ Code → PRD 수정     ❌ 금지
 
 ### 위반 시 대응
 
-| 상황                                    | 대응                                  |
-| --------------------------------------- | ------------------------------------- |
-| Sub-agent가 코드 기반으로 SDD 수정 요청 | 즉시 거부, Leader에게 보고            |
-| 구현 중 설계 변경 필요 발견             | 작업 중단 → Leader에게 설계 변경 요청 |
-| 코드 리뷰 중 PRD 불일치 발견            | 코드 수정 (PRD 변경 아님)             |
+| 상황                                | 대응                                  |
+| ----------------------------------- | ------------------------------------- |
+| Coder가 코드 기반으로 SDD 수정 요청 | 즉시 거부, Leader에게 보고            |
+| 구현 중 설계 변경 필요 발견         | 작업 중단 → Leader에게 설계 변경 요청 |
+| 코드 리뷰 중 PRD 불일치 발견        | 코드 수정 (PRD 변경 아님)             |
 
-> **원칙**: 설계 변경은 반드시 Leader Agent를 통해 정방향으로만 진행
+> **원칙**: 설계 변경은 반드시 Leader를 통해 정방향으로만 진행
 
 ---
 
@@ -104,8 +62,9 @@ Code → PRD 수정     ❌ 금지
 
 ### 1️⃣ PRD (Product Requirements Document)
 
-**입력:** `FEATURE_REQUEST`, `AI_Playbook.md`
-**출력:** 구조화된 요구사항 문서
+**입력:** 사용자가 `PRD_GUIDE.md` 양식에 맞춰 작성한 PRD (+ 선택적 Task 문장)
+**출력:** Gap Check 통과된 PRD
+**참조:** `AI_Playbook.md` (비즈니스 목표)
 
 - **핵심 질문:** 이 기능이 `AI_Playbook.md`의 수익 모델(B2B/B2C)과 연결되는가?
 
@@ -139,7 +98,7 @@ Code → PRD 수정     ❌ 금지
 ### 3️⃣ SDD (Software Design Document) - 🚨 가장 중요
 
 > **HITL 참조**: SDD 생성 완료 후 **Human-in-the-Loop 설계 승인** 체크포인트가 트리거됩니다.
-> 상세 정의는 `AGENT_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
+> 상세 정의는 `ROLE_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
 
 **입력:** `PRD`, `User Flow`, `DOMAIN_SCHEMA.md`
 **출력:** 기술 설계 문서 (구현의 진실 공급원)
@@ -205,9 +164,12 @@ paths:
 
 ---
 
-### 📋 리더 에이전트 체크리스트 (Quality Gate)
+### 📋 Quality Gate (문서 단계별 검증)
 
-문서를 다음 단계로 넘기기 전, 반드시 아래 항목을 검증하세요.
+> **검증 주체**: ImpLeader가 1차 검증 → Leader가 최종 승인
+> **상세 기준**: `VALIDATION_GUIDE.md`의 **Quality Gates** 섹션 참조
+
+문서를 다음 단계로 넘기기 전, 아래 항목을 검증합니다.
 
 **PRD → SDD 단계**
 
@@ -225,7 +187,7 @@ paths:
 
 | 문서                    | 물리적 경로                               | 역할                                       |
 | ----------------------- | ----------------------------------------- | ------------------------------------------ |
-| `AGENT_ARCHITECTURE.md` | `.claude/workflows/AGENT_ARCHITECTURE.md` | **HITL 체크포인트** 섹션                   |
+| `ROLE_ARCHITECTURE.md` | `.claude/workflows/ROLE_ARCHITECTURE.md` | **HITL 체크포인트** 섹션                   |
 | `DOMAIN_SCHEMA.md`      | `.claude/rules/DOMAIN_SCHEMA.md`          | **SDD 작성 시 필수 참조** (DB 구조 확인)   |
 | `TDD_WORKFLOW.md`       | `.claude/rules/TDD_WORKFLOW.md`           | **TDD Spec 작성 시 필수 참조** (규칙/절차) |
 | `AI_Playbook.md`        | `.claude/context/AI_Playbook.md`          | PRD 작성 시 필수 참조 (비즈니스 목표)      |

@@ -1,37 +1,51 @@
 # IA.md - 정보 구조
 
-## 페이지 계층 구조
+## 1. 시스템 아키텍처
 
 ```
-Daily Podcast System
-├── Data Collection Layer
-│   ├── /api/v1/muzzima/daily-best (베스트 게시물 추출)
-│   └── /api/v1/muzzima/sanitize (PII 마스킹)
-├── Content Generation Layer  
-│   ├── /api/v1/podcast/script (대본 생성)
-│   └── /api/v1/podcast/metadata (메타데이터)
-└── Delivery Layer
-    └── /api/v1/podcast/daily (최종 팟캐스트 패키지)
+Daily Briefing System
+├── Phase A: Analysis
+│   ├── /analysis/best-posts (SQL 실행)
+│   ├── /analysis/pii-masking (전처리)
+│   └── /analysis/raw-data (데이터 요약)
+└── Phase B: Content Generation
+    ├── /generation/script (대본 생성)
+    ├── /generation/metadata (TTS 메타데이터)
+    └── /safety/content-check (안전성 검증)
 ```
 
-## 라우팅 구조
-
-| 경로 | 메서드 | 역할 |
-|------|--------|------|
-| `/api/v1/muzzima/daily-best` | GET | 24시간 내 베스트 게시물 5건 추출 |
-| `/api/v1/muzzima/sanitize` | POST | PII 마스킹 처리 |
-| `/api/v1/podcast/script` | POST | Host-Guest 대화형 대본 생성 |
-| `/api/v1/podcast/metadata` | POST | TTS용 메타데이터 생성 |
-| `/api/v1/podcast/daily` | GET | 통합 팟캐스트 패키지 조회 |
-
-## 데이터 흐름
+## 2. 데이터 플로우
 
 ```mermaid
 graph TD
-    A[BOARD_MUZZIMA] --> B[베스트 게시물 추출]
-    C[COMMENT] --> B
-    B --> D[PII 마스킹]
-    D --> E[대본 생성]
-    E --> F[메타데이터 생성]
-    F --> G[팟캐스트 패키지]
+    A[BOARD_MUZZIMA] --> B[Best Posts Query]
+    B --> C[PII Masking]
+    C --> D[Raw Data Summary]
+    D --> E[Podcast Script Generation]
+    E --> F[Audio Metadata]
+    F --> G[Content Safety Check]
+    G --> H[HITL Review]
+```
+
+## 3. 페이지 계층 구조
+
+- **백엔드 API만 필요** (Frontend UI 없음)
+- 스케줄링: 매일 오전 7시 자동 실행
+- 결과물: 파일 시스템 저장 (TTS 연동 준비)
+
+## 4. 라우팅 설계
+
+```yaml
+endpoints:
+  - path: /api/v1/daily-briefing/analyze
+    method: POST
+    description: Phase A - 데이터 분석 실행
+    
+  - path: /api/v1/daily-briefing/generate
+    method: POST  
+    description: Phase B - 팟캐스트 콘텐츠 생성
+    
+  - path: /api/v1/daily-briefing/status
+    method: GET
+    description: 생성 상태 조회
 ```

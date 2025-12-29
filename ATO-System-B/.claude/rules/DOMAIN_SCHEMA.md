@@ -296,8 +296,4 @@ WHERE U_KIND = 'DOC001'
 | `DB_ACCESS_POLICY.md` | 접근 권한, 실행 제한, 감사 로깅 |
 | `VALIDATION_GUIDE.md` | 쿼리 실행 전 검증 규칙 |
 
----
-
 **END OF DOMAIN_SCHEMA.MD**
-
-*도메인 지식은 올바른 설계의 기초입니다.*

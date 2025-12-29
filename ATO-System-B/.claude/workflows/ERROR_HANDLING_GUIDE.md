@@ -260,7 +260,7 @@ FeedbackLoop이 수집하는 에러 로그는 다음 정보를 포함합니다:
 | --------------------- | --------------------------------------- | ----------------------------- |
 | CLAUDE.md             | .claude/CLAUDE.md                       | 팀 헌법, Safety Rules         |
 | VALIDATION_GUIDE.md   | .claude/rules/VALIDATION_GUIDE.md       | 품질 검증 기준                |
-| AGENT_ARCHITECTURE.md | .claude/workflows/AGENT_ARCHITECTURE.md | Leader/Sub-agent 권한 및 구조 |
+| ROLE_ARCHITECTURE.md | .claude/workflows/ROLE_ARCHITECTURE.md | Role 권한 및 구조 |
 
 ---
 

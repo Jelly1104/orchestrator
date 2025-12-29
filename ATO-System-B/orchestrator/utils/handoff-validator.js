@@ -5,21 +5,26 @@
  * - Leader → Sub-agent 핸드오프 검증
  * - 필수 섹션 확인
  * - 악의적 지시 필터링
+ *
+ * @version 1.1.0
+ * @updated 2025-12-29 - CompletionCriteria 필수 섹션 승격
+ * @see HANDOFF_PROTOCOL.md
  */
 
-// HANDOFF 필수 섹션
+// HANDOFF 필수 섹션 (개발 지시서 DD-2025-001 반영)
 const REQUIRED_SECTIONS = [
-  'Mode',           // Coding, Review 등
-  'Input',          // 입력 문서
-  'Output',         // 기대 산출물
-  'Constraints',    // 제약사항
+  'Mode',               // Coding, Review 등
+  'Input',              // 입력 문서
+  'Output',             // 기대 산출물
+  'Constraints',        // 제약사항
+  'CompletionCriteria', // 완료 기준 (필수로 승격)
 ];
 
 // 선택적 섹션
 const OPTIONAL_SECTIONS = [
-  'CompletionCriteria',  // 완료 기준
   'References',          // 참조 문서
   'Notes',               // 비고
+  'Context',             // 컨텍스트
 ];
 
 // 위험한 지시 패턴
@@ -226,6 +231,41 @@ export class HandoffValidator {
     console.log(result.valid ? '✅ Handoff validation passed' : '❌ Handoff validation failed');
 
     return result;
+  }
+
+  /**
+   * 파이프라인 중단 및 Leader 재생성 요청
+   * 필수 섹션 누락 시 호출
+   * @param {Object} validationResult - 검증 결과
+   * @returns {Object} - 재생성 요청 정보
+   */
+  requestRegeneration(validationResult) {
+    if (validationResult.valid) {
+      return { needed: false };
+    }
+
+    const feedback = [];
+
+    if (!validationResult.sections.valid) {
+      feedback.push(`Missing required sections: ${validationResult.sections.missing.join(', ')}`);
+      feedback.push('Please regenerate HANDOFF.md with all required sections:');
+      REQUIRED_SECTIONS.forEach(s => feedback.push(`  - ${s}`));
+    }
+
+    if (!validationResult.mode.valid) {
+      feedback.push(`Invalid mode: ${validationResult.mode.error}`);
+    }
+
+    if (!validationResult.security.safe) {
+      feedback.push('Security threats detected - please remove dangerous patterns');
+    }
+
+    return {
+      needed: true,
+      action: 'REGENERATE_HANDOFF',
+      feedback: feedback.join('\n'),
+      requiredSections: REQUIRED_SECTIONS,
+    };
   }
 }
 

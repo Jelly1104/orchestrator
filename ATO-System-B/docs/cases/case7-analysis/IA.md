@@ -1,52 +1,86 @@
 # IA.md - 정보 구조
 
-## 1. 시스템 아키텍처
+## 시스템 개요
+메디게이트 무찌마 일간 베스트 팟캐스트 시스템은 의사 커뮤니티의 인기 게시물을 자동으로 분석하여 2인 대화형 팟캐스트 대본을 생성하는 서비스입니다.
 
+## 정보 아키텍처
+
+### Phase A - 데이터 수집 및 전처리
 ```
-메디게이트 무찌마 → Phase A (데이터 추출) → Phase B (팟캐스트 생성) → 산출물 배포
-```
-
-### 1.1 Phase 구조
-
-| Phase | 목적 | 입력 | 출력 |
-|-------|------|------|------|
-| Phase A | 일간 베스트 추출 및 전처리 | BOARD_MUZZIMA, COMMENT | best_posts_query.sql, raw_data_summary.json |
-| Phase B | 팟캐스트 대본 및 메타데이터 생성 | raw_data_summary.json | Podcast_Script.md, Audio_Metadata.json |
-
-## 2. 데이터 흐름 구조
-
-```mermaid
-graph TD
-    A[BOARD_MUZZIMA<br/>337만 행] --> B[일간 베스트 추출<br/>상위 5건]
-    C[COMMENT<br/>1,826만 행] --> D[댓글 집계<br/>게시글별]
-    
-    B --> E[PII 전처리<br/>민감정보 마스킹]
-    D --> E
-    
-    E --> F[raw_data_summary.json]
-    F --> G[Host/Guest 대본 생성]
-    F --> H[TTS 메타데이터 생성]
-    
-    G --> I[Podcast_Script.md]
-    H --> J[Audio_Metadata.json]
+무찌마 게시판 (BOARD_MUZZIMA)
+├── 일간 베스트 추출 (최근 24시간)
+│   ├── 조회수 상위 5건
+│   └── 댓글수 상위 5건 (중복 제거)
+├── 댓글 데이터 수집 (COMMENT)
+│   ├── 해당 게시물 댓글만 조회
+│   └── 반응 분석용 데이터
+└── PII 전처리
+    ├── 개인정보 마스킹
+    ├── 병원명 익명화
+    └── 연락처/이메일 제거
 ```
 
-## 3. 라우팅 구조 (API 기준)
+### Phase B - 콘텐츠 생성
+```
+대본 생성 엔진
+├── Host 캐릭터 설정
+│   ├── 진행자 역할 (의학 뉴스 전문)
+│   └── 질문/정리 담당
+├── Guest 캐릭터 설정
+│   ├── 현장 의사 역할
+│   └── 실무 경험 공유 담당
+└── 메타데이터 생성
+    ├── TTS 감정 태그
+    ├── 강조점/휴지 마킹
+    └── 배경음악 큐
+```
 
+## 라우팅 구조
+
+### API 엔드포인트
 ```
 /api/v1/podcast/
-├── /extract          # Phase A - 데이터 추출
-│   ├── /best-posts    # 베스트 게시물 조회
-│   └── /preprocess    # PII 전처리
-└── /generate          # Phase B - 콘텐츠 생성
-    ├── /script        # 대본 생성
-    └── /metadata      # 오디오 메타데이터
+├── daily-briefing/
+│   ├── GET /extract      # Phase A: 베스트 게시물 추출
+│   ├── GET /preprocess   # Phase A: PII 전처리
+│   ├── POST /generate    # Phase B: 대본 생성
+│   └── GET /metadata     # Phase B: 메타데이터 생성
+└── archive/
+    ├── GET /{date}       # 과거 대본 조회
+    └── GET /list         # 대본 목록
 ```
 
-## 4. 보안 계층
+### 관리자 인터페이스
+```
+/admin/podcast/
+├── dashboard/            # 생성 현황 대시보드
+├── review/              # 대본 검토 및 수정
+├── settings/            # 캐릭터 설정 관리
+└── analytics/           # 사용량 통계
+```
 
-| 계층 | 규칙 | 적용 범위 |
-|------|------|-----------|
-| 데이터 접근 | REG_DATE >= 조건 강제, LIMIT 10 이하 | BOARD_MUZZIMA, COMMENT |
-| PII 보호 | 개인식별정보 마스킹 필수 | 모든 게시글 내용 |
-| SELECT 제한 | SELECT * 금지, 필요 컬럼만 조회 | 모든 쿼리 |
+## 데이터 계층 구조
+
+### 입력 데이터
+- **BOARD_MUZZIMA**: 메인 게시물 데이터 (337만 행)
+- **COMMENT**: 댓글 및 반응 데이터 (1,826만 행)
+- **USERS**: 작성자 정보 (익명화 참조용)
+
+### 출력 데이터
+- **팟캐스트 대본**: Host/Guest 대화 스크립트
+- **메타데이터**: TTS 설정, 감정 태그, 타이밍
+- **요약 정보**: 다뤄진 주제, 키워드, 통계
+
+## 보안 및 접근 제어
+
+### PII 보호 정책
+- 개인 식별 정보 자동 마스킹
+- 병원/의원명 → "A병원", "B의원"으로 변환
+- 연락처, 이메일, 주민번호 완전 제거
+- 의료진 실명 → "김○○ 선생님"으로 변환
+
+### 데이터 접근 제한
+- 최근 24시간 데이터만 조회 (REG_DATE 필터 필수)
+- LIMIT 10 이하로 제한
+- SELECT * 금지, 필요 컬럼만 선택
+- 인덱스 활용 강제 (성능 보호)

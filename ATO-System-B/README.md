@@ -16,9 +16,10 @@ ATO-System-B는 Leader-SubAgent 협업 구조 기반의 AI 오케스트레이션
 ATO-System-B/
 ├── .claude/                    # AI 에이전트 Constitution 체계
 │   ├── SYSTEM_MANIFEST.md      # 시스템 설정 맵 (Control Tower)
+│   ├── README.md               # 인간용 시각 가이드 (다이어그램)
 │   ├── rules/                  # 제약 사항 (읽기 전용)
 │   ├── workflows/              # 프로세스 정의
-│   ├── context/                # 팀 철학 및 컨텍스트
+│   ├── context/                # 팀 철학 (AI_Playbook.md)
 │   └── project/                # 프로젝트별 설정
 ├── orchestrator/               # AI 오케스트레이션 엔진
 │   ├── skills/                 # 에이전트 스킬 정의
@@ -206,9 +207,10 @@ cd backend && npm run lint
 |------|------|
 | `CLAUDE.md` | 팀 공통 헌법 (최상위) |
 | `.claude/SYSTEM_MANIFEST.md` | Orchestrator 설정 맵 |
+| `.claude/README.md` | 인간용 시각 가이드 (다이어그램) |
 | `.claude/rules/*` | 엄격한 제약 사항 (읽기 전용) |
 | `.claude/workflows/*` | 작업 프로세스 정의 |
-| `.claude/context/*` | 팀 철학 및 행동 강령 |
+| `.claude/context/AI_Playbook.md` | 팀 철학 (인간 온보딩용) |
 
 ## Phase 정의 (v4.3.2)
 

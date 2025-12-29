@@ -25,9 +25,10 @@
 ├── CLAUDE.md              # Claude Code 자동 로딩 (진입점)
 └── .claude/
     ├── rules/             # [Group A] 제약 사항 (Code Style, DB Schema)
-    │   └── PROJECT_STACK.md
     ├── workflows/         # [Group B] 실행 절차
-    └── context/           # [Group C] 배경 지식
+    ├── context/           # [Group C] 배경 지식
+    └── project/           # 프로젝트별 설정
+        └── PROJECT_STACK.md
 ```
 
 ---

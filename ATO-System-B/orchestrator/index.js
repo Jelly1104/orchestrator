@@ -76,18 +76,19 @@ function snapshotPRD(projectRoot, caseId, prdSourcePath) {
  */
 function extractCaseIdFromPRD(prdContent) {
   // Case ID: case6-orchestrator-validation-20251223 형식 찾기
-  const caseIdMatch = prdContent.match(/Case ID[:\s]*([a-zA-Z0-9_-]+)/i);
+  // 마크다운 테이블 형식도 지원: | **Case ID** | case7-xxx |
+  const caseIdMatch = prdContent.match(/\*{0,2}Case ID\*{0,2}[:\s|]*([a-zA-Z0-9_-]+)/i);
   if (caseIdMatch) {
     return caseIdMatch[1];
   }
 
-  // PRD 제목에서 추출 시도
+  // PRD 제목에서 추출 시도 (한글 제외, 영문만)
   const titleMatch = prdContent.match(/# PRD[:\s]*(.+)/);
   if (titleMatch) {
-    // 제목을 케밥 케이스로 변환
+    // 제목을 케밥 케이스로 변환 (한글 제외)
     return titleMatch[1]
       .toLowerCase()
-      .replace(/[^a-z0-9가-힣]+/g, "-")
+      .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "")
       .substring(0, 50);
   }
