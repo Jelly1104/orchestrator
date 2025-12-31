@@ -1,51 +1,18 @@
 # IA.md - 정보 구조
 
-## 1. 시스템 아키텍처
+## 라우팅 및 페이지 계층 구조
 
-```
-Daily Briefing System
-├── Phase A: Analysis
-│   ├── /analysis/best-posts (SQL 실행)
-│   ├── /analysis/pii-masking (전처리)
-│   └── /analysis/raw-data (데이터 요약)
-└── Phase B: Content Generation
-    ├── /generation/script (대본 생성)
-    ├── /generation/metadata (TTS 메타데이터)
-    └── /safety/content-check (안전성 검증)
-```
+- **홈페이지**
+  - /home
+  - 목적: 사용자 인트로 및 서비스 소개
+  - 컴포넌트: 상단 배너, 최신 뉴스 섹션
 
-## 2. 데이터 플로우
+- **무찌마 일간 베스트 팟캐스트**
+  - /podcast/daily-best
+  - 목적: 인기 게시물 기반 팟캐스트 대본 확인 및 TTS 재생
+  - 컴포넌트: 대본 생성 버튼, 게시물 목록, 메타데이터, 재생 컨트롤
 
-```mermaid
-graph TD
-    A[BOARD_MUZZIMA] --> B[Best Posts Query]
-    B --> C[PII Masking]
-    C --> D[Raw Data Summary]
-    D --> E[Podcast Script Generation]
-    E --> F[Audio Metadata]
-    F --> G[Content Safety Check]
-    G --> H[HITL Review]
-```
-
-## 3. 페이지 계층 구조
-
-- **백엔드 API만 필요** (Frontend UI 없음)
-- 스케줄링: 매일 오전 7시 자동 실행
-- 결과물: 파일 시스템 저장 (TTS 연동 준비)
-
-## 4. 라우팅 설계
-
-```yaml
-endpoints:
-  - path: /api/v1/daily-briefing/analyze
-    method: POST
-    description: Phase A - 데이터 분석 실행
-    
-  - path: /api/v1/daily-briefing/generate
-    method: POST  
-    description: Phase B - 팟캐스트 콘텐츠 생성
-    
-  - path: /api/v1/daily-briefing/status
-    method: GET
-    description: 생성 상태 조회
-```
+- **관리자 대시보드**
+  - /admin/dashboard
+  - 목적: 팟캐스트 대본 및 메타데이터 업로드, 관리
+  - 컴포넌트: 데이터 테이블, 업로드 폼, 로그 뷰어

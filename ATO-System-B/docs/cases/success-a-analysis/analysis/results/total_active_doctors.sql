@@ -1,0 +1,1 @@
+SELECT COUNT(U_ID) AS total_active_doctors FROM USERS WHERE U_KIND = 'DOC001' AND U_ALIVE = 'Y'

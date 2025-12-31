@@ -1,8 +1,8 @@
 # DOCUMENT_PIPELINE.md
 
-> **문서 버전**: 1.3.0
-> **최종 업데이트**: 2025-12-29
-> **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
+> **문서 버전**: 1.4.0
+> **최종 업데이트**: 2025-12-30
+> **변경 이력**: 파이프라인 타입 6개 확장 (analysis, design, code, analyzed_design, ui_mockup, full)
 > **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md` > **상위 문서**: `CLAUDE.md` > **대상**: 리더 에이전트
 
 ---
@@ -24,6 +24,47 @@
 2. **Phase A** (Optional): Analyzer가 SQL 실행 → ImpLeader 검증 → 분석 리포트
 3. **Phase B**: Designer가 IA/Wireframe/SDD 작성 → ImpLeader 검증 → Leader가 HANDOFF.md 확정 → [HITL: 설계 승인]
 4. **Phase C**: Coder가 TDD Cycle 실행 → ImpLeader 검증 → [HITL: 배포 승인] → Deploy
+
+---
+
+## 📊 파이프라인 타입별 흐름
+
+Leader의 `{ router: "..." }` 출력에 따라 6가지 파이프라인 중 하나가 실행됩니다.
+
+| 타입 | Phase 조합 | 흐름 요약 |
+|------|-----------|----------|
+| `analysis` | A만 | PRD → Analyzer(SQL) → 분석 리포트 |
+| `design` | B만 | PRD → Designer(IA/WF/SDD) → 설계 문서 |
+| `code` | C만 | HANDOFF → Coder(구현) → 소스코드 |
+| `analyzed_design` | A→B | PRD → Analyzer → Designer → 설계 문서 |
+| `ui_mockup` | B→C | PRD → Designer → Coder → UI 코드 |
+| `full` | A→B→C | PRD → Analyzer → Designer → Coder → 전체 산출물 |
+
+### 타입별 상세
+
+**analysis (A만)**: 데이터 분석만 필요한 경우
+- 산출물: `*.sql`, `analysis_result.json`, `report.md`
+- 예: 세그먼트 분석, KPI 리포트
+
+**design (B만)**: 설계만 필요한 경우
+- 산출물: `IA.md`, `Wireframe.md`, `SDD.md`
+- 예: 신규 화면 기획, UX 개선 제안
+
+**code (C만)**: 이미 설계가 있고 구현만 필요한 경우
+- 산출물: `backend/src/*`, `frontend/src/*`, `tests/*`
+- 예: HANDOFF 기반 코딩, 버그 수정
+
+**analyzed_design (A→B)**: 분석 후 설계가 필요한 경우
+- 산출물: 분석 리포트 + 설계 문서
+- 예: 데이터 기반 UX 설계, 인사이트 → 제안
+
+**ui_mockup (B→C)**: 분석 없이 설계부터 화면 구현까지
+- 산출물: 설계 문서 + UI 코드
+- 예: 신규 기능 개발 (IA/WF → React 컴포넌트)
+
+**full (A→B→C)**: 전체 파이프라인
+- 산출물: 분석 리포트 + 설계 문서 + 소스코드
+- 예: 데이터 분석부터 배포까지 완전 자동화
 
 ---
 

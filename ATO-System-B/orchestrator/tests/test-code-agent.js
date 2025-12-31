@@ -294,7 +294,7 @@ async function testSkillLoading() {
   console.log('═══════════════════════════════════════════════════════════════\n');
 
   try {
-    const { SkillLoader } = await import('../skills/skill-loader.js');
+    const { SkillLoader } = await import('../tools/tool-loader.js');
     const skillsRoot = path.join(projectRoot, 'orchestrator/skills');
 
     const skillLoader = new SkillLoader(skillsRoot);
@@ -328,7 +328,7 @@ async function testSkillLoading() {
     return passed;
   } catch (error) {
     console.error('❌ 테스트 실패:', error.message);
-    console.log('  (skill-loader.js가 없거나 code-agent SKILL.md를 찾을 수 없음)');
+    console.log('  (tool-loader.js가 없거나 code-agent SKILL.md를 찾을 수 없음)');
     return false;
   }
 }

@@ -46,13 +46,13 @@
 
 ### 2.2 Role별 로딩 예상 토큰
 
-| Role                  | 로딩 문서                     | 예상 토큰 |
-| --------------------- | ----------------------------- | --------- |
-| Leader                | ROLES_DEFINITION(§2), HANDOFF | ~800      |
-| Analyzer              | ROLES_DEFINITION(§3)          | ~500      |
-| Designer              | ROLES_DEFINITION(§4)          | ~600      |
-| Implementation Leader | ROLES_DEFINITION(§5)          | ~500      |
-| Coder                 | ROLES_DEFINITION(§6), HANDOFF | ~600      |
+| Role                                    | 로딩 문서                     | 예상 토큰 |
+| --------------------------------------- | ----------------------------- | --------- |
+| Leader (PM & Commander)                 | Leader 정의, HANDOFF Protocol | ~800      |
+| Analyzer (Data Analyst)                 | Analyzer 정의                 | ~500      |
+| Designer (Architect)                    | Designer 정의                 | ~600      |
+| Implementation Leader (Quality Manager) | ImpLeader 정의                | ~500      |
+| Coder (Developer)                       | Coder 정의, HANDOFF Protocol  | ~600      |
 
 ### 2.3 Role별 출력 토큰 제한 (maxTokens)
 
@@ -68,21 +68,37 @@
 
 ## 3. Phase 정의
 
-| Phase | 이름           | 담당 Role    | Tools           | 설명                          |
-| ----- | -------------- | ------------ | --------------- | ----------------------------- |
-| **A** | Analysis       | Analyzer     | query, profiler | DB 분석, SQL 실행             |
-| **B** | Design         | Designer     | designer        | IA/Wireframe/SDD/HANDOFF 생성 |
-| **C** | Implementation | Coder        | coder           | 코드 구현                     |
-| **D** | Security       | Orchestrator | -               | 입력 검증, 보안               |
+| Phase | 이름           | 담당 Role    | Tools           | 설명                                        |
+| ----- | -------------- | ------------ | --------------- | ------------------------------------------- |
+| **A** | Analysis       | Analyzer     | query, profiler | DB 분석, SQL 실행                           |
+| **B** | Design         | Designer     | designer        | IA/Wireframe/SDD/HANDOFF 생성               |
+| **C** | Implementation | Coder        | coder           | **SDD 기반 코드 구현 (PRD 직접 참조 금지)** |
+| **D** | Security       | Orchestrator | -               | 입력 검증, 보안                             |
 
-### 파이프라인 타입
+### 파이프라인 타입 (현재 구현)
 
-| Type          | 설명                 |
-| ------------- | -------------------- |
-| Analysis Only | Phase A만 실행       |
-| Design Only   | Phase B만 실행       |
-| Mixed (기본)  | Phase A → B 순차     |
-| Full          | Phase A → B → C 전체 |
+| 타입            | Phase 조합 | 상태                        |
+| --------------- | ---------- | --------------------------- |
+| `analysis`      | A만        | ✅ 구현됨                   |
+| `design`        | B만        | ✅ 구현됨                   |
+| `mixed`         | A → B      | ✅ 구현됨                   |
+| `code`          | C만        | 🚧 미구현                   |
+| `analyzed_design` | A → B    | 🚧 미구현 (mixed로 대체)    |
+| `ui_mockup`     | B → C      | 🚧 미구현                   |
+| `full`          | A → B → C  | 🚧 미구현                   |
+
+> **Note**: 점진적 확장 예정. 현재는 3개 타입만 지원.
+
+### 파이프라인 타입 (목표)
+
+| Type            | Phase 조합 | 설명                                                    | 사용 케이스             |
+| --------------- | ---------- | ------------------------------------------------------- | ----------------------- |
+| analysis        | A만        | 데이터 분석만                                           | SQL 분석, 리포트        |
+| design          | B만        | 설계만                                                  | IA/Wireframe/SDD 작성   |
+| code            | C만        | **SDD/HANDOFF가 이미 존재하는 경우에 한해 구현만 수행** | 이미 설계 있고 코딩만   |
+| analyzed_design | A → B      | 분석 후 설계                                            | 데이터 기반 UX 설계     |
+| ui_mockup       | B → C      | 설계 후 화면 구현                                       | IA/WF 기반 UI 코드 생성 |
+| full            | A → B → C  | 전체 파이프라인                                         | 처음부터 끝까지         |
 
 > **상세 플로우 다이어그램**: README.md 섹션 2 참조
 
@@ -141,7 +157,20 @@ Phase C: PRD 매칭률 < 80%, 보안 위반, 재시도 >= 3회
 | ------ | -------------------------------------------- |
 | 역할   | 기계적 파이프라인 스위칭 + 보안 게이트웨이   |
 | 담당   | PRD 파싱, Role 호출, HITL 관리, 재시도, 로그 |
-| 스위칭 | Leader 출력 `{ router: "mixed" }` 기반       |
+| 스위칭 | Leader 출력 `{ router: "..." }` 기반         |
+
+### 스위칭 예시
+
+| Leader 출력                     | 실행 Phase              |
+| ------------------------------- | ----------------------- |
+| `{ router: "analysis" }`        | A만                     |
+| `{ router: "design" }`          | B만                     |
+| `{ router: "code" }`            | **C만 (SDD 존재 필수)** |
+| `{ router: "analyzed_design" }` | A → B                   |
+| `{ router: "ui_mockup" }`       | B → C                   |
+| `{ router: "full" }`            | A → B → C               |
+
+> **💡 code 타입 가드**: 실제 구현에서는 `if (!exists(SDD.md)) → HITL: Design Skip Approval` 체크 필요
 
 ### 금지 패턴
 
@@ -192,12 +221,11 @@ workspace/logs/{task-id}.json     # 실행 로그
 
 ## 변경 이력
 
-| 버전  | 날짜       | 변경 내용                                                           |
-| ----- | ---------- | ------------------------------------------------------------------- |
-| 3.1.0 | 2025-12-29 | 300줄 다이어트: 다이어그램→README.md, Role 상세→ROLES_DEFINITION.md |
-| 3.0.1 | 2025-12-29 | 문서 책임 경계 섹션 추가                                            |
-| 3.0.0 | 2025-12-29 | Role-Based Collaboration Model 적용                                 |
-
----
+| 버전  | 날짜       | 변경 내용                                                                              |
+| ----- | ---------- | -------------------------------------------------------------------------------------- |
+| 3.2.0 | 2025-12-30 | 파이프라인 타입 4개→6개 확장 (code, analyzed_design, ui_mockup 추가), 스위칭 예시 추가 |
+| 3.1.0 | 2025-12-29 | 300줄 다이어트: 다이어그램→README.md, Role 상세→ROLES_DEFINITION.md                    |
+| 3.0.1 | 2025-12-29 | 문서 책임 경계 섹션 추가                                                               |
+| 3.0.0 | 2025-12-29 | Role-Based Collaboration Model 적용                                                    |
 
 **END OF ROLE_ARCHITECTURE.md**

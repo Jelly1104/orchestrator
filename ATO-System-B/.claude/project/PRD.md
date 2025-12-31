@@ -3,8 +3,8 @@
 | 항목          | 내용                                                |
 | ------------- | --------------------------------------------------- |
 | **Case ID**   | case7-muzzima-podcast-20251226                      |
-| **PRD 버전**  | 2.0.0                                               |
-| **작성일**    | 2025-12-29                                          |
+| **PRD 버전**  | 3.0.0                                               |
+| **작성일**    | 2025-12-30                                          |
 | **작성자**    | ATO Team                                            |
 | **Type**      | MIXED                                               |
 | **Pipeline**  | mixed                                               |
@@ -39,6 +39,9 @@
 | F2  | A     | PII 전처리       | 게시물 본문 내 환자명, 의사 실명, 병원명 마스킹                            | 마스킹 패턴 적용 확인 (`***` 치환) |
 | F3  | B     | 대본 생성        | 요약된 내용을 2인 대화(Host/Guest) 형식의 구어체 스크립트로 변환           | 대본 내 호칭(Host:/Guest:) 존재    |
 | F4  | B     | 메타데이터 생성  | TTS용 감정 태그 및 발화 속도 가이드 포함                                   | JSON 스키마 유효성                 |
+| F5  | C     | Web UI           | 브라우저에서 대본 생성 및 결과 확인 가능한 웹 인터페이스                   | localhost 접속 시 UI 렌더링        |
+| F6  | C     | TTS 음성 재생    | 생성된 대본을 음성으로 변환하여 브라우저에서 재생                          | 재생 버튼 클릭 시 음성 출력        |
+| F7  | C     | 화자 구분 음성   | Host/Guest 각각 다른 음색으로 TTS 재생                                     | 두 가지 음색 구분 가능             |
 
 ---
 
@@ -69,7 +72,7 @@
 ```yaml
 type: MIXED
 pipeline: mixed
-rationale: "SQL을 통한 정량적 데이터 확보(Phase A)가 선행되어야 대본 작성(Phase B)이 가능함"
+rationale: "SQL을 통한 정량적 데이터 확보(Phase A)가 선행되어야 대본 작성(Phase B)이 가능하고, 최종적으로 Web UI와 TTS 재생(Phase C)으로 사용자에게 전달함"
 
 phases:
   - id: A
@@ -83,6 +86,15 @@ phases:
     agent: LeaderAgent
     input: Phase A 결과물
     output: Podcast_Script.md, Audio_Metadata.json
+
+  - id: C
+    name: Implementation
+    agent: CoderAgent
+    input: Phase B 결과물 + HANDOFF.md
+    output:
+      - Express.js 백엔드 API
+      - Web UI (HTML/CSS/JS)
+      - TTS 음성 재생 기능
 ```
 
 ---
@@ -199,6 +211,45 @@ deliverables:
     validation: Human Review (HITL)
 ```
 
+### Phase C (Implementation) - CoderAgent
+
+```yaml
+deliverables:
+  - name: "Express.js Backend"
+    type: SOURCE_CODE
+    location: "backend/src/"
+    criteria:
+      - TypeScript strict mode
+      - POST /api/v1/podcast/daily-best API
+      - TDD 테스트 커버리지 ≥ 90%
+      - DOMAIN_SCHEMA.md 컬럼명 준수
+    validation: npm run test && npm run type-check
+
+  - name: "Web UI"
+    type: SOURCE_CODE
+    location: "backend/public/index.html"
+    criteria:
+      - 대본 생성 버튼
+      - 생성된 대본 표시 (Host/Guest 구분)
+      - 원본 게시글 목록 표시 (PII 마스킹)
+      - 메타데이터 표시
+    validation: 브라우저 렌더링 확인
+
+  - name: "TTS Player"
+    type: SOURCE_CODE
+    location: "backend/public/index.html (내장)"
+    criteria:
+      - 재생/일시정지/정지 컨트롤
+      - Host/Guest 음색 구분 (pitch 차이)
+      - 세그먼트별 순차 재생
+      - 현재 재생 위치 하이라이트
+    validation: TTS 재생 테스트
+    tech_option:
+      - Web Speech API (브라우저 내장, 무료, 권장)
+      - Google Cloud TTS (고품질, 유료)
+      - Naver Clova Voice (한국어 특화, 유료)
+```
+
 ---
 
 ## 9. 제약사항 (Constraints)
@@ -218,7 +269,8 @@ deliverables:
 | Phase  | 체크포인트     | 승인 조건                        | 실패 시        |
 | ------ | -------------- | -------------------------------- | -------------- |
 | A→B    | SQL 결과 검증  | 5건 추출, PII 마스킹 확인        | Phase A 재실행 |
-| B 완료 | 대본 품질 검증 | 구어체 자연스러움, PII 완전 제거 | 대본 수정 요청 |
+| B→C    | 대본 품질 검증 | 구어체 자연스러움, PII 완전 제거 | 대본 수정 요청 |
+| C 완료 | 구현 검증      | 서버 실행, UI 렌더링, TTS 재생   | 코드 수정 요청 |
 | 최종   | 안전성 검증    | Content_Safety_Check 통과        | 배포 보류      |
 
 ---
@@ -227,6 +279,7 @@ deliverables:
 
 | 버전  | 날짜       | 변경 내용                                                                                                 |
 | ----- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| 3.0.0 | 2025-12-30 | Phase C 추가: Web UI(F5), TTS 음성 재생(F6), 화자 구분 음성(F7), CoderAgent 산출물 정의                   |
 | 2.0.0 | 2025-12-29 | PRD_GUIDE.md v2.1 기준 전면 개정, YAML 형식 정규화, 성공 지표 정량화, 레퍼런스 추가, HITL 체크포인트 명시 |
 | 1.1.0 | 2025-12-26 | 초기 버전                                                                                                 |
 

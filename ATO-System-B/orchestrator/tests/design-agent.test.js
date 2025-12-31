@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DesignAgent } from '../skills/design-agent/index.js';
+import { DesignAgent } from '../tools/design-agent/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 

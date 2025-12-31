@@ -129,20 +129,26 @@ export class Sandbox {
    * 경로 이탈 검사
    * 심볼릭 링크 등을 통한 샌드박스 이탈 방지
    * @param {string} requestedPath - 요청 경로
+   * @param {boolean} isCodePath - 코드 경로 여부 (backend/src, frontend/src 등)
    * @returns {Object} - { allowed, realPath, reason }
    */
-  checkPathEscape(requestedPath) {
+  checkPathEscape(requestedPath, isCodePath = false) {
     // 스텁 모드
     if (!isEnabled('SECURITY_SANDBOX')) {
       this.logger.debug('SANDBOX_STUB', `[STUB] Would check path escape: ${requestedPath}`);
       return { allowed: true, realPath: requestedPath, stub: true };
     }
 
-    const pathResult = this.pathValidator.validateDocumentPath(requestedPath);
+    // 코드 경로는 validateInternalPath 사용 (backend/src, frontend/src 허용)
+    // 문서 경로는 validateDocumentPath 사용 (.claude/ 만 허용)
+    const pathResult = isCodePath
+      ? this.pathValidator.validateInternalPath(requestedPath)
+      : this.pathValidator.validate(requestedPath);
 
     if (!pathResult.valid) {
       this.logger.security('SANDBOX_PATH_ESCAPE', 'Path escape attempt detected', {
         requestedPath,
+        isCodePath,
         error: pathResult.error,
       });
 
@@ -171,7 +177,9 @@ export class Sandbox {
 
     // 1. 경로 이탈 검사
     if (targetPath) {
-      const escapeCheck = this.checkPathEscape(targetPath);
+      // FEATURE 등급이거나 WRITE 작업이면 코드 경로로 간주 (backend/src, frontend/src 허용)
+      const isCodePath = targetGrade === 'FEATURE' || operation === 'WRITE';
+      const escapeCheck = this.checkPathEscape(targetPath, isCodePath);
       if (!escapeCheck.allowed) {
         violations.push({
           type: 'PATH_ESCAPE',

@@ -18,16 +18,21 @@ import { getAuditLogger } from '../utils/audit-logger.js';
 // 허용된 기본 경로 패턴
 // Phase 4.1.2: workspace/ 경로 추가 (2025-12-22 Skill-Centric Refactoring)
 // Phase 2.5: src/ 레거시 경로 제거 (2025-12-22)
+// Phase C: backend/, frontend/ 코드 생성 경로 추가 (2025-12-30)
 const ALLOWED_BASE_PATHS = [
   '.claude/',
   'orchestrator/',
   'workspace/',
+  'backend/',
+  'frontend/',
+  'docs/',
 ];
 
 // 내부 시스템 경로 (항상 허용) - Security Whitelist
 // Phase 4.1.1: workspace/ 경로 추가 (2025-12-22 Skill-Centric Refactoring)
+// Phase C: backend/src/, frontend/src/ 코드 생성 경로 추가 (2025-12-30)
 const INTERNAL_SYSTEM_PATHS = [
-  'orchestrator/skills/',
+  'orchestrator/tools/',
   'orchestrator/agents/',
   'orchestrator/config/',
   'orchestrator/utils/',
@@ -37,6 +42,8 @@ const INTERNAL_SYSTEM_PATHS = [
   'workspace/sessions/',
   'workspace/features/',
   'docs/cases/',
+  'backend/src/',
+  'frontend/src/',
 ];
 
 // 금지된 경로 패턴
@@ -203,7 +210,7 @@ export class PathValidator {
 
   /**
    * 내부 시스템 경로 검증 (Skills, Agents 등)
-   * orchestrator/skills/*, orchestrator/agents/* 등 허용
+   * orchestrator/tools/*, orchestrator/agents/* 등 허용
    * @param {string} inputPath - 검증할 경로
    * @returns {Object} - { valid, normalized, error }
    */

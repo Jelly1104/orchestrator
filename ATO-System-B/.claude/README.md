@@ -1,97 +1,118 @@
-# .claude 디렉토리 가이드
+## 0. 이 문서는 무엇을 설명하는가
 
-> **목적**: 인간 개발자를 위한 시각적 문서 (다이어그램, 상세 설명)
-> **최종 업데이트**: 2025-12-29
-> **참고**: LLM은 이 문서를 로딩하지 않습니다. 핵심 규칙은 각 `.md` 파일 참조.
+**목적**: AI-기반 협업 시스템의 역할, 책임, 흐름, 원칙을 인간 기준으로 설명
+
+**범위**: 개념 → 흐름 → 규칙 → 구현 가이드
+
+**읽는 법**: 독자 유형별 권장 경로 제공
+
+**최종 업데이트**: 2025-12-29
+
+**참고**: LLM은 이 문서를 로딩하지 않습니다. 핵심 규칙은 각 `.md` 파일 참조.
 
 ---
 
-## 1. 시스템 개요
+## 1. 문제 정의 (Why/Who)
 
-### 1.1 Role-Based Collaboration Model (v3.0.0)
+### 1-1 이 시스템은 무엇을 해결하는가
+
+- **ATO-System-B는 메디게이트의 레거시 개발 프로세스에서 발생하는 핵심 병목을 해결합니다.**
+
+해결하는 문제:
+
+- 순차적 병목 → 기획→디자인→개발→QA 각 단계 대기 시간 제거, AI Role 기반 병렬 협업
+- 핸드오프 손실 → PM↔디자이너↔개발자 간 문서 해석 비용 제거, 단일 스펙 문서 체계(PRD→SDD→Code) 자동 생성
+- 표준화 부재 → 팀별 상이한 작업 방식 통일, Implementation Leader의 자동 검증 게이트
+
+추가 안전장치:
+
+- 레거시 DB 정합성 → DOMAIN_SCHEMA.md로 20년 레거시 스키마를 AI가 정확히 참조
+- 민감 데이터 보호 → DB_ACCESS_POLICY.md로 SELECT만 허용, PII 컬럼 차단
+- 무한 루프 방지 → Circuit Breaker(5회 실패 시 HITL 강제 전환)
+
+**목표**: 리드타임 30%↓, 핸드오프 50%↓, 개발 비용 40%↓
+
+### 1-2 Role-Based Collaboration Model
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as 👤 User (HITL)
-    participant Leader as 🧠 Leader<br>(PM & Commander)
+    actor User as 👤 User<br/>(HITL Authority)
+    participant Leader as 🧠 Leader<br/>(PM & Commander)
 
-    box "Executors (Workers)" #F9F9F9
-        participant Analyzer as 🕵️ Analyzer<br>(Data Analyst)
-        participant Designer as 📐 Designer<br>(Architect & Planner)
-        participant Coder as 💻 Coder<br>(Developer)
+    box "Executors (Workers)" #F5F5F5
+        participant Analyzer as 🕵️ Analyzer
+        participant Designer as 📐 Designer
+        participant Coder as 💻 Coder
     end
 
-    box "Quality Assurance" #E6FFE6
-        participant ImpLeader as 👮 Implementation Leader<br>(Quality Manager)
+    box "Quality Authority" #FFF3CD
+        participant ImpLeader as 👮 ImpLeader<br/>(Objective Judge)
     end
 
-    %% --- 1. PM Strategy & Routing ---
-    User->>Leader: 1. PRD 제출
-    Note over Leader: 🧠 Role: Product Manager
-    Leader->>Leader: PRD 분석 & 파이프라인 전략 수립<br>(Data / Design / Mixed)
+    %% ─────────────────────────────────────
+    %% Phase 0: Strategy
+    %% ─────────────────────────────────────
+    User->>Leader: PRD 제출
+    Leader->>Leader: 파이프라인 전략 수립
 
-    %% --- Phase A: Analysis ---
-    opt If Data Analysis Needed
-        rect rgb(230, 240, 255)
-            Note over Leader, ImpLeader: 🟦 Phase A: Analysis (Data Foundation)
-            Leader->>Analyzer: [Command] 데이터 분석 및 근거 마련
-            Analyzer->>Analyzer: QueryTool 실행 (Data Fetch)
-            Analyzer->>ImpLeader: [Report] 분석 결과 검증 요청
-            Note right of ImpLeader: 🛠️ QA: Data Accuracy
-            ImpLeader-->>Analyzer: Pass/Fail (Schema Validation)
-            Analyzer-->>Leader: [Report] 분석 리포트 제출
-            Leader->>User: 🔴 HITL: 전략 승인 (PM Check)
-            User-->>Leader: 승인
+    %% HITL-G (Structural / Risk)
+    Leader->>User: 🔴 HITL-G<br/>Structural / Scope Decision Approval
+    User-->>Leader: 승인 또는 Reject
+
+    %% ─────────────────────────────────────
+    %% Phase A: Analysis
+    %% ─────────────────────────────────────
+    rect rgb(230,240,255)
+        Leader->>Analyzer: 데이터 분석 명령
+        Analyzer->>Analyzer: Query / 분석 수행
+        Analyzer->>ImpLeader: 분석 결과 검증 요청
+        ImpLeader-->>Analyzer: PASS / FAIL
+        Analyzer-->>Leader: 분석 리포트
+    end
+
+    %% HITL-G (Phase Gate)
+    Leader->>User: 🔴 HITL-G<br/>Phase Gate Approval (Analysis → Design)
+    User-->>Leader: 승인
+
+    %% ─────────────────────────────────────
+    %% Phase B: Design
+    %% ─────────────────────────────────────
+    rect rgb(255,245,230)
+        Leader->>Designer: 설계 명령
+        Designer->>Designer: IA / Wireframe / SDD 작성
+        Designer->>ImpLeader: 설계 패키지 검증 요청
+        ImpLeader-->>Designer: PASS / FAIL
+        Designer-->>Leader: 설계 산출물
+    end
+
+    %% HITL-G (Design Freeze)
+    Leader->>User: 🔴 HITL-G<br/>Design Freeze Approval
+    User-->>Leader: 승인
+
+    %% ─────────────────────────────────────
+    %% Phase C: Implementation
+    %% ─────────────────────────────────────
+    rect rgb(230,255,230)
+        Leader->>Coder: 구현 명령 (HANDOFF / SDD)
+        loop Implementation Cycle
+            Coder->>Coder: 구현 & 테스트
+            Coder->>ImpLeader: 코드 품질 검증 요청
+            ImpLeader-->>Coder: PASS / FAIL
+Note right of ImpLeader: FAIL → Internal retry / pipeline rule applies
         end
+        Coder-->>Leader: 구현 결과
     end
 
-    %% --- Phase B: Design & Architecture ---
-    rect rgb(255, 245, 230)
-        Note over Leader, ImpLeader: 🟨 Phase B: Design (Blueprint)
-        Leader->>Designer: [Command] 기획 시각화 및 기술 설계
-        Note right of Designer: 🎨 Mode 1: UX Planner
-        Designer->>Designer: IA (구조) & Wireframe (화면) 작성
-        Note right of Designer: 📐 Mode 2: System Architect
-        Designer->>Designer: SDD (Schema/API) 작성
-        Designer->>ImpLeader: [Report] 설계 패키지 검증 요청
-        Note right of ImpLeader: 🛠️ QA: Feasibility Check
-        ImpLeader->>ImpLeader: PRD vs Wireframe vs SDD 정합성 검사
-        alt Verification Fail
-            ImpLeader-->>Designer: ❌ Reject (데이터-화면 불일치 등)
-            Designer->>Designer: 설계 수정
-        else Verification Pass
-            ImpLeader-->>Leader: ✅ Verified Blueprint
-        end
-        Leader->>Leader: HANDOFF.md (개발 명세서) 확정
-        Leader->>User: 🔴 HITL: 설계 승인 (Design Freeze)
-        User-->>Leader: 승인
-    end
+    %% HITL-G (Release)
+    Leader->>User: 🔴 HITL-G<br/>Release Risk Acceptance
+    User-->>Leader: 승인 (Go Live)
 
-    %% --- Phase C: Implementation ---
-    rect rgb(230, 255, 230)
-        Note over Leader, ImpLeader: 🟩 Phase C: Implementation (Construction)
-        Leader->>Coder: [Command] 소프트웨어 구현 (HANDOFF 기반)
-        loop TDD Cycle
-            Coder->>Coder: 코드 구현 (Impl & Test)
-            Coder->>ImpLeader: [Report] 코드 품질 검증 요청
-            Note right of ImpLeader: 🛠️ QA: Code Review
-            ImpLeader->>ImpLeader: 보안(Env/SQL) & 로직 검증
-            alt Verification Fail
-                ImpLeader-->>Coder: ❌ Reject (Refactor Request)
-                Coder->>Coder: 코드 수정
-            else Verification Pass
-                ImpLeader-->>Leader: ✅ Verified Code
-            end
-        end
-        Leader->>User: 🔴 HITL: 배포 승인 (Release)
-        User-->>Leader: 승인 (Deploy)
-    end
+    Leader-->>User: 🎉 Task Complete
 
-    Leader-->>User: 🎉 태스크 완료
 ```
 
-### 1.2 문서 로딩 토폴로지 - 미시적 관점 (Role별 컨텍스트 주입)
+### 1-3 문서 로딩 토폴로지 - 미시적 관점
 
 ```mermaid
 graph LR
@@ -143,14 +164,15 @@ graph LR
     subgraph IMPLEADER ["Imp. Leader Role"]
         I_ROLES["ROLES_DEFINITION.md<br/>(§5: Impl Leader)"]:::def
         I_VALID["VALIDATION_GUIDE.md"]:::rule
+        I_INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Conditional)"]:::rule
     end
 
     ROOT --> ORC_MAN
-    ROOT --> L_ROLES
-    ROOT --> D_ROLES
-    ROOT --> C_ROLES
-    ROOT --> A_ROLES
-    ROOT --> I_ROLES
+    ROOT -->|Bootstrap Context| L_ROLES
+    ROOT -->|Bootstrap Context| D_ROLES
+    ROOT -->|Bootstrap Context| C_ROLES
+    ROOT -->|Bootstrap Context| A_ROLES
+    ROOT -->|Bootstrap Context| I_ROLES
 
     ORC_MAN --> ORC_ARCH
     ORC_MAN --> ORC_TOOLS
@@ -174,11 +196,12 @@ graph LR
     A_ROLES --> A_ANALYSIS
 
     I_ROLES --> I_VALID
+    I_ROLES --> I_INCIDENT
 ```
 
 > **범례**: 🟣 루트(CLAUDE.md) | 🟡 프로토콜(워크플로우) | 🔵 규칙(Rules) | 🟢 정의(Definitions) | 🟠 점선=런타임 입력(PRD, SDD 등) | ⬜ Tool/JS 클래스
 
-### 1.3 문서 의존성 토폴로지 - 거시적 관점 (Frontstage/Backstage)
+### 1-4 문서 의존성 토폴로지 - 거시적 관점
 
 ```mermaid
 graph TD
@@ -219,7 +242,7 @@ graph TD
 
     %% 4. Backstage Context (Hidden) - 시스템/인간 용
     subgraph "Backstage: System & Human Only"
-        INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Orchestrator Logic)"]:::backstage
+        INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Used by ImpLeader via Orchestrator)"]:::backstage
         ERROR["ERROR_HANDLING_GUIDE.md<br/>(Retry Logic)"]:::backstage
         PRD_G["PRD_GUIDE.md<br/>(Planning Guide)"]:::backstage
     end
@@ -239,137 +262,248 @@ graph TD
 
 > **범례**: ⬛ 헌법(Constitution) | 🟢 Frontstage (Role이 로딩) | ⬜ Backstage (시스템/인간용, 점선)
 
----
+## 2. 파이프라인 플로우 (How)
 
-## 2. 파이프라인 플로우
-
-### 2.1 Phase 기반 파이프라인 흐름
+### 2-1 Phase 기반 파이프라인 흐름 - 정적 구조 Phase
 
 ```mermaid
 graph TD
-    A[PRD 입력] --> B{PRD Gap Check}
-    B -- 불완전 --> C[🧑 HITL: PRD 보완]
-    B -- 완전 --> D[자동: Pipeline Type 판별]
+    A[PRD 입력] --> B[👮 ImpLeader: PRD Gap Check]
+    B --> B1{Objective Rules Pass?}
 
-    D --> E{Pipeline Type?}
+    B1 -- YES --> D[자동: Pipeline Type 판별]
+    B1 -- NO --> C[🧑 HITL Review]
 
+    %% HITL Actions (ONLY override types)
+    C --> C1[Exception Approval<br/>single-run]
+    C --> C2[Rule Override<br/>rule change]
+
+    %% HITL Outcomes
+    C1 --> D
+    C2 --> D
+    C --> C3[No Approval → Reject<br/>PRD 보완]
+    C3 --> A
+
+    D --> E{Pipeline Type?<br/>code requires SDD}
+
+    %% ═══════════════════════════════════════
     %% Phase A: Analysis
-    E -- Analysis/Mixed --> F[Phase A: Analyzer]
-    F --> G[QueryTool: SQL 실행]
-    G --> G1[ReviewerTool: 쿼리 결과 검증]
-    G1 -- FAIL --> F
-    G1 -- PASS --> H{결과 검증}
-    H -- 이상 --> I[🧑 HITL: 쿼리 검토]
-    I -.-> I1[ViewerTool: 대시보드]
-    H -- 정상 --> J[분석 리포트 생성]
+    %% ═══════════════════════════════════════
+    E -- analysis --> F
+    E -- analyzed_design --> F
+    E -- full --> F
+
+    F[Phase A: Analysis] --> G[QueryTool: SQL 실행]
+    G --> G1[👮 ImpLeader: 쿼리 결과 검증]
+    G1 --> G2{Objective Rules Pass?}
+
+    G2 -- YES --> J[분석 리포트 생성]
+    G2 -- NO --> I[🧑 HITL Review]
+
+    I --> I1[Exception Approval]
+    I --> I2[Rule Override]
+    I --> I3[No Approval → Reject<br/>분석 재작업]
+
+    I1 --> J
+    I2 --> J
+    I3 --> F
+
     J --> J2[DocSyncTool: Notion 동기화]
-    J2 --> K{Mixed Pipeline?}
+    J2 --> K{analyzed_design / full?}
     K -- Yes --> L[Phase B로 진행]
     K -- No --> U[완료]
 
+    %% ═══════════════════════════════════════
     %% Phase B: Design
-    E -- Design Only --> L
-    L --> M[Phase B: Leader Planning]
-    M --> N[DesignerTool: IA/Wireframe/SDD/HANDOFF]
-    N --> N1[ReviewerTool: 품질 검증]
-    N1 -- FAIL --> M
-    N1 -- PASS --> O[🧑 HITL: 설계 승인]
-    O -.-> O1[ViewerTool: 대시보드]
-    O -- 승인 --> O2[DocSyncTool: Notion 동기화]
-    O2 --> P{Phase C 필요?}
-    O -- 수정요청 --> M
+    %% ═══════════════════════════════════════
+    E -- design --> L
+    E -- ui_mockup --> L
 
-    %% Phase C: Code Implementation
-    P -- Yes --> Q[Phase C: Coder 구현]
+    L[Phase B: Design] --> M[DesignerTool: IA / WF / SDD / HANDOFF]
+    M --> N1[👮 ImpLeader: 설계 품질 검증]
+    N1 --> N2{Objective Rules Pass?}
+
+    N2 -- YES --> O2[DocSyncTool: Notion 동기화]
+    N2 -- NO --> O[🧑 HITL Review]
+
+    O --> O1[Exception Approval]
+    O --> O3[Rule Override]
+    O --> O4[No Approval → Reject<br/>설계 재작업]
+
+    O1 --> O2
+    O3 --> O2
+    O4 --> L
+
+    O2 --> P{ui_mockup / full?}
+    P -- Yes --> Q[Phase C로 진행]
     P -- No --> U
-    Q --> R[CoderTool: 코드 작성]
-    R --> S[ReviewerTool: Output Validation]
-    S -- FAIL --> Q
-    S -- PASS --> T[Leader Review]
-    T -- FAIL 3회 --> V[🧑 HITL: 수동 수정]
-    V -.-> V1[ViewerTool: 대시보드]
-    T -- PASS --> T1[DocSyncTool: Notion 동기화]
-    T1 --> W{프론트 배포?}
-    W -- Yes --> X[🧑 HITL: 배포 승인]
-    X -.-> X1[ViewerTool: 대시보드]
-    W -- No --> U
 
+    %% ═══════════════════════════════════════
+    %% Phase C: Implementation
+    %% ═══════════════════════════════════════
+    E -- code --> Q[Phase C로 진행<br/>Input: HANDOFF + SDD]
+
+    Q[Phase C: Implementation<br/>Input: HANDOFF + SDD] --> R1[CoderTool: 코드 작성]
+    R1 --> S[👮 ImpLeader: 코드 품질 검증]
+    S --> S1{Objective Rules Pass?}
+
+    S1 -- YES --> T1[DocSyncTool: Notion 동기화]
+    S1 -- NO --> V[🧑 HITL Review]
+
+    V --> V1[Exception Approval<br/>Tech Debt]
+    V --> V2[Rule Override]
+    V --> V3[No Approval → Reject<br/>코드 재작업]
+
+    V1 --> T1
+    V2 --> T1
+    V3 --> Q
+
+    T1 --> U[완료]
+
+    %% ═══════════════════════════════════════
+    %% Styles
+    %% ═══════════════════════════════════════
     style C fill:#ffcccc
     style I fill:#ffcccc
     style O fill:#ffcccc
     style V fill:#ffcccc
-    style X fill:#ffcccc
-    style I1 fill:#e6f3ff
-    style O1 fill:#e6f3ff
-    style V1 fill:#e6f3ff
-    style X1 fill:#e6f3ff
+
+    style B fill:#fff3cd
     style G1 fill:#fff3cd
     style N1 fill:#fff3cd
     style S fill:#fff3cd
+
     style J2 fill:#d4edda
     style O2 fill:#d4edda
     style T1 fill:#d4edda
+
+
 ```
 
-> **범례**: 🔴 빨간색 = HITL 체크포인트 | 🔵 파란색 = ViewerTool | 🟡 노란색 = ReviewerTool | 🟢 초록색 = DocSyncTool
+> **범례**: 🔴 빨간색 = HITL Review (예외 처리) | 🟡 노란색 = 👮 ImpLeader (자동 검증) | 🟢 초록색 = DocSyncTool
+>
+> **HITL 트리거 조건**: ImpLeader 자동 검증 실패 시에만 HITL Review 진입
+>
+> - **Exception Approval**: 이번 실행만 예외 승인
+> - **Rule Override**: 규칙 자체 수정 승인
+> - **Reject**: 재작업 요청
 
-### 2.2 협업 사이클 (간략)
+### 2-2 협업 사이클 - Orchestrator 관점/동적 루프 Cycle
 
 ```mermaid
 graph TD
-    User((👤 User)) -->|Task/PRD| ORC[🤖 Orchestrator<br/>Control Tower]
+    User((👤 User)) --> ORC[🤖 Orchestrator]
 
-    subgraph "Orchestrator Core (v4.0.0)"
-        ORC -->|1. Route| Router{Pipeline<br/>Router}
-        ORC -->|4. Loop| LoopCheck{Retry / HITL}
+    subgraph "Orchestrator Core"
+        ORC --> Router{Pipeline Router}
+        ORC --> |On Demand|Viewer[👀 Viewer]
+        ORC --> |On Finalize|DocSync[📄 Doc-Sync]
     end
 
-    subgraph "🧠 Leader (Brain)"
-        L_Plan[Planning Mode<br/>DesignerTool]
-        L_Review[Review Mode<br/>ReviewerTool]
-
-        Router -->|Design/Default| L_Plan
-        L_Plan -->|IA/Wireframe/SDD/HANDOFF| Handoff[📋 HANDOFF.md]
+    subgraph "🧠 Leader"
+        Router -->|PRD + Type| L_Plan[Planning]
+        L_Plan --> Handoff[📋 HANDOFF.md]
     end
 
-    subgraph "🛠️ Executors (Tool-Centric)"
-        direction TB
-
+    subgraph "🛠️ Executors"
         Handoff --> Registry[Tool Registry]
-
-        Registry -->|Implementation| Code[⚙️ CoderTool]
-        Registry -->|Data Analysis| Analysis[📊 Query/ProfilerTool]
-        Registry -->|Visualization| Design[🎨 DesignerTool]
-
-        Code --> Output[📦 Artifacts]
-        Analysis --> Output
-        Design --> Output
+        Registry --> Code[⚙️ Coder]
+        Registry --> Analysis[📊 Query]
+        Registry --> Design[🎨 Designer]
     end
 
-    Output -->|Validation Request| L_Review
+    subgraph "👮 Quality Gate"
+        Code --> Review[🧪 Reviewer]
+        Analysis --> Review
+        Design --> Review
+        Review -->|Score| ImLeader[Im Leader<br/>Objective Judge]
+    end
 
-    L_Review -->|Pass Score >= 80| LoopCheck
-    L_Review -->|Fail Feedback| Code
+    ImLeader -->|PASS| PhaseCheck{Next Phase?}
+    ImLeader -->|FAIL| HITL[🚨 HITL Review]
 
-    LoopCheck -- Success --> Done(✅ Complete)
-    LoopCheck -- Fail/Retry --> Registry
-    LoopCheck -- HITL --> Human[🧑 Human Approval]
-    Human -->|Approve| Done
-    Human -->|Reject/Fix| L_Plan
+    PhaseCheck -->|Yes| Router
+    PhaseCheck -->|No| DocSync
+    DocSync --> Done[✅ Complete]
 
-    style ORC fill:#333,stroke:#fff,stroke-width:4px,color:#fff
-    style L_Plan fill:#f9f,stroke:#333,stroke-width:2px
-    style L_Review fill:#f9f,stroke:#333,stroke-width:2px
-    style Code fill:#e1f5fe,stroke:#333
-    style Analysis fill:#e1f5fe,stroke:#333
-    style Design fill:#e1f5fe,stroke:#333
+    HITL -->|Approved| PhaseCheck
+    HITL -->|Override| PhaseCheck
+    HITL -->|Rejected| Registry
+
+    style HITL fill:#ffcccc,stroke:#dc3545
+    style ImLeader fill:#fff3cd,stroke:#ffc107
+    style Done fill:#d4edda,stroke:#28a745
+    style DocSync fill:#d4edda,stroke:#28a745
 ```
 
 ---
 
-## 3. 시스템 다이어그램 (ASCII)
+## 3. 설계 핵심 원칙 (What to Believe)
 
-### 3.1 Role-Based Collaboration Model
+### 3-1 Role-Based Collaboration Model 핵심
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🎯 Role-Based Collaboration Model                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. No Agents - Role 기반 정의                                               │
+│     • 모든 구성원은 기능 중심의 역할(Role)로 정의                               │
+│     • Agent 용어 폐기, Role 용어 사용                                         │
+│                                                                             │
+│  2. 실행/검증 분리 (Execution & Verification Separation)                     │
+│     • 만드는 자(Executor)와 검사하는 자(Impl Leader)를 분리                     │
+│     • 황금률: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."        │
+│                                                                             │
+│  3. Universal Quality Gate                                                  │
+│     • 모든 Phase는 Implementation Leader의 검증을 통과해야 Leader에게 보고      │
+│                                                                             │
+│  4. Multi-LLM Provider 지원                                                  │
+│     • Claude (Primary) → GPT-4 → Gemini (Fallback Chain)                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3-2 Orchestrator vs Leader 역할 구분
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ⚠️ 코드 구현 시 강제 규칙                                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. Leader는 tools 배열이 비어 있어야 합니다.                                 │
+│     └── 시스템 프롬프트에 Tool Definition 포함 금지                          │
+│     └── 하위 Role 호출하는 Delegation 인터페이스만 보유                       │
+│                                                                             │
+│  2. Orchestrator는 '판단'하지 않습니다.                                       │
+│     └── "PRD 내용에 따라 분기" 같은 로직 금지 (Leader의 몫)                   │
+│     └── Leader가 출력한 { router: "..." } 에 따라 기계적 스위칭만 수행        │
+│                                                                             │
+│  3. Doc-Sync는 'Hook'입니다.                                                 │
+│     └── Leader가 "Notion에 올려줘" 지시 금지                                  │
+│     └── Leader는 "Phase 완료"만 선언                                         │
+│     └── Orchestrator가 onPhaseComplete 훅에서 DocSyncTool 자동 실행          │
+│                                                                             │
+│  4. Router 값 (6개 타입)                                                     │
+│     ┌──────────────────┬───────────────┬────────────────────────────────┐   │
+│     │ router           │ Phase 조합     │ 설명                           │   │
+│     ├──────────────────┼───────────────┼────────────────────────────────┤   │
+│     │ "analysis"       │ A만           │ SQL 분석, 리포트                │   │
+│     │ "design"         │ B만           │ IA/Wireframe/SDD               │   │
+│     │ "code"           │ C만           │ HANDOFF 기반 구현만            │   │
+│     │ "analyzed_design"│ A → B         │ 분석 후 설계                   │   │
+│     │ "ui_mockup"      │ B → C         │ 설계 후 화면 구현              │   │
+│     │ "full"           │ A → B → C     │ 전체 파이프라인                │   │
+│     └──────────────────┴───────────────┴────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. 시스템 참조 다이어그램 (Reference)
+
+### 4-1 Role-Based Collaboration Model 핵심
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -450,7 +584,7 @@ graph TD
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 문서 분리 원칙
+### 4-2 문서 분리 원칙
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -470,9 +604,7 @@ graph TD
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 4. 검증 파이프라인 개요
+### 4-3 검증 파이프라인 개요
 
 ```
 PRD 입력
@@ -513,58 +645,9 @@ PRD 입력
 
 ---
 
-## 5. 핵심 원칙 요약
+## 5. 구현 및 운영 규칙 (How to Run)
 
-### 5.1 Role-Based Collaboration Model 핵심
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  🎯 Role-Based Collaboration Model (v3.0.0)                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  1. No Agents - Role 기반 정의                                               │
-│     • 모든 구성원은 기능 중심의 역할(Role)로 정의                               │
-│     • Agent 용어 폐기, Role 용어 사용                                         │
-│                                                                             │
-│  2. 실행/검증 분리 (Execution & Verification Separation)                     │
-│     • 만드는 자(Executor)와 검사하는 자(Impl Leader)를 분리                     │
-│     • 황금률: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."        │
-│                                                                             │
-│  3. Universal Quality Gate                                                  │
-│     • 모든 Phase는 Implementation Leader의 검증을 통과해야 Leader에게 보고      │
-│                                                                             │
-│  4. Multi-LLM Provider 지원                                                  │
-│     • Claude (Primary) → GPT-4 → Gemini (Fallback Chain)                    │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 5.2 Orchestrator vs Leader 역할 구분
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ⚠️ 코드 구현 시 강제 규칙                                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  1. Leader는 tools 배열이 비어 있어야 합니다.                                 │
-│     └── 시스템 프롬프트에 Tool Definition 포함 금지                          │
-│     └── 하위 Role 호출하는 Delegation 인터페이스만 보유                       │
-│                                                                             │
-│  2. Orchestrator는 '판단'하지 않습니다.                                       │
-│     └── "PRD 내용에 따라 분기" 같은 로직 금지 (Leader의 몫)                   │
-│     └── Leader가 출력한 { router: "mixed" } 등에 따라 기계적 스위칭만 수행    │
-│                                                                             │
-│  3. Doc-Sync는 'Hook'입니다.                                                 │
-│     └── Leader가 "Notion에 올려줘" 지시 금지                                  │
-│     └── Leader는 "Phase B 승인 완료"만 선언                                   │
-│     └── Orchestrator가 onPhaseComplete 훅에서 DocSyncTool 자동 실행          │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 6. 디렉토리 구조
+### 5-1. 디렉토리 구조
 
 ```
 .claude/
@@ -597,9 +680,7 @@ PRD 입력
     └── PRD.md             # 현재 PRD
 ```
 
----
-
-## 7. PRD 파이프라인 라우팅
+### 5-2. PRD 파이프라인 라우팅
 
 > **원본 위치**: PRD_GUIDE.md 섹션 1.6
 
@@ -656,9 +737,7 @@ graph TD
     style HITL fill:#f96,stroke:#333,stroke-width:2px,color:white
 ```
 
----
-
-## 8. 문서 파이프라인 플로우
+### 5-3. 문서 파이프라인 플로우
 
 > **원본 위치**: DOCUMENT_PIPELINE.md 섹션 전체 파이프라인
 
@@ -745,9 +824,7 @@ flowchart TD
     style PhaseC fill:#e6ffe6,stroke:#4ad94a
 ```
 
----
-
-## 9. JIT Injection 원칙 (ROLES_DEFINITION.md)
+### 5-4. JIT Injection 원칙
 
 > **원본 위치**: ROLES_DEFINITION.md 문서 책임 경계 섹션
 
@@ -770,6 +847,32 @@ flowchart TD
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+| 섹션                                                                                       | 읽고 얻어야 하는 것           | 임원 | 엔지니어 | 운영자 |
+| ------------------------------------------------------------------------------------------ | ----------------------------- | :--: | :------: | :----: |
+| [0. 이 문서는 무엇을 설명하는가](#0-이-문서는-무엇을-설명하는가)                           | 이 문서의 범위와 한계 이해    |  ✅  |    ✅    |   ✅   |
+| [1. 문제 정의 (Why/Who)](#1-문제-정의-whywho)                                              | 왜 이런 구조가 필요한지       |  ✅  |    ✅    |   △    |
+| [1-1 이 시스템은 무엇을 해결하는가](#1-1-이-시스템은-무엇을-해결하는가)                    | 해결 대상과 문제 범위 명확화  |  ✅  |    ✅    |   △    |
+| [1-2 Role-Based Collaboration Model](#1-2-role-based-collaboration-model)                  | 사람이 AI와 어떻게 협업하는지 |  ✅  |    ✅    |   ✅   |
+| [1-3 문서 로딩 토폴로지 - 미시적 관점](#1-3-문서-로딩-토폴로지---미시적-관점)              | 문서가 언제·어떻게 로딩되는지 |  △   |    ✅    |   ✅   |
+| [1-4 문서 의존성 토폴로지 - 거시적 관점](#1-4-문서-의존성-토폴로지---거시적-관점)          | 문서 간 위계와 참조 방향      |  △   |    ✅    |   ✅   |
+| [2. 파이프라인 플로우 (How)](#2-파이프라인-플로우-how)                                     | 시스템 실행 흐름의 큰 틀      |  △   |    ✅    |   ✅   |
+| [2-1 Phase 기반 파이프라인 흐름](#2-1-phase-기반-파이프라인-흐름---정적-구조-phase)        | Phase 중심의 정적 구조 이해   |  △   |    ✅    |   ✅   |
+| [2-2 협업 사이클 - Orchestrator 관점](#2-2-협업-사이클---orchestrator-관점동적-루프-cycle) | 자동 루프와 인간 개입 위치    |  ✅  |    ✅    |   ✅   |
+| [3. 설계 핵심 원칙 (What to Believe)](#3-설계-핵심-원칙-what-to-believe)                   | 시스템이 지키는 사고 기준     |  ✅  |    ✅    |   ✅   |
+| [3-1 Role-Based Collaboration Model 핵심](#3-1-role-based-collaboration-model-핵심)        | 역할 기반 협업의 불변 원칙    |  ✅  |    ✅    |   ✅   |
+| [3-2 Orchestrator vs Leader 역할 구분](#3-2-orchestrator-vs-leader-역할-구분)              | 판단과 통제의 분리 기준       |  ✅  |    ✅    |   ✅   |
+| [4. 시스템 참조 다이어그램 (Reference)](#4-시스템-참조-다이어그램-reference)               | 구조를 정확히 재확인          |  △   |    △     |   △    |
+| [4-1 Role-Based Collaboration Model 핵심](#4-1-role-based-collaboration-model-핵심)        | ASCII 기준 구조 재확인        |  △   |    ✅    |   ✅   |
+| [4-2 문서 분리 원칙](#4-2-문서-분리-원칙)                                                  | 문서 경계가 왜 중요한지       |  △   |    ✅    |   ✅   |
+| [4-3 검증 파이프라인 개요](#4-3-검증-파이프라인-개요)                                      | 품질 판단 위치와 흐름         |  △   |    ✅    |   ✅   |
+| [5. 구현 및 운영 규칙 (How to Run)](#5-구현-및-운영-규칙-how-to-run)                       | 실무 적용 범위 인지           |      |    ✅    |   ✅   |
+| [5-1 디렉토리 구조](#5-1-디렉토리-구조)                                                    | 파일이 있어야 할 자리         |      |    ✅    |   ✅   |
+| [5-2 PRD 파이프라인 라우팅](#5-2-prd-파이프라인-라우팅)                                    | 시작 시 분기 규칙             |      |    ✅    |   ✅   |
+| [5-3 문서 파이프라인 플로우](#5-3-문서-파이프라인-플로우)                                  | 문서 생성·소비 흐름           |      |    ✅    |   ✅   |
+| [5-4 JIT Injection 원칙](#5-4-jit-injection-원칙)                                          | 맥락 주입 허용 범위           |      |    ✅    |   △    |
 
 ---
 

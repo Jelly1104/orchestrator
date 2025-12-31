@@ -65,7 +65,6 @@ function snapshotPRD(projectRoot, caseId, prdSourcePath) {
 
   // PRD 복사
   fs.copyFileSync(prdSourcePath, targetPath);
-  console.log(`📸 [Snapshot] PRD copied: docs/cases/${caseId}/PRD.md`);
 
   return targetPath;
 }
@@ -405,7 +404,7 @@ async function main() {
         options.taskId || extractedCaseId || `task-${Date.now()}`;
 
       // PRD 스냅샷 (Case-Centric 전략)
-      const snapshotPath = snapshotPRD(PROJECT_ROOT, caseId, prdFullPath);
+      snapshotPRD(PROJECT_ROOT, caseId, prdFullPath);
 
       // Task ID를 Case ID로 설정 (Orchestrator에 전달)
       options.taskId = caseId;
@@ -418,15 +417,10 @@ async function main() {
         options.taskDescription = prdTitle
           ? `[PRD] ${prdTitle}`
           : `PRD 기반 작업 실행: ${path.basename(options.prdPath)}`;
-        console.log(`ℹ️ 작업 설명 자동 생성: "${options.taskDescription}"`);
       } else if (prdTitle && !options.taskDescription.includes(prdTitle)) {
         // 작업 설명이 있어도 PRD 제목을 보강 (LLM 컨텍스트 강화)
         options.taskDescription = `[PRD: ${prdTitle}] ${options.taskDescription}`;
-        console.log(`ℹ️ 작업 설명 보강: "${options.taskDescription}"`);
       }
-
-      console.log(`📄 PRD 로드: ${options.prdPath}`);
-      console.log(`📁 Case ID: ${caseId}`);
     } else {
       console.error(`❌ PRD 파일을 찾을 수 없습니다: ${prdFullPath}`);
 
@@ -462,7 +456,6 @@ async function main() {
     // 파이프라인 선택
 
     if (options.pipeline === "parallel") {
-      console.log("🚀 병렬 파이프라인 실행\n");
 
       result = await orchestrator.runParallelPipeline(
         options.taskId || `task-${Date.now()}`,
@@ -487,33 +480,10 @@ async function main() {
       });
     }
 
-    // 결과 요약
-
-    console.log("\n" + "━".repeat(60));
-
-    console.log("📋 최종 결과");
-
-    console.log("━".repeat(60));
-
-    console.log(`상태: ${result.success ? "✅ 성공" : "❌ 실패"}`);
-
-    console.log(`Task ID: ${result.taskId}`);
-
-    console.log(`생성 파일: ${Object.keys(result.files || {}).length}개`);
-
-    console.log(
-      `총 토큰: ${
-        result.metrics?.tokens?.grandTotal?.toLocaleString() || "N/A"
-      }`
-    );
-
-    console.log(
-      `총 소요 시간: ${result.metrics?.summary?.totalDuration || "N/A"}`
-    );
-
+    // 결과 요약은 orchestrator.printCompletionReport에서 처리됨
+    // 여기서는 에러 피드백만 추가 출력
     if (!result.success && result.review?.feedback) {
       console.log("\n⚠️ 사용자 개입 필요:");
-
       console.log(result.review.feedback.substring(0, 500));
     }
 
@@ -540,10 +510,6 @@ async function main() {
         completedPhases: completedPhases,
         nextAction: null, // 최종 체크포인트이므로 다음 동작 없음
       });
-
-      console.log("\n📋 산출물 위치:");
-      console.log(`   - 설계 문서: docs/cases/${result.taskId}/`);
-      console.log(`   - 분석 결과: docs/cases/${result.taskId}/analysis/`);
 
       if (!continueNext) {
         process.exit(0);

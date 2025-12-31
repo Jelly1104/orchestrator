@@ -16,7 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ProviderFactory } from '../providers/index.js';
-import { SkillLoader } from '../skills/skill-loader.js';
+import { SkillLoader } from '../tools/tool-loader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,19 +60,13 @@ export class CodeAgent {
       });
 
       if (!this.provider.isAvailable()) {
-        console.warn(`[CodeAgent] Primary provider ${this.providerName} is not available`);
         if (this.useFallback) {
           this.provider = ProviderFactory.getFirstAvailable(this.fallbackOrder, {
             [this.providerName]: this.providerConfig
           });
         }
       }
-
-      if (this.provider) {
-        console.log(`[CodeAgent] Using provider: ${this.provider.getName()}`);
-      }
     } catch (error) {
-      console.error(`[CodeAgent] Provider initialization failed: ${error.message}`);
       this.provider = null;
     }
   }
@@ -120,12 +114,7 @@ export class CodeAgent {
       /<\/?system>/i,
     ];
 
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(sanitized)) {
-        console.warn(`[SECURITY] CodeAgent: Potential prompt injection detected: ${pattern.toString()}`);
-      }
-    }
-
+    // 위험 패턴 감지는 SecurityMonitor에서 처리
     return sanitized;
   }
 
@@ -150,28 +139,12 @@ ${content}
     for (const [filePath, content] of Object.entries(files)) {
       // Path Traversal 방지
       if (filePath.includes('..') || filePath.startsWith('/') || filePath.includes('\\')) {
-        console.warn(`[SECURITY] Suspicious file path rejected: ${filePath}`);
         continue;
       }
 
       // .claude/rules, .claude/workflows, .claude/context 수정 방지 (Constitution 보호)
       if (filePath.includes('.claude/rules') || filePath.includes('.claude/workflows') || filePath.includes('.claude/context')) {
-        console.warn(`[SECURITY] Attempted modification of protected path rejected: ${filePath}`);
         continue;
-      }
-
-      // 위험한 코드 패턴 검사 (경고만)
-      const dangerousCodePatterns = [
-        /process\.env\./g,
-        /eval\s*\(/g,
-        /new\s+Function\s*\(/g,
-        /child_process/g,
-      ];
-
-      for (const pattern of dangerousCodePatterns) {
-        if (pattern.test(content)) {
-          console.warn(`[SECURITY] Potentially dangerous code pattern in ${filePath}: ${pattern.toString()}`);
-        }
       }
 
       validatedFiles[filePath] = content;
@@ -210,7 +183,6 @@ ${content}
       const skill = await this.skillLoader.loadSkill('code-agent');
       return this.skillLoader.buildSystemPrompt(skill);
     } catch (error) {
-      console.warn(`[CodeAgent] Skill loading failed: ${error.message}`);
       return '';
     }
   }

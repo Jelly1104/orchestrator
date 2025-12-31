@@ -29,11 +29,14 @@
 
 ### 1.1 유형-파이프라인 매칭
 
-| Type | Pipeline | 설명 |
-|------|----------|------|
-| QUANTITATIVE | analysis / mixed | SQL 실행, 수치 분석 |
-| QUALITATIVE | design / code | UX 설계, 제안서 |
-| MIXED | mixed | 정량→정성 2단계 |
+| Type | Pipeline | Phase 조합 | 설명 |
+|------|----------|-----------|------|
+| QUANTITATIVE | analysis | A만 | SQL 실행, 수치 분석만 |
+| QUALITATIVE | design | B만 | UX 설계, 제안서만 |
+| QUALITATIVE | code | C만 | 이미 설계 완료, 구현만 |
+| MIXED | analyzed_design | A → B | 분석 후 설계 |
+| MIXED | ui_mockup | B → C | 설계 후 화면 구현 |
+| MIXED | full | A → B → C | 분석→설계→구현 전체 |
 
 ---
 
@@ -42,14 +45,29 @@
 ### 2.1 키워드 기반 판별
 
 ```yaml
-quantitative_keywords:
-  - 분석, 통계, 세그먼트, 코호트, KPI, SQL, 쿼리
+# Pipeline: analysis (A만)
+analysis_keywords:
+  - 분석, 통계, 세그먼트, 코호트, KPI, SQL, 쿼리, 리포트
 
-qualitative_keywords:
-  - 설계, UX, UI, 제안, 추천, 여정, 플로우
+# Pipeline: design (B만)
+design_keywords:
+  - 설계, UX, UI, 제안, IA, Wireframe, 화면구조
 
-mixed_indicators:
-  - "분석 → 제안", "데이터 기반 인사이트"
+# Pipeline: code (C만)
+code_keywords:
+  - 구현만, 코딩, 이미 설계됨, HANDOFF 기반
+
+# Pipeline: analyzed_design (A→B)
+analyzed_design_keywords:
+  - 분석 → 설계, 데이터 기반 UX, 인사이트 → 제안
+
+# Pipeline: ui_mockup (B→C)
+ui_mockup_keywords:
+  - 설계 → 화면구현, IA/WF 기반 UI 코드, 화면만 구현
+
+# Pipeline: full (A→B→C)
+full_keywords:
+  - 전체 파이프라인, 처음부터 끝까지, 분석→설계→구현
 ```
 
 ### 2.2 산출물 기반 판별
@@ -63,30 +81,63 @@ mixed_indicators:
 
 ---
 
-## 3. 유형별 파이프라인 요약
+## 3. 파이프라인별 요약
 
-### 3.1 정량적 (Analysis)
+### 3.1 분석만 (Analysis: A만)
 
 ```
 PRD → 데이터 요구사항 파싱 → SQL 생성 → 실행 → 결과 해석
 산출물: *.sql, analysis_result.json, report.md
 ```
 
-### 3.2 정성적 (Design)
+> 데이터 분석만 수행, 설계/구현 없음
+
+### 3.2 설계만 (Design: B만)
 
 ```
 PRD → 컨텍스트 수집 → 레퍼런스 매칭 → 설계 초안 → HITL 승인 → 상세화
-산출물: IA.md, Wireframe.md, proposal.md
+산출물: IA.md, Wireframe.md, SDD.md
 ```
 
-> **HITL 참조**: ROLE_ARCHITECTURE.md의 HITL 체크포인트 섹션 참조
+> UX 설계만 수행, 분석/구현 없음
 
-### 3.3 혼합 (Mixed)
+### 3.3 분석+설계 (Analyzed_Design: A→B)
 
 ```
 Phase A: 정량 (SQL → 데이터) → Phase B: 정성 (해석 → 제안)
 산출물: *.sql + insight_report.md + proposal.md
 ```
+
+> 데이터 분석 후 설계 문서 생성
+
+### 3.4 구현만 (Code: C만)
+
+```
+HANDOFF → 코드 구현 → Self-Check → Implementation Leader 검증
+산출물: backend/src/*, frontend/src/*, tests/*.test.ts
+```
+
+> 이미 설계(IA/WF/SDD)가 완료된 상태에서 코딩만 수행
+
+### 3.5 설계+화면구현 (UI_Mockup: B→C)
+
+```
+Phase B: 설계 (IA/WF/SDD) → Phase C: 화면 코드 생성
+산출물: IA.md, Wireframe.md, SDD.md + frontend/src/*
+```
+
+> 분석 없이 설계부터 시작하여 화면 구현까지 수행
+
+### 3.6 전체 (Full: A→B→C)
+
+```
+Phase A: 분석 → Phase B: 설계 → Phase C: 구현
+산출물: *.sql + IA.md + Wireframe.md + SDD.md + 소스코드
+```
+
+> 데이터 분석부터 설계, 구현까지 전체 파이프라인 수행
+
+> **HITL 참조**: ROLE_ARCHITECTURE.md의 HITL 체크포인트 섹션 참조
 
 ---
 
@@ -172,6 +223,7 @@ deliverables:
 
 | 버전 | 날짜 | 변경 내용 |
 |------|------|----------|
+| 2.2.0 | 2025-12-30 | 파이프라인 타입 3개→6개 확장 (code, analyzed_design, ui_mockup, full), 키워드/파이프라인 요약 재정리 |
 | 2.1.0 | 2025-12-29 | 300줄 다이어트: Mermaid→README.md, 파이프라인 상세→요약 |
 | 2.0.6 | 2025-12-26 | 섹션 참조 이름 기반 전환 |
 

@@ -1,0 +1,35 @@
+{
+  "taskId": "case8-pipeline-test",
+  "prdPath": "# PRD: Pipeline Refactoring 테스트\n\n| 항목          | 내용                           |\n| ------------- | ------------------------------ |\n| **Case ID**   | case8-pipeline-test            |\n| **PRD 버전**  | 1.0.0                          |\n| **작성일**    | 2025-12-30                     |\n| **작성자**    | ATO Team                       |\n| **Type**      | MIXED                          |\n| **Pipeline**  | mixed                          |\n| **참조 문서** | DOMAIN_SCHEMA.md               |\n\n---\n\n## 1. 목적 (Objective)\n\nPipeline Refactoring 작업 검증을 위한 테스트 케이스입니다.\n- `mixed` 파이프라인이 Phase A → Phase B에서 정상 종료되는지 확인\n- 새로운 CLI UX (`printCompletionReport`) 출력 형식 검증\n\n---\n\n## 2. 타겟 유저 (Target User)\n\n| 항목          | 설명                    |\n| ------------- | ----------------------- |\n| **Persona**   | ATO 개발팀              |\n| **Pain Point** | 파이프라인 테스트 필요  |\n| **Needs**     | mixed 파이프라인 검증   |\n\n---\n\n## 3. 핵심 기능 (Core Features)\n\n| ID  | Phase | 기능명            | 설명                                      |\n| --- | ----- | ----------------- | ----------------------------------------- |\n| F1  | A     | 활성 사용자 조회  | USERS 테이블에서 활성 사용자 카운트       |\n| F2  | B     | 분석 리포트 작성  | 조회 결과를 바탕으로 간단한 리포트 작성   |\n\n---\n\n## 4. 성공 지표 (Success Criteria)\n\n| 지표              | 목표값              | 측정 방법        |\n| ----------------- | ------------------- | ---------------- |\n| Phase A 완료      | SQL 실행 성공       | 쿼리 결과 확인   |\n| Phase B 완료      | 리포트 생성         | 파일 존재 확인   |\n| Phase C 미실행    | Phase C 스킵됨      | 로그 확인        |\n\n---\n\n## 5. PRD 유형 및 파이프라인\n\n```yaml\ntype: MIXED\npipeline: mixed\nrationale: \"mixed 파이프라인은 Phase A→B만 실행하고 Phase C는 실행하지 않음\"\n\nphases:\n  - id: A\n    name: Analysis\n    agent: AnalysisAgent\n    output: active_users.sql\n\n  - id: B\n    name: Design\n    agent: LeaderAgent\n    output: Analysis_Report.md\n```\n\n---\n\n## 6. 데이터 요구사항 (Data Requirements)\n\n```yaml\ndata_requirements:\n  tables:\n    - name: USERS\n      columns: [U_ID, U_KIND, U_ALIVE]\n      risk_level: LOW\n```\n\n---\n\n## 7. 산출물 체크리스트 (Deliverables)\n\n### Phase A (Analysis)\n\n```yaml\ndeliverables:\n  - name: \"active_users.sql\"\n    type: SQL_QUERY\n    criteria:\n      - SELECT문만 사용\n      - LIMIT 포함\n```\n\n### Phase B (Design)\n\n```yaml\ndeliverables:\n  - name: \"Analysis_Report.md\"\n    type: REPORT\n    criteria:\n      - 분석 결과 요약\n```\n\n---\n\n## 변경 이력\n\n| 버전  | 날짜       | 변경 내용    |\n| ----- | ---------- | ------------ |\n| 1.0.0 | 2025-12-30 | 초기 버전    |\n\n---\n\n**END OF PRD**\n",
+  "status": "RUNNING",
+  "currentPhase": "initialized",
+  "currentCheckpoint": null,
+  "createdAt": "2025-12-30T06:27:11.486Z",
+  "updatedAt": "2025-12-30T06:27:11.487Z",
+  "history": [
+    {
+      "event": "SESSION_CREATED",
+      "data": {
+        "prdPath": "# PRD: Pipeline Refactoring 테스트\n\n| 항목          | 내용                           |\n| ------------- | ------------------------------ |\n| **Case ID**   | case8-pipeline-test            |\n| **PRD 버전**  | 1.0.0                          |\n| **작성일**    | 2025-12-30                     |\n| **작성자**    | ATO Team                       |\n| **Type**      | MIXED                          |\n| **Pipeline**  | mixed                          |\n| **참조 문서** | DOMAIN_SCHEMA.md               |\n\n---\n\n## 1. 목적 (Objective)\n\nPipeline Refactoring 작업 검증을 위한 테스트 케이스입니다.\n- `mixed` 파이프라인이 Phase A → Phase B에서 정상 종료되는지 확인\n- 새로운 CLI UX (`printCompletionReport`) 출력 형식 검증\n\n---\n\n## 2. 타겟 유저 (Target User)\n\n| 항목          | 설명                    |\n| ------------- | ----------------------- |\n| **Persona**   | ATO 개발팀              |\n| **Pain Point** | 파이프라인 테스트 필요  |\n| **Needs**     | mixed 파이프라인 검증   |\n\n---\n\n## 3. 핵심 기능 (Core Features)\n\n| ID  | Phase | 기능명            | 설명                                      |\n| --- | ----- | ----------------- | ----------------------------------------- |\n| F1  | A     | 활성 사용자 조회  | USERS 테이블에서 활성 사용자 카운트       |\n| F2  | B     | 분석 리포트 작성  | 조회 결과를 바탕으로 간단한 리포트 작성   |\n\n---\n\n## 4. 성공 지표 (Success Criteria)\n\n| 지표              | 목표값              | 측정 방법        |\n| ----------------- | ------------------- | ---------------- |\n| Phase A 완료      | SQL 실행 성공       | 쿼리 결과 확인   |\n| Phase B 완료      | 리포트 생성         | 파일 존재 확인   |\n| Phase C 미실행    | Phase C 스킵됨      | 로그 확인        |\n\n---\n\n## 5. PRD 유형 및 파이프라인\n\n```yaml\ntype: MIXED\npipeline: mixed\nrationale: \"mixed 파이프라인은 Phase A→B만 실행하고 Phase C는 실행하지 않음\"\n\nphases:\n  - id: A\n    name: Analysis\n    agent: AnalysisAgent\n    output: active_users.sql\n\n  - id: B\n    name: Design\n    agent: LeaderAgent\n    output: Analysis_Report.md\n```\n\n---\n\n## 6. 데이터 요구사항 (Data Requirements)\n\n```yaml\ndata_requirements:\n  tables:\n    - name: USERS\n      columns: [U_ID, U_KIND, U_ALIVE]\n      risk_level: LOW\n```\n\n---\n\n## 7. 산출물 체크리스트 (Deliverables)\n\n### Phase A (Analysis)\n\n```yaml\ndeliverables:\n  - name: \"active_users.sql\"\n    type: SQL_QUERY\n    criteria:\n      - SELECT문만 사용\n      - LIMIT 포함\n```\n\n### Phase B (Design)\n\n```yaml\ndeliverables:\n  - name: \"Analysis_Report.md\"\n    type: REPORT\n    criteria:\n      - 분석 결과 요약\n```\n\n---\n\n## 변경 이력\n\n| 버전  | 날짜       | 변경 내용    |\n| ----- | ---------- | ------------ |\n| 1.0.0 | 2025-12-30 | 초기 버전    |\n\n---\n\n**END OF PRD**\n"
+      },
+      "timestamp": "2025-12-30T06:27:11.487Z"
+    },
+    {
+      "event": "STATUS_CHANGED",
+      "data": {
+        "status": "RUNNING",
+        "currentPhase": "initialized"
+      },
+      "timestamp": "2025-12-30T06:27:11.487Z"
+    }
+  ],
+  "metadata": {
+    "pipeline": "auto",
+    "mode": null,
+    "projectRoot": "/Users/m2-mini/Desktop/eunah/ATO-System-B",
+    "maxRetries": 3,
+    "autoApprove": true
+  },
+  "retryCount": 0,
+  "maxRetries": 3
+}

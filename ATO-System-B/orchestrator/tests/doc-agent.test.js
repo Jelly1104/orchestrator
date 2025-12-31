@@ -5,13 +5,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import DocAgent, { getDocAgent } from '../skills/doc-agent/index.js';
+import DocAgent, { getDocAgent } from '../tools/doc-agent/index.js';
 import {
   extractVersion,
   compareVersions,
   loadMapping,
   readLocalDoc
-} from '../skills/doc-agent/sync.js';
+} from '../tools/doc-agent/sync.js';
 import fs from 'fs';
 
 // Mock fs

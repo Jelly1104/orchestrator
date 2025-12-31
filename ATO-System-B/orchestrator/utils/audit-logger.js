@@ -95,9 +95,9 @@ export class AuditLogger {
 
     const entry = this.createLogEntry(level.toUpperCase(), event, message, context);
 
-    // 콘솔 출력
-    if (this.consoleOutput) {
-      const prefix = level === 'SECURITY' ? '🔒' : level === 'ERROR' ? '❌' : level === 'WARN' ? '⚠️' : 'ℹ️';
+    // 콘솔 출력 - 보안 이벤트와 에러만 (verbose 로그 제거)
+    if (this.consoleOutput && (level === 'SECURITY' || level === 'ERROR')) {
+      const prefix = level === 'SECURITY' ? '🔒' : '❌';
       console.log(`${prefix} [${entry.timestamp}] [${event}] ${message}`);
     }
 

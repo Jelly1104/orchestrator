@@ -1,26 +1,21 @@
-# PROJECT_STACK.md - 프로젝트별 기술 스택 템플릿
+# PROJECT_STACK.md - 시스템 기술 스택 정의
 
-> **문서 버전**: 1.3.1
-> **최종 업데이트**: 2025-12-23
+> **문서 버전**: 1.4.0
+> **최종 업데이트**: 2025-12-30
 > **물리적 경로**: `.claude/project/PROJECT_STACK.md`
-> **상위 문서**: `.claude/CLAUDE.md` > **용도**: AI 에이전트에게 **"이 프로젝트만의 기술적 제약"**을 주입
+> **상위 문서**: `CLAUDE.md`
+> **용도**: AI 에이전트에게 **시스템 전체의 기술적 제약**을 주입 (Case별 PRD와 분리)
 
 ---
 
-## 🎯 프로젝트 개요 (Overview)
+## 1. 문서 역할
 
-| 항목       | 내용                                           |
-| ---------- | ---------------------------------------------- |
-| 프로젝트명 | 공지사항 목록 PoC (케이스 #1)                  |
-| 기반 PRD   | `docs/case1-notice-list/PRD.md`                |
-| 승인 상태  | [x] Draft (AI 추천) / [ ] Approved (사람 승인) |
-| 승인자     | -                                              |
-| 승인일     | 2025-12-16                                     |
+| 문서 | 범위 | 저장 위치 |
+|------|------|----------|
+| **PROJECT_STACK.md** | 시스템 전체 기술 스택 (고정) | `.claude/project/` |
+| **PRD.md** | Case별 요구사항 (가변) | `docs/cases/{caseId}/` |
 
-**⚠️ Legacy Integration 체크 시 주의사항**
-
-이 프로젝트는 `.claude/rules/DOMAIN_SCHEMA.md`의 제약을 엄격히 따릅니다.
-DB 컬럼명 변경 금지 및 대용량 테이블 조회 시 인덱스 전략이 필수입니다.
+> **원칙**: 프로젝트 개요/목적은 PRD에서 정의. 이 문서는 기술 스택만 다룸.
 
 ---
 
@@ -131,7 +126,7 @@ ATO-System-B의 실제 코드 경로입니다.
 | `backend/src/` | Express API 서버 코드 | ✅ 수정 가능 |
 | `frontend/src/` | React 프론트엔드 코드 | ✅ 수정 가능 |
 | `mcp-server/` | MCP 서버 모듈 | ✅ 수정 가능 |
-| `orchestrator/skills/` | 에이전트 스킬 정의 | ⚠️ 제한적 |
+| `orchestrator/tools/` | 에이전트 Tool 정의 | ⚠️ 제한적 |
 | `workspace/` | 분석 결과 및 산출물 | ✅ 수정 가능 |
 | `src/` | 레거시 코드 | ⚠️ 읽기 전용 |
 

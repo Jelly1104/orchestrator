@@ -34,13 +34,13 @@
 
 > **황금률**: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."
 
-| Role                              | Scope       | Tools              | Responsibility                                                           |
-| --------------------------------- | ----------- | ------------------ | ------------------------------------------------------------------------ |
-| **1. Leader (PM & Commander)**    | All         | -                  | PRD 분석, 파이프라인 전략 수립, 목표 하달, HITL 최종 승인                |
-| **2. Analyzer**                   | Phase A     | Query, Profiler    | 데이터 분석 및 전략 근거 마련                                            |
-| **3. Designer (Architect)**       | Phase B     | Designer           | UX 기획(IA/WF) + 기술 설계(SDD), 화면-데이터 정합성 책임                 |
-| **4. Implementation Leader (QM)** | Phase A,B,C | Reviewer           | Quality Gate 관리, 각 Phase 산출물 검증                                  |
-| **5. Coder**                      | Phase C     | Coder              | HANDOFF 기반 코드 구현, Self-Check                                       |
+| Role                              | Scope       | Tools              | Responsibility                                                               |
+| --------------------------------- | ----------- | ------------------ | ---------------------------------------------------------------------------- |
+| **1. Leader (PM & Commander)**    | All         | -                  | PRD 분석, 파이프라인 전략 수립, 목표 하달, HITL 최종 승인                    |
+| **2. Analyzer**                   | Phase A     | Query, Profiler    | 데이터 분석 및 전략 근거 마련                                                |
+| **3. Designer (Architect)**       | Phase B     | Designer           | UX 기획(IA/WF) + 기술 설계(SDD), 화면-데이터 정합성 책임                     |
+| **4. Implementation Leader (QM)** | Phase A,B,C | Reviewer           | Quality Gate 관리, 각 Phase 산출물 검증                                      |
+| **5. Coder**                      | Phase C     | Coder              | HANDOFF 기반 코드 구현, **SDD 준수 구현**, Self-Check                        |
 
 ---
 
@@ -54,7 +54,7 @@
 | **Phase**  | All (전체 파이프라인 관장)                               |
 | **Tools**  | ❌ 없음 (tools 배열 비어 있음)                           |
 | **권한**   | `.claude/project/*` 수정 가능 (PRD 보완 등)              |
-| **출력**   | `{ router: "analysis" | "design" | "mixed" | "full" }`   |
+| **출력**   | `{ router: "analysis" | "design" | "code" | "analyzed_design" | "ui_mockup" | "full" }` |
 
 ### 2.2 시스템 프롬프트 요약
 
@@ -69,13 +69,14 @@
 
 ### 2.3 입출력 정의
 
-| 방향   | 항목                    | 설명                                      |
-| ------ | ----------------------- | ----------------------------------------- |
-| Input  | PRD.md                  | 사용자 요구사항 정의서                    |
-| Input  | Phase A 분석 결과       | Analyzer → Impl Leader → Leader           |
-| Output | 파이프라인 타입         | `{ router: "analysis/design/mixed/full" }` |
-| Output | 하위 Role 명령          | Analyzer/Designer/Coder에게 목표 하달     |
-| Output | HITL 승인/반려          | 최종 결정                                 |
+| 방향   | 항목                    | 설명                                                                      |
+| ------ | ----------------------- | ------------------------------------------------------------------------- |
+| Input  | PRD.md                  | 사용자 요구사항 정의서                                                    |
+| Input  | Phase A 분석 결과       | Analyzer → Impl Leader → Leader                                           |
+| Output | 파이프라인 타입         | `{ router: "analysis/design/code/analyzed_design/ui_mockup/full" }`       |
+|        |                         | **단, "code" 선택 시 SDD 존재 필수**                                      |
+| Output | 하위 Role 명령          | Analyzer/Designer/Coder에게 목표 하달                                     |
+| Output | HITL 승인/반려          | 최종 결정                                                                 |
 
 ---
 
@@ -202,11 +203,11 @@
 
 ### 5.3 검증 항목
 
-| 검증 대상      | Phase   | 검증 항목                                    |
-| -------------- | ------- | -------------------------------------------- |
-| 분석 결과      | A       | 데이터 정합성, 스키마 일치, SQL 안전성       |
-| 설계 문서      | B       | PRD ↔ Wireframe ↔ SDD 정합성, 실현 가능성    |
-| 구현 코드      | C       | 보안 (Env/SQL Injection), 로직 정확성, 테스트 |
+| 검증 대상      | Phase   | 검증 항목                                                   |
+| -------------- | ------- | ----------------------------------------------------------- |
+| 분석 결과      | A       | 데이터 정합성, 스키마 일치, SQL 안전성                      |
+| 설계 문서      | B       | PRD ↔ Wireframe ↔ SDD 정합성, 실현 가능성                   |
+| 구현 코드      | C       | **SDD ↔ Code 정합성**, 보안, 로직 정확성, 테스트            |
 
 ### 5.4 입출력 정의
 
@@ -251,6 +252,7 @@
 | Input  | HANDOFF.md              | 개발 명세서                               |
 | Input  | SDD.md                  | 데이터 구조                               |
 | Input  | DOMAIN_SCHEMA.md        | DB 스키마                                 |
+| **제약** | PRD.md 직접 참조 금지 | Coder는 SDD/HANDOFF만 참조해야 함         |
 | Output | backend/src/*           | 백엔드 코드                               |
 | Output | frontend/src/*          | 프론트엔드 코드                           |
 | Output | **/tests/*.test.ts      | 테스트 코드                               |
@@ -270,9 +272,20 @@
 | **담당**   | PRD 파싱, Role 호출, HITL 관리, 재시도, 로그 저장        |
 | **Tools**  | `DocSyncTool`, `ViewerTool` (자동화 훅으로 실행)         |
 | **제약**   | ❌ "PRD 내용에 따라 분기" 같은 **판단 로직 금지**        |
-| **스위칭** | Leader 출력 `{ router: "mixed" }` 등에 따라 기계적 전환  |
+| **스위칭** | Leader 출력 `{ router: "..." }` 에 따라 기계적 전환      |
 
-### 7.2 금지 패턴
+### 7.2 스위칭 예시
+
+| Leader 출력               | 실행 Phase    | 설명                    |
+| ------------------------- | ------------- | ----------------------- |
+| `{ router: "analysis" }`  | A만           | 데이터 분석만           |
+| `{ router: "design" }`    | B만           | 설계만                  |
+| `{ router: "code" }`            | C만           | 구현만                  |
+| `{ router: "analyzed_design" }` | A → B         | 분석 후 설계            |
+| `{ router: "ui_mockup" }`       | B → C         | 설계 후 화면 구현       |
+| `{ router: "full" }`      | A → B → C     | 전체 파이프라인         |
+
+### 7.3 금지 패턴
 
 ```
 ❌ if (prd.includes("분석")) → Analyzer      (판단 금지)
@@ -288,6 +301,7 @@
 
 | 버전 | 날짜 | 변경 내용 |
 |------|------|----------|
+| 1.4.0 | 2025-12-30 | 파이프라인 타입 4개→6개 확장 (code, analyzed_design, ui_mockup 추가), 스위칭 예시 추가 |
 | 1.3.0 | 2025-12-29 | 300줄 다이어트: ASCII→README, 예시 압축 |
 | 1.2.0 | 2025-12-29 | JIT Injection 원칙 명시, SSOT 선언 |
 

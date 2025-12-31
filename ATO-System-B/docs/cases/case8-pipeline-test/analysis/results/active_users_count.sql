@@ -1,0 +1,1 @@
+SELECT COUNT(*) AS active_user_count FROM USERS WHERE U_ALIVE = 'Y' LIMIT 1000

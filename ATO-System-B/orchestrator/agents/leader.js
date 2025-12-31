@@ -31,7 +31,7 @@ import {
 import { getInputValidator } from "../security/input-validator.js";
 
 // Phase 3: SkillLoader 연동
-import { getDefaultSkillLoader } from "../skills/skill-loader.js";
+import { getDefaultSkillLoader } from "../tools/tool-loader.js";
 
 // ========== 보안 상수 ==========
 const SECURITY_LIMITS = {
@@ -78,9 +78,6 @@ export class LeaderAgent {
       });
 
       if (!this.provider.isAvailable()) {
-        console.warn(
-          `[LeaderAgent] Primary provider ${this.providerName} is not available`
-        );
         if (this.useFallback) {
           this.provider = ProviderFactory.getFirstAvailable(
             this.fallbackOrder,
@@ -90,14 +87,7 @@ export class LeaderAgent {
           );
         }
       }
-
-      if (this.provider) {
-        console.log(`[LeaderAgent] Using provider: ${this.provider.getName()}`);
-      }
     } catch (error) {
-      console.error(
-        `[LeaderAgent] Provider initialization failed: ${error.message}`
-      );
       this.provider = null;
     }
   }
@@ -167,11 +157,6 @@ export class LeaderAgent {
           agent: "LeaderAgent",
           violations: result.violations,
         });
-        console.warn(
-          `[SECURITY] Input validation failed: ${result.violations
-            .map((v) => v.type)
-            .join(", ")}`
-        );
       }
 
       // isGeneratedCode 또는 warnOnly면 원본 반환, 아니면 sanitized 반환
@@ -191,14 +176,7 @@ export class LeaderAgent {
       /<\/?system>/i,
     ];
 
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(sanitized)) {
-        console.warn(
-          `[SECURITY] Potential prompt injection detected: ${pattern.toString()}`
-        );
-      }
-    }
-
+    // 위험 패턴 감지는 SecurityMonitor에서 처리되므로 여기서는 로깅 생략
     return sanitized;
   }
 
@@ -231,11 +209,6 @@ ${content}
       if (fs.existsSync(fullPath)) {
         const content = fs.readFileSync(fullPath, "utf-8");
         context += `\n\n---\n## ${doc}\n\n${content}`;
-        // ✅ [추가] 로딩 성공 로그
-        console.log(`[LeaderAgent] Loaded context: ${doc}`);
-      } else {
-        // ✅ [추가] 로딩 실패 로그 (디버깅용)
-        console.warn(`[LeaderAgent] ❌ File not found: ${doc}`);
       }
     }
     return context;
@@ -257,8 +230,6 @@ ${content}
       if (fs.existsSync(fullPath)) {
         const content = fs.readFileSync(fullPath, "utf-8");
         context += `\n\n---\n## ${doc}\n\n${content}`;
-        // ✅ [추가] 로딩 성공 로그
-        console.log(`[LeaderAgent] Loaded context: ${doc}`);
       }
     }
     return context;
@@ -280,12 +251,8 @@ ${content}
     try {
       const skillData = await this.skillLoader.loadSkill(skillType);
       this.skillCache.set(skillType, skillData);
-      console.log(`[LeaderAgent] Loaded skill: ${skillType}`);
       return skillData;
     } catch (error) {
-      console.warn(
-        `[LeaderAgent] Failed to load skill ${skillType}: ${error.message}`
-      );
       return null;
     }
   }
@@ -300,9 +267,6 @@ ${content}
     const skillData = await this.loadSkill(skillType);
 
     if (!skillData) {
-      console.warn(
-        `[LeaderAgent] Skill not found: ${skillType}, using fallback`
-      );
       return null;
     }
 
@@ -329,10 +293,7 @@ ${content}
   async runGapCheck(prdContent) {
     const analyzer = new PRDAnalyzer(this.projectRoot);
     const analysis = await analyzer.analyze(prdContent);
-    const formatted = analyzer.formatGapCheckResult(analysis);
-
-    console.log("\n" + formatted);
-
+    // Gap Check 결과 로깅은 필요시 DEBUG 모드에서만
     return analysis;
   }
 
@@ -359,20 +320,7 @@ ${content}
     // ========== Gap Check (신규) ==========
     let gapCheckResult = null;
     if (sanitizedPrd && !options.skipGapCheck) {
-      console.log("\n📋 [Gap Check] PRD 분석 중...");
       gapCheckResult = await this.runGapCheck(sanitizedPrd);
-
-      // 심각한 Gap이 있으면 경고
-      const highSeverityGaps = gapCheckResult.gaps.filter(
-        (g) => g.severity === "HIGH"
-      );
-      if (highSeverityGaps.length > 0 && !options.autoApprove) {
-        console.log("\n⚠️  심각한 Gap 발견:");
-        highSeverityGaps.forEach((g) => {
-          console.log(`   - ${g.field || g.type}`);
-        });
-        console.log("\n   계속 진행합니다. (autoApprove 모드)");
-      }
     }
 
     const context = await this.loadPlanningContext();
@@ -598,13 +546,11 @@ PRD에 산출물 체크리스트가 있으면 반드시 해당 항목들을 모�
       if (skillPrompt) {
         systemPrompt = skillPrompt;
         skillUsed = true;
-        console.log("[LeaderAgent] Using skill-based prompt for review");
       }
     }
 
     // Fallback: 스킬 로딩 실패 시 기존 하드코딩 프롬프트 사용
     if (!systemPrompt) {
-      console.log("[LeaderAgent] Using fallback hardcoded prompt");
       systemPrompt = this._buildFallbackReviewPrompt(context);
     }
 

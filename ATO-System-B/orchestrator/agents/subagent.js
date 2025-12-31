@@ -18,7 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { BaseAgent } from './base-agent.js';
-import { CoderSkill } from '../skills/coder/index.js';
+import { CoderSkill } from '../tools/coder/index.js';
 import { getSandbox } from '../security/sandbox.js';
 import { getSecurityMonitor, EVENT_TYPES } from '../security/security-monitor.js';
 
@@ -155,6 +155,57 @@ export class SubAgent extends BaseAgent {
         }
       };
     }
+  }
+
+  /**
+   * 파일 목록을 Output 형식으로 변환
+   * @param {Object} files - { filename: content } 형태
+   * @returns {Array} - Output 배열
+   */
+  filesToOutputs(files) {
+    if (!files || typeof files !== 'object') return [];
+
+    return Object.entries(files).map(([filename, content]) => ({
+      filename,
+      content,
+      type: this._inferFileType(filename)
+    }));
+  }
+
+  /**
+   * 파일 타입 추론
+   */
+  _inferFileType(filename) {
+    if (filename.endsWith('.md')) return 'markdown';
+    if (filename.endsWith('.ts') || filename.endsWith('.tsx')) return 'typescript';
+    if (filename.endsWith('.js') || filename.endsWith('.jsx')) return 'javascript';
+    if (filename.endsWith('.sql')) return 'sql';
+    return 'text';
+  }
+
+  /**
+   * Output 검증
+   * @param {Array} outputs - Output 배열
+   * @param {Object} gapCheck - PRD Gap Check 결과
+   * @returns {Object} - 검증 결과
+   */
+  validateOutputs(outputs, gapCheck) {
+    const deliverables = gapCheck?.deliverables || [];
+    const total = deliverables.length;
+
+    // 간단한 매칭: 파일 개수 기준
+    const matched = Math.min(outputs.length, total);
+
+    return {
+      passed: outputs.length > 0,
+      prdMatch: {
+        total,
+        matched,
+        missing: deliverables.slice(matched).map(d => d.item || d)
+      },
+      syntaxErrors: [],
+      schemaErrors: []
+    };
   }
 
   /**

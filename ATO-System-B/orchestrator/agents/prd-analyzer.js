@@ -540,7 +540,10 @@ export class PRDAnalyzer {
 
     // PRD v2 명시적 type 필드 추출
     const typeMatch = prdContent.match(/type\s*:\s*(QUANTITATIVE|QUALITATIVE|MIXED)/i);
-    const pipelineMatch = prdContent.match(/pipeline\s*:\s*(analysis|design|code|mixed)/i);
+    // pipeline 필드 - 모든 값을 캡처 (유효성 검사는 orchestrator에서)
+    // 테이블 형식: | **Pipeline** | value | 또는 일반 형식: Pipeline: value
+    const pipelineMatch = prdContent.match(/\|\s*\*{0,2}Pipeline\*{0,2}\s*\|\s*([^\s|]+)/i)
+      || prdContent.match(/pipeline\s*[:\|]\s*(\S+)/i);
 
     // 산출물 추출 (Gap Check 용)
     const deliverables = this.extractDeliverables(prdContent);
@@ -548,15 +551,22 @@ export class PRDAnalyzer {
     // Gap Check 실행 (동기 버전)
     const gapCheckResult = this._runGapCheckSync(prdContent, deliverables);
 
+    // type이 명시된 경우
     if (typeMatch) {
       const type = typeMatch[1].toUpperCase();
-      const pipeline = pipelineMatch ? pipelineMatch[1].toLowerCase() : this.inferPipeline(type);
+      const pipeline = pipelineMatch
+        ? pipelineMatch[1].toLowerCase()
+        : this.inferPipeline(type, prdContent, deliverables);
       return { type, pipeline, gapCheck: gapCheckResult };
     }
 
     // v2 필드가 없으면 기존 로직으로 추론
     const inferredType = this.classifyPRD(prdContent, deliverables);
-    const inferredPipeline = this.inferPipeline(inferredType);
+
+    // pipeline이 명시적으로 지정된 경우 그 값을 사용 (유효성 검사는 orchestrator에서)
+    const inferredPipeline = pipelineMatch
+      ? pipelineMatch[1].toLowerCase()
+      : this.inferPipeline(inferredType, prdContent, deliverables);
 
     return { type: inferredType, pipeline: inferredPipeline, gapCheck: gapCheckResult };
   }
@@ -618,14 +628,53 @@ export class PRDAnalyzer {
 
   /**
    * type에서 pipeline 추론
+   *
+   * ROLE_ARCHITECTURE.md 정의:
+   * - analysis: Phase A만
+   * - design: Phase B만
+   * - mixed: Phase A → B
+   * - full: Phase A → B → C
+   *
+   * @param {string} type - PRD 유형 (QUANTITATIVE, QUALITATIVE, MIXED)
+   * @param {string} prdContent - PRD 원본 텍스트 (Phase C 산출물 감지용)
+   * @param {Array} deliverables - 산출물 목록
+   * @returns {string} - pipeline 타입
    */
-  inferPipeline(type) {
+  inferPipeline(type, prdContent = '', deliverables = []) {
+    // 기본 매핑
     const mapping = {
       'QUANTITATIVE': 'analysis',
       'QUALITATIVE': 'design',
       'MIXED': 'mixed'
     };
-    return mapping[type] || 'design';
+
+    const basePipeline = mapping[type] || 'design';
+
+    // MIXED 타입일 때 Phase C 산출물이 있으면 full로 승격
+    if (type === 'MIXED' && prdContent) {
+      // Phase C 관련 키워드 감지
+      const phaseCKeywords = [
+        /phase\s*c/i,
+        /코드\s*(구현|생성)/i,
+        /code\s*implementation/i,
+        /backend|frontend/i,
+        /express|react|api\s*서버/i,
+        /\.ts|\.js|\.tsx/i
+      ];
+
+      const hasPhaseCOutput = phaseCKeywords.some(pattern => pattern.test(prdContent));
+
+      // 산출물에서 코드 관련 항목 감지
+      const hasCodeDeliverable = deliverables.some(d =>
+        /code|backend|frontend|서버|api|구현/i.test(d)
+      );
+
+      if (hasPhaseCOutput || hasCodeDeliverable) {
+        return 'full';
+      }
+    }
+
+    return basePipeline;
   }
 
   /**

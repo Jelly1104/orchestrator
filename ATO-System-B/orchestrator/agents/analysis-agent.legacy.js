@@ -16,9 +16,9 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { ProviderFactory } from "../providers/index.js";
-import { ReviewerSkill } from "../skills/reviewer/index.js";
+import { ReviewerSkill } from "../tools/reviewer/index.js";
 import { SQLValidator } from "../security/sql-validator.js";
-import { QueryLibrary } from "../skills/query/library/query-library.js";
+import { QueryLibrary } from "../tools/query/library/query-library.js";
 
 // ========== 보안 상수 ==========
 const SECURITY_LIMITS = {
@@ -256,8 +256,6 @@ export class AnalysisAgent {
   // ========== 메인 분석 함수 ==========
 
   async analyze(prd, taskId = null, options = {}) {
-    console.log("\n[AnalysisAgent] ========== 분석 시작 ==========");
-
     // P1-3: 세션 토큰 사용량 초기화
     this._resetSessionUsage();
 
@@ -274,7 +272,6 @@ export class AnalysisAgent {
         "analysis"
       );
     }
-    console.log(`[AnalysisAgent] 산출물 경로: ${this.outputDir}`);
 
     const results = {
       success: false,
@@ -291,161 +288,96 @@ export class AnalysisAgent {
 
     try {
       // Step 1: PRD 파싱
-      console.log("\n[Step 1] PRD 파싱...");
       let prdObj = prd;
       if (typeof prd === "string") {
         prdObj = this._convertStringPRDtoObject(prd);
       }
       const requirements = this.parseAnalysisRequirements(prdObj);
-      console.log(
-        `  - 목적: ${
-          requirements.objective
-            ? requirements.objective.substring(0, 50) + "..."
-            : "❌"
-        }`
-      );
-      console.log(
-        `  - 필요 테이블: ${requirements.tables.map((t) => t.name).join(", ")}`
-      );
 
       // Step 2: 스키마 검증
-      console.log("\n[Step 2] 스키마 검증...");
       const schemaValidation = this.validateSchema(requirements.tables);
-      if (!schemaValidation.valid) {
-        console.warn(`  - 경고: ${schemaValidation.warnings.join(", ")}`);
-      }
 
       // Step 3: SQL 쿼리 생성
-      console.log("\n[Step 3] SQL 쿼리 생성...");
       const rawQueries = await this.generateQueries(requirements);
-      // ✅ [Fix] 쿼리 정규화 (undefined 방지)
       const queries = this._normalizeQueries(rawQueries);
       results.queries = queries;
-      console.log(`  - 생성된 쿼리 ${queries.length}개`);
-
-      // 디버깅: 생성된 쿼리 이름 확인
-      queries.forEach((q) => console.log(`    > ${q.name}`));
+      console.log(`   📊 SQL ${queries.length}개 생성 완료`);
 
       // Step 3.5: SQL 검증 게이트 (P0-3)
-      console.log("\n[Step 3.5] SQL 검증 게이트 (P0-3)...");
       const sqlValidator = new SQLValidator({ strictMode: true });
       const validationResult = sqlValidator.validateAll(queries);
 
       if (!validationResult.allValid) {
-        console.error(`  ❌ SQL 검증 실패: ${validationResult.blockedCount}/${validationResult.totalQueries} 쿼리 차단`);
-
-        // 위반 사항 로깅
-        for (const result of validationResult.results) {
-          if (!result.valid) {
-            console.error(`    - ${result.name}: ${result.summary}`);
-            for (const v of result.violations) {
-              console.error(`      [${v.severity}] ${v.message}`);
-            }
-          }
-        }
-
         // 재시도 가능 여부 확인
         const canRetry = validationResult.results.every(r => r.valid || r.canRetry);
 
         if (!canRetry) {
-          // CRITICAL 위반 - 즉시 중단
           results.success = false;
           results.errors.push(`SQL 검증 실패 (CRITICAL): ${validationResult.blockedCount}개 쿼리 차단`);
           results.sqlValidation = validationResult;
-          console.log("\n[AnalysisAgent] ========== SQL 검증 실패 - 조기 종료 ==========\n");
+          console.log(`   ❌ SQL 검증 실패 - ${validationResult.blockedCount}개 차단`);
           return results;
         }
 
         // ERROR 위반 - 피드백 반영 재생성 시도
-        console.log("  → LLM 피드백 반영 재생성 시도...");
         const regeneratedQueries = await this._regenerateQueriesWithFeedback(
           requirements,
           validationResult.results.filter(r => !r.valid)
         );
 
         if (regeneratedQueries.length > 0) {
-          // 재검증
           const revalidation = sqlValidator.validateAll(regeneratedQueries);
           if (revalidation.allValid) {
-            console.log("  ✅ 재생성 쿼리 검증 통과");
             queries.length = 0;
             queries.push(...regeneratedQueries);
           } else {
-            console.error("  ❌ 재생성 쿼리도 검증 실패 - 진행 불가");
             results.success = false;
             results.errors.push(`SQL 재생성 후에도 검증 실패`);
             results.sqlValidation = revalidation;
             return results;
           }
         }
-      } else {
-        console.log(`  ✅ SQL 검증 통과: ${validationResult.totalQueries}개 쿼리 모두 안전`);
       }
 
       results.sqlValidation = validationResult;
 
       // Step 4: SQL 실행
-      console.log("\n[Step 4] SQL 실행...");
       const queryResults = await this.executeQueries(queries);
       results.data = queryResults;
-
       const successCount = queryResults.filter((r) => r.success).length;
-      console.log(`  - 성공: ${successCount}/${queryResults.length}`);
+      console.log(`   📊 SQL 실행 ${successCount}/${queryResults.length} 성공`);
 
-      // Step 4.5: Reviewer Skill 쿼리 결과 검증 (v1.0.3 - AGENT_ARCHITECTURE v2.6.2 준수)
-      console.log("\n[Step 4.5] Reviewer Skill: 쿼리 결과 검증...");
+      // Step 4.5: Reviewer Skill 쿼리 결과 검증
       const reviewResult = await this._validateQueryResults(queryResults, prdObj, requirements);
 
       if (!reviewResult.passed) {
-        console.error(`  ❌ Reviewer FAIL (${reviewResult.score}/100): ${reviewResult.summary}`);
-        console.log("  → Phase A 재시작 필요");
-
-        // 검증 실패 결과 반환 (Orchestrator에서 재시도 결정)
         results.reviewResult = reviewResult;
         results.success = false;
         results.errors.push(`Reviewer Skill FAIL: ${reviewResult.summary}`);
-
-        // Fail-Fast: 리포트 생성 없이 조기 종료
-        console.log("\n[AnalysisAgent] ========== 검증 실패 - 조기 종료 ==========\n");
+        console.log(`   ❌ Reviewer FAIL (${reviewResult.score}/100)`);
         return results;
       }
 
-      console.log(`  ✅ Reviewer PASS (${reviewResult.score}/100)`);
+      console.log(`   ✅ Reviewer PASS (${reviewResult.score}/100)`);
       results.reviewResult = reviewResult;
 
       // Step 5: 결과 해석
       if (prdObj.type === "MIXED" || prdObj.pipeline === "mixed") {
-        console.log("\n[Step 5] 결과 해석 (MIXED)...");
-        results.insights = await this.interpretResults(
-          queryResults,
-          requirements
-        );
+        results.insights = await this.interpretResults(queryResults, requirements);
       }
 
       // Step 6: 산출물 생성
-      console.log("\n[Step 6] 산출물 생성...");
-      results.outputs = await this.generateOutputs(
-        queries,
-        queryResults,
-        results.insights,
-        prdObj
-      );
-
+      results.outputs = await this.generateOutputs(queries, queryResults, results.insights, prdObj);
       results.success = true;
-      results.summary = this.generateSummary(
-        queryResults,
-        results.insights,
-        prdObj
-      );
+      results.summary = this.generateSummary(queryResults, results.insights, prdObj);
     } catch (error) {
-      console.error(`\n[AnalysisAgent] 오류 발생: ${error.message}`);
+      console.error(`   ❌ 오류: ${error.message}`);
       results.errors.push(error.message);
     }
 
     // P1-3: 세션 토큰 사용량을 결과에 복사
     results.usage = this._getSessionUsage();
 
-    console.log("\n[AnalysisAgent] ========== 분석 완료 ==========\n");
     return results;
   }
 
@@ -620,30 +552,18 @@ ${JSON.stringify(requirements.tables)}`;
     }
 
     // Step 2: Hybrid Search - 라이브러리 매칭 시도
-    // [Fix] originalText를 우선 사용하여 PRD 전체 내용을 검색
     const querySource = requirements.originalText || requirements.objective || '';
-    console.log(`  [Hybrid Search] 검색 대상 텍스트 길이: ${querySource.length}자`);
     const match = this.queryLibrary.findMatchingTemplate(querySource);
 
     if (match) {
-      // Step 3: 매칭 성공 → 템플릿에서 쿼리 로드 [Source: Library]
-      console.log(`  📚 [Source: Library] Using template: ${match.template.file}`);
-
-      // 파라미터 추출 (PRD에서 날짜 등 파싱)
       const params = this._extractQueryParams(requirements);
-
       const libraryQueries = this.queryLibrary.loadQueries(match.key, params);
-
       if (libraryQueries.length > 0) {
-        console.log(`  ✅ ${libraryQueries.length}개 쿼리 로드 완료 (Library)`);
         return libraryQueries;
       }
-
-      console.log(`  ⚠️ 템플릿 로드 실패, LLM 생성으로 전환`);
     }
 
-    // Step 4: 매칭 실패 → LLM 동적 생성 [Source: Generated]
-    console.log(`  🤖 [Source: Generated] LLM 동적 SQL 생성`);
+    // LLM 동적 생성
     return await this._generateQueriesWithLLM(requirements);
   }
 
@@ -750,8 +670,6 @@ ${SQL_GENERATION_RULES}
       const mysql = await import('mysql2/promise').catch(() => null);
 
       if (mysql && this.dbConfig) {
-        console.log(`  [DB] 연결 시도: ${this.dbConfig.host}:${this.dbConfig.port}/${this.dbConfig.database}`);
-
         dbConnection = await mysql.default.createConnection({
           host: this.dbConfig.host,
           port: this.dbConfig.port,
@@ -761,19 +679,14 @@ ${SQL_GENERATION_RULES}
           connectTimeout: 10000,
         });
 
-        console.log(`  [DB] ✅ 연결 성공`);
         useRealDB = true;
       }
     } catch (dbError) {
-      console.warn(`  [DB] ⚠️ 연결 실패: ${dbError.message}`);
-      console.warn(`  [DB] Mock 모드로 전환 (실제 데이터 없음)`);
+      // DB 연결 실패 - Mock 모드로 전환
     }
 
     for (const query of queries) {
       const queryName = query.name || "unnamed_query";
-      // [P2-1] 쿼리 소스 로깅 (Library vs Generated)
-      const sourceTag = query.source === 'library' ? '📚 Library' : '🤖 Generated';
-      console.log(`  - 실행 중: ${queryName} [${sourceTag}]`);
 
       const result = {
         name: queryName,
@@ -796,11 +709,9 @@ ${SQL_GENERATION_RULES}
           result.data = Array.isArray(rows) ? rows.slice(0, 1000) : []; // 최대 1000행
           result.rowCount = result.data.length;
           result.success = true;
-          console.log(`    ✅ ${result.rowCount}행 반환`);
         } catch (queryError) {
           result.error = queryError.message;
           result.success = false;
-          console.log(`    ❌ 쿼리 오류: ${queryError.message}`);
         }
       } else {
         // Mock 모드: DB 연결 없이 SQL 파일만 생성
@@ -808,7 +719,6 @@ ${SQL_GENERATION_RULES}
         result.data = [];
         result.rowCount = 0;
         result.mock = true;
-        console.log(`    ⚠️ Mock 모드 (데이터 없음)`);
       }
 
       results.push(result);
@@ -817,16 +727,10 @@ ${SQL_GENERATION_RULES}
     // DB 연결 종료
     if (dbConnection) {
       await dbConnection.end();
-      console.log(`  [DB] 연결 종료`);
     }
 
     // [New v4.3.4] Security Filter: PII 마스킹 적용
-    console.log(`  [Security] PII 마스킹 적용 중...`);
     const maskedResults = results.map(r => this._applyPIIMasking(r));
-    const maskedCount = maskedResults.reduce((sum, r) => sum + (r.piiMaskedCount || 0), 0);
-    if (maskedCount > 0) {
-      console.log(`  [Security] ✅ ${maskedCount}개 PII 필드 마스킹 완료`);
-    }
 
     return maskedResults;
   }
@@ -914,7 +818,6 @@ ${SQL_GENERATION_RULES}
     // State 1: ❌ Connection Failure (Mock 모드)
     if (mockResults.length > 0 && successResults.length === 0) {
       insights.state = 'connection_failure';
-      console.log(`  [Interpret] ❌ DB 연결 실패 (Mock 모드로 전환됨)`);
       insights.insights.push({
         finding: "DB 연결 실패",
         implication: "❌ DB 연결이 불가능하여 Mock 모드로 실행되었습니다. VPN/방화벽/권한 설정을 확인하세요.",
@@ -926,22 +829,18 @@ ${SQL_GENERATION_RULES}
     // State 2: ⚠️ Success but No Data
     if (resultsWithData.length === 0 && successResults.length > 0) {
       insights.state = 'success_no_data';
-      console.log(`  [Interpret] ⚠️ DB 연결 성공, 쿼리 실행 완료 - 조건에 맞는 데이터 없음 (0 rows)`);
       insights.insights.push({
         finding: "데이터 없음 (조건 불일치)",
         implication: "✅ DB 연결 및 쿼리 실행은 성공했으나, 조건에 맞는 데이터가 없습니다 (0 rows 반환).",
         action: "WHERE 조건 완화 또는 데이터 존재 여부 확인 필요",
       });
-      // 빈 결과도 분석 완료로 간주 (Mock 모드 아님)
       insights.dataAvailable = false;
       return insights;
     }
 
     // State 3: ✅ Success with Data
     insights.state = 'success_with_data';
-
     insights.dataAvailable = true;
-    console.log(`  [Interpret] 📊 ${resultsWithData.length}개 쿼리 결과 분석 중...`);
 
     // Step 1: 코드 레벨 통계 계산
     const codeStats = this._calculateCodeLevelStats(resultsWithData);
@@ -959,16 +858,11 @@ ${SQL_GENERATION_RULES}
     }
 
     // Step 2: LLM 기반 비즈니스 인사이트 생성 (Option C 핵심)
-    console.log(`  [Interpret] 🤖 LLM 비즈니스 인사이트 생성 중...`);
     try {
       insights.llmInsights = await this._generateLLMInsights(resultsWithData, requirements, codeStats);
-      console.log(`  [Interpret] ✅ LLM 인사이트 생성 완료`);
     } catch (llmError) {
-      console.warn(`  [Interpret] ⚠️ LLM 인사이트 생성 실패: ${llmError.message}`);
       insights.llmInsights = { error: llmError.message };
     }
-
-    console.log(`  [Interpret] ✅ 인사이트 ${insights.insights.length}개, 패턴 ${insights.patterns.length}개, 권장사항 ${insights.recommendations.length}개`);
 
     return insights;
   }
@@ -1094,7 +988,6 @@ ${JSON.stringify(codeStats, null, 2)}
 
       fs.writeFileSync(filepath, query.sql, "utf-8");
       outputs.push({ type: "SQL_QUERY", path: filepath, name: query.name });
-      console.log(`    - results/${filename}`);
     }
 
     // [Fix v4.3.3] 풍부한 리포트 생성
@@ -1178,7 +1071,6 @@ ${JSON.stringify(codeStats, null, 2)}
 
     fs.writeFileSync(reportPath, reportContent, "utf-8");
     outputs.push({ type: "REPORT", path: reportPath });
-    console.log(`    - analysis_report.md (${reportContent.length} bytes)`);
 
     return outputs;
   }
@@ -1251,8 +1143,6 @@ ${JSON.stringify(codeStats, null, 2)}
         customChecks,
       };
     } catch (error) {
-      console.warn(`  [Reviewer] 검증 중 오류: ${error.message}`);
-
       // Fallback: 기본 검증 (ReviewerSkill 실패 시)
       return this._fallbackValidation(queryResults, prd);
     }

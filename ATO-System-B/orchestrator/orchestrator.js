@@ -51,7 +51,6 @@ import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { LeaderAgent } from './agents/leader.js';
-import { SubAgent } from './agents/subagent.js';
 import { CodeAgent } from './agents/code-agent.js';
 import { AnalysisAgent } from './agents/analysis-agent.js';
 import { MetricsTracker } from './metrics/tracker.js';
@@ -59,7 +58,7 @@ import { FeedbackLoopController } from './agents/feedback-loop.js';
 import { PRDAnalyzer } from './agents/prd-analyzer.js';
 
 // Phase 3: SkillRegistry 연동 (DI 패턴)
-import { SkillRegistry, SkillType, getSkillRegistry } from './skills/skill-registry.js';
+import { SkillRegistry, SkillType, getSkillRegistry } from './tools/tool-registry.js';
 
 // Phase D: Security Layer 연동
 import { isEnabled } from './config/feature-flags.js';
@@ -69,10 +68,13 @@ import { getSecurityMonitor, EVENT_TYPES } from './security/security-monitor.js'
 import { getAuditLogger } from './utils/audit-logger.js';
 
 // P1-1: Phase B Reviewer 연동
-import { ReviewerSkill } from './skills/reviewer/index.js';
+import { ReviewerSkill } from './tools/reviewer/index.js';
 
 // P2-2: Doc-Sync 연동 (Milestone 3)
-import { DocSyncSkill } from './skills/doc-sync/index.js';
+import { DocSyncSkill } from './tools/doc-sync/index.js';
+
+// P0-3: SQL Validator 연동 (보안 검증)
+import { SQLValidator } from './security/sql-validator.js';
 
 // Phase 0: Session Store 연동 (Pause/Resume 지원)
 const require = createRequire(import.meta.url);
@@ -85,7 +87,21 @@ const SECURITY_LIMITS = {
   MAX_TASK_DESCRIPTION_LENGTH: 10000, // taskDescription 최대 길이
   MAX_PRD_CONTENT_LENGTH: 50000,     // prdContent 최대 길이
   TASK_ID_PATTERN: /^[a-zA-Z0-9_-]+$/, // taskId 허용 패턴
+  MAX_FEATURES_PER_ITERATION: 50,    // 단일 iteration 최대 기능 수
+  TOKEN_WARNING_THRESHOLD: 80000,    // 토큰 경고 임계값
 };
+
+// 보호된 경로 목록 (Constitution 보호)
+const PROTECTED_PATHS = [
+  '.claude/rules/',
+  '.claude/workflows/',
+  '.claude/context/',
+  'CLAUDE.md',
+  '.env',
+  '/.ssh/',
+  '/etc/',
+  'System32',
+];
 
 // Rate Limiting 상태
 const rateLimitState = {
@@ -123,10 +139,7 @@ export class Orchestrator {
       projectRoot: this.projectRoot,
       ...this.providerConfig
     });
-    this.subagent = new SubAgent({
-      projectRoot: this.projectRoot,
-      ...this.providerConfig
-    });
+    // Note: SubAgent는 더 이상 사용하지 않음 (tools 개념으로 대체)
 
     // Code Agent 초기화 (v1.0.0 - 코드 구현 전담)
     this.codeAgent = new CodeAgent({
@@ -163,9 +176,6 @@ export class Orchestrator {
 
     // 스킬 초기화 상태 (lazy loading)
     this.skillsInitialized = false;
-
-    console.log(`[Orchestrator] Provider: ${this.providerConfig.provider}`);
-    console.log(`[Orchestrator] Fallback: ${this.providerConfig.useFallback ? 'enabled' : 'disabled'}`);
   }
 
   // ========== 보안: 입력 검증 ==========
@@ -294,11 +304,9 @@ export class Orchestrator {
    */
   async initializeSkills(skillTypes = null) {
     if (this.skillsInitialized) {
-      console.log('[Orchestrator] Skills already initialized');
       return this.skillRegistry.getStatus();
     }
 
-    console.log('[Orchestrator] Initializing SkillRegistry...');
     const result = await this.skillRegistry.loadAll(skillTypes);
     this.skillsInitialized = true;
 
@@ -483,17 +491,17 @@ export class Orchestrator {
    * @returns {string|null} - 필요한 체크포인트 또는 null
    */
   checkHITLRequired(phase, context = {}) {
-    // 자동 승인 모드면 HITL 스킵
-    if (this.autoApprove) {
-      return null;
-    }
-
     // AGENT_ARCHITECTURE.md 기반 HITL 체크포인트
     switch (phase) {
       case 'planning':
         // 1. PRD 보완 필요 시 (v1.2.0: missing 배열 체크 개선)
-        // gapCheck.missing 또는 gapCheck.hasHighSeverityGaps 체크
-        if (context.gapCheck?.missing?.length > 0 || context.gapCheck?.hasHighSeverityGaps) {
+        // v1.3.0: HIGH severity gap이 있으면 autoApprove를 무시하고 반드시 HITL 트리거
+        // 단, hasHighSeverityGaps가 true면 autoApprove와 상관없이 체크포인트 반환
+        if (context.gapCheck?.hasHighSeverityGaps) {
+          return HITLCheckpoint.PRD_REVIEW;
+        }
+        // 일반 missing은 autoApprove 시 스킵
+        if (!this.autoApprove && context.gapCheck?.missing?.length > 0) {
           return HITLCheckpoint.PRD_REVIEW;
         }
         break;
@@ -611,11 +619,7 @@ export class Orchestrator {
     // 메트릭 트래커 초기화
     const metrics = new MetricsTracker(taskId);
 
-    console.log('\n🚀 Orchestrator 시작');
-    console.log(`📌 Task ID: ${taskId}`);
-    console.log(`📝 Task: ${sanitizedDescription.substring(0, 100)}${sanitizedDescription.length > 100 ? '...' : ''}`);
-    console.log(`🔄 자동 승인: ${this.autoApprove ? 'ON' : 'OFF'}`);
-    console.log(`🔁 최대 재시도: ${this.maxRetries}회\n`);
+    console.log(`\n🚀 Task: ${taskId}`);
 
     // ========== Phase 0: 세션 생성 ==========
     const session = this.createSession(taskId, prdContent || sanitizedDescription, {
@@ -631,30 +635,61 @@ export class Orchestrator {
 
     try {
       // ========== Phase 0: PRD v2 유형 판별 (P1-2: Auto-Routing) ==========
-      console.log('🔍 [Phase 0] PRD 유형 판별 및 파이프라인 자동 선택...');
-
       const prdClassification = this.prdAnalyzer.classifyPRDv2(prdContent);
       const prdType = prdClassification?.type || 'QUALITATIVE';
       const pipeline = prdClassification?.pipeline || 'design';
 
-      // P1-2: 명시적 라우팅 결정 로깅
+      // P1-2: 명시적 라우팅 결정
       const routingDecision = this._determineRoutingDecision(prdType, pipeline, options);
 
-      console.log(`   - PRD 유형: ${prdType}`);
-      console.log(`   - 추론된 파이프라인: ${pipeline}`);
-      console.log(`   - 라우팅 결정: ${routingDecision.selectedPipeline} (${routingDecision.reason})`);
+      // ========== 잘못된 파이프라인 검사 - FAIL 처리 ==========
+      if (routingDecision.invalidPipeline) {
+        console.log(`   Pipeline: ${routingDecision.invalidPipeline} (INVALID)`);
+
+        // FAIL 리포트 출력
+        this._printInvalidPipelineFailReport(taskId, routingDecision.invalidPipeline, metrics);
+
+        metrics.endPhase('planning', 'fail');
+
+        return {
+          success: false,
+          taskId,
+          error: `유효하지 않은 파이프라인: ${routingDecision.invalidPipeline}`,
+          suggestion: '유효한 파이프라인: analysis, design, mixed'
+        };
+      }
+
+      console.log(`   Pipeline: ${routingDecision.selectedPipeline} (${prdType})`);
+
+      // ========== v1.3.0: PRD Gap Check - HIGH severity gap 강제 FAIL ==========
+      // 빈 PRD나 필수 항목 대부분 누락 시 autoApprove와 상관없이 즉시 FAIL
+      const gapCheck = prdClassification?.gapCheck;
+      if (gapCheck?.hasHighSeverityGaps) {
+        // 즉시 FAIL 리포트 출력 (중복 메시지 없이 리포트만)
+        this._printGapCheckFailReport(taskId, prdType, routingDecision.selectedPipeline, gapCheck, metrics);
+
+        metrics.endPhase('planning', 'fail');
+
+        return {
+          success: false,
+          taskId,
+          error: 'PRD Gap Check 실패 - 필수 섹션 누락',
+          gapCheck,
+          suggestion: 'PRD에 필수 4개 섹션을 추가해주세요: 목적, 타겟유저, 핵심기능, 성공지표'
+        };
+      }
 
       // ========== HITL: PRD_REVIEW 체크포인트 (Graceful Exit 패턴) ==========
-      // PRD Gap Check 결과가 불완전할 경우 사람의 검토 필요
-      if (prdClassification?.gapCheck?.missing?.length > 0) {
+      // PRD Gap Check 결과가 불완전할 경우 (LOW/MEDIUM severity) 사람의 검토 필요
+      if (gapCheck?.missing?.length > 0) {
         const prdCheckpoint = this.checkHITLRequired('planning', {
-          gapCheck: prdClassification.gapCheck
+          gapCheck: gapCheck
         });
 
         if (prdCheckpoint) {
           sessionStore.updatePhase(taskId, 'prd_review');
           await this.pauseForHITL(taskId, prdCheckpoint, {
-            missing: prdClassification.gapCheck.missing,
+            missing: gapCheck.missing,
             prdType,
             pipeline,
             message: 'PRD에 필수 항목이 누락되었습니다. 검토 후 승인하거나 PRD를 보완해주세요.'
@@ -681,25 +716,38 @@ export class Orchestrator {
       const selectedPipeline = routingDecision.selectedPipeline;
 
       if (selectedPipeline === 'analysis') {
-        console.log('\n🔀 [Auto-Routing] QUANTITATIVE → Analysis Pipeline');
-        console.log('   ⚡ AnalysisAgent 단독 실행 (LeaderAgent 건너뜀)\n');
         return await this.runAnalysisPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
       if (selectedPipeline === 'mixed') {
-        console.log('\n🔀 [Auto-Routing] MIXED → Mixed Pipeline');
-        console.log('   ⚡ AnalysisAgent + LeaderAgent 순차 실행\n');
         return await this.runMixedPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
+      if (selectedPipeline === 'full') {
+        return await this.runFullPipeline(taskId, sanitizedDescription, prdContent, options);
+      }
+
       // QUALITATIVE → Design 파이프라인 (기본)
-      console.log('\n🔀 [Auto-Routing] QUALITATIVE → Design Pipeline');
-      console.log('   ⚡ LeaderAgent 중심 실행 (AnalysisAgent 건너뜀)');
-      const isDesignOnly = options.mode === 'design';
-      console.log(`   → Design 파이프라인 실행 ${isDesignOnly ? '(설계 문서 전용)' : '(설계+구현)'}\n`);
+      // selectedPipeline === 'design' 또는 options.mode === 'design'이면 Phase B에서 종료
+      const isDesignOnly = selectedPipeline === 'design' || options.mode === 'design';
+
+      // ========== Case 09: 보호된 경로 검증 ==========
+      const protectedPathCheck = this._validateProtectedPaths(prdContent);
+      if (!protectedPathCheck.passed) {
+        metrics.endPhase('planning', 'fail');
+        this._printProtectedPathFailReport(taskId, protectedPathCheck.violations, metrics);
+        return {
+          success: false,
+          taskId,
+          pipeline: 'design',
+          error: `보안 정책 위반 - ${protectedPathCheck.blockedCount}개 보호된 경로 접근 차단됨`,
+          securityViolations: protectedPathCheck.violations,
+          metrics: metrics.generateReport()
+        };
+      }
 
       // ========== Phase 1: Planning ==========
-      console.log('📋 [Phase 1] Leader Planning 시작...');
+      console.log('\n📋 Phase B: Design...');
       metrics.startPhase('planning');
 
       const planResult = await this.leader.plan(sanitizedDescription, prdContent);
@@ -714,13 +762,7 @@ export class Orchestrator {
         await this.savePlanningDocs(taskId, planResult);
       }
 
-      console.log('✅ Planning 완료');
-      console.log(`   - IA.md: ${planResult.ia ? '생성됨' : '없음'}`);
-      console.log(`   - Wireframe.md: ${planResult.wireframe ? '생성됨' : '없음'}`);
-      console.log(`   - SDD.md: ${planResult.sdd ? '생성됨' : '없음'}`);
-      console.log(`   - HANDOFF.md: ${planResult.handoff ? '생성됨' : '없음'}`);
-      console.log(`   - Gap Check: ${planResult.gapCheck ? '완료' : '스킵'}`);
-      console.log(`   - 토큰: ${planResult.usage.inputTokens + planResult.usage.outputTokens}`);
+      console.log(`   ✅ Design 완료 (${planResult.usage.inputTokens + planResult.usage.outputTokens} tokens)`);
 
       // HANDOFF 누락 시 자동 생성 (fallback)
       if (!planResult.handoff && planResult.sdd) {
@@ -772,43 +814,23 @@ export class Orchestrator {
         console.log('   ⏩ 설계 자동 승인 (HITL_AUTO_APPROVE_DESIGN=true)');
       }
 
-      // ========== Design Only 모드: SubAgent로 설계 문서 보완 ==========
+      // ========== Design Only 모드: Leader 설계 문서 사용 ==========
       if (isDesignOnly) {
-        console.log('\n📝 [Phase 2] Design Mode: SubAgent 설계 문서 보완...');
-        metrics.startPhase('design_subagent');
+        console.log('\n📝 [Phase 2] Design Mode: Leader 설계 문서 구성...');
+        metrics.startPhase('design_docs');
 
-        // SubAgent Design Mode로 설계 문서 보완
-        const designResult = await this.subagent.implementDesign(planResult.handoff, {
-          documentType: 'all',
-          prdAnalysis: planResult.gapCheck
-        });
-
-        metrics.addTokens('subagent', designResult.usage.inputTokens, designResult.usage.outputTokens);
-
-        // SubAgent가 생성한 설계 문서와 Leader 문서 병합
+        // Leader 설계 문서 구성
         const leaderDocs = {
           'IA.md': planResult.ia,
           'Wireframe.md': planResult.wireframe,
           'SDD.md': planResult.sdd
         };
 
-        // SubAgent 결과가 더 상세하면 병합, 아니면 Leader 결과 유지
-        for (const [fileName, content] of Object.entries(designResult.files)) {
-          const leaderContent = leaderDocs[fileName];
-          if (!leaderContent || content.length > leaderContent.length) {
-            currentFiles[fileName] = content;
-            console.log(`   - ${fileName}: SubAgent 결과 사용 (${content.length} chars)`);
-          } else {
-            currentFiles[fileName] = leaderContent;
-            console.log(`   - ${fileName}: Leader 결과 유지 (${leaderContent.length} chars)`);
-          }
-        }
-
-        // Leader가 생성했지만 SubAgent가 생성하지 않은 문서도 포함
+        // Leader 결과를 currentFiles에 추가
         for (const [fileName, content] of Object.entries(leaderDocs)) {
-          if (content && !currentFiles[fileName]) {
+          if (content) {
             currentFiles[fileName] = content;
-            console.log(`   - ${fileName}: Leader 결과 추가`);
+            console.log(`   - ${fileName}: Leader 결과 사용 (${content.length} chars)`);
           }
         }
 
@@ -817,12 +839,12 @@ export class Orchestrator {
           currentFiles['HANDOFF.md'] = planResult.handoff;
         }
 
-        metrics.endPhase('design_subagent', 'success');
+        metrics.endPhase('design_docs', 'success');
 
-        // Output Validation
+        // Output Validation (인라인)
         console.log('\n🔍 [Phase 3] Design Output Validation...');
-        const outputs = this.subagent.filesToOutputs(currentFiles);
-        const validationResult = this.subagent.validateOutputs(outputs, planResult.gapCheck);
+        const outputs = this._filesToOutputs(currentFiles);
+        const validationResult = this._validateOutputs(outputs, planResult.gapCheck);
 
         const passed = validationResult.passed;
         console.log(`   - 전체 통과: ${passed ? '✅' : '❌'}`);
@@ -845,7 +867,6 @@ export class Orchestrator {
         const report = metrics.generateReport();
         await this.saveLog(taskId, report, {
           planning: planResult,
-          designSubagent: designResult,
           files: currentFiles,
           validation: validationResult
         });
@@ -899,7 +920,7 @@ export class Orchestrator {
 
         // 파일 저장
         if (this.saveFiles) {
-          await this.subagent.saveFiles(codingResult.files);
+          await this._saveFiles(codingResult.files, taskId);
         }
 
         metrics.endPhase(codingPhase, 'success');
@@ -910,8 +931,8 @@ export class Orchestrator {
 
         if (planResult.gapCheck && planResult.gapCheck.deliverables?.length > 0) {
           console.log('\n🔍 [Phase 2.5] Output Validation 시작...');
-          const outputs = this.subagent.filesToOutputs(currentFiles);
-          validationResult = this.subagent.validateOutputs(outputs, planResult.gapCheck);
+          const outputs = this._filesToOutputs(currentFiles);
+          validationResult = this._validateOutputs(outputs, planResult.gapCheck);
 
           if (!validationResult.passed) {
             console.log(`   ⚠️ PRD 체크리스트 매칭: ${validationResult.prdMatch?.matched || 0}/${validationResult.prdMatch?.total || 0}`);
@@ -1120,6 +1141,26 @@ export class Orchestrator {
         parsedPRD.dbConnection = options.dbConfig;
       }
 
+      // ========== PRD 내 SQL Injection / 위험 쿼리 사전 검증 (Case 04) ==========
+      console.log('📊 Phase A: Analysis...');
+      const prdSecurityCheck = this._validatePRDSecurity(prdContent, taskId);
+      if (!prdSecurityCheck.passed) {
+        // 보안 위반 발견 - FAIL 처리
+        metrics.endPhase('analysis', 'fail');
+
+        // 보안 FAIL 리포트 출력
+        this._printSecurityFailReport(taskId, prdSecurityCheck, metrics);
+
+        return {
+          success: false,
+          taskId,
+          pipeline: 'analysis',
+          error: `보안 정책 위반 - ${prdSecurityCheck.blockedCount}개 위험 쿼리 차단됨`,
+          securityViolations: prdSecurityCheck.violations,
+          metrics: metrics.generateReport()
+        };
+      }
+
       // ========== Phase 7-2: QUERY_REVIEW 체크포인트 (v3.5.0) ==========
       // 쿼리 생성 단계에서 위험 쿼리 감지 시 HITL 트리거
       console.log('📊 [Analysis] 쿼리 생성 중...');
@@ -1236,16 +1277,11 @@ export class Orchestrator {
    * @returns {Object} - 통합 결과
    */
   async runMixedPipeline(taskId, taskDescription, prdContent, options = {}) {
-    console.log('   → Mixed 파이프라인 실행 (Phase A: Analysis → Phase B: Design)\n');
-
     const metrics = new MetricsTracker(taskId);
 
     try {
       // ========== Phase A: Analysis ==========
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📊 [Phase A] Analysis 시작...');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
+      console.log('\n📊 Phase A: Analysis...');
       metrics.startPhase('analysis');
 
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
@@ -1270,32 +1306,19 @@ export class Orchestrator {
         metrics.addPhaseTokens('phase_a', analysisResult.usage.inputTokens, analysisResult.usage.outputTokens);
       }
 
-      console.log(`\n✅ Phase A 완료: ${analysisResult.success ? '성공' : '부분 성공'}`);
+      console.log(`   ✅ Analysis 완료`);
 
-      // [Fix v4.3.3] Empty Analysis Guard - 빈 분석 결과 경고
+      // [Fix v4.3.3] Empty Analysis Guard
       const hasValidInsights = analysisResult.insights?.insights?.length > 0 ||
                                analysisResult.insights?.patterns?.length > 0;
-      const hasMockData = analysisResult.data?.some(d => d.mock === true);
       const totalRows = analysisResult.data?.reduce((sum, d) => sum + (d.rowCount || 0), 0) || 0;
 
       if (totalRows === 0 || !hasValidInsights) {
-        console.warn('\n⚠️━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.warn('⚠️ [Empty Analysis Guard] 분석 결과가 비어있습니다!');
-        console.warn('⚠️━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.warn(`   - 총 반환 행: ${totalRows}`);
-        console.warn(`   - 인사이트 존재: ${hasValidInsights ? '있음' : '없음'}`);
-        console.warn(`   - Mock 모드: ${hasMockData ? '예 (DB 연결 실패)' : '아니오'}`);
-        console.warn('');
-        console.warn('⛔ Phase B로 진행하지만, Leader Agent는 "빈 데이터"를 기반으로 설계합니다.');
-        console.warn('   실제 데이터 분석을 원하면 DB 연결을 확인하세요.');
-        console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+        console.warn('   ⚠️ Empty data - Design will use mock context');
       }
 
       // ========== Phase B: Design (분석 결과 기반) ==========
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📋 [Phase B] Design 시작 (분석 결과 기반)...');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
+      console.log('\n📋 Phase B: Design...');
       metrics.startPhase('design');
 
       // 분석 결과를 PRD에 추가하여 설계에 활용
@@ -1313,62 +1336,174 @@ export class Orchestrator {
       }
 
       // ========== Phase B Reviewer (P1-1) ==========
-      console.log('\n[Phase B] Reviewer Skill: 설계 문서 품질 검증...');
       const phaseBReviewResult = await this._validateDesignDocuments(planResult, prdContent);
 
-      if (!phaseBReviewResult.passed) {
-        console.warn(`  ⚠️ Phase B Reviewer FAIL (${phaseBReviewResult.score}/100)`);
-        console.warn(`  → ${phaseBReviewResult.summary}`);
+      // ========== Case 05: Reviewer가 감지한 초대형 PRD 처리 ==========
+      const prdScopeResult = phaseBReviewResult.details?.prd_scope;
+      if (prdScopeResult && !prdScopeResult.passed) {
+        console.warn(`   ⚠️ ${prdScopeResult.message}`);
+        metrics.addError('oversized_prd', prdScopeResult.message);
 
-        // 피드백과 함께 계속 진행 (재생성은 하지 않음 - 단순 경고)
+        // Partial 상태로 보고서 출력
+        const report = metrics.generateReport();
+        this._printOversizedPRDReport(taskId, prdScopeResult, phaseBReviewResult, report);
+
+        return {
+          success: false,
+          partial: true,
+          taskId,
+          pipeline: 'mixed',
+          prdType: 'MIXED',
+          error: `PRD 범위 과다 - ${prdScopeResult.featureCount}개 기능 (최대 ${prdScopeResult.maxFeatures}개)`,
+          prdScopeResult,
+          metrics: report
+        };
+      }
+
+      if (!phaseBReviewResult.passed) {
+        console.warn(`   ⚠️ Review FAIL (${phaseBReviewResult.score}/100)`);
         metrics.addError('design_review', phaseBReviewResult.summary);
       } else {
-        console.log(`  ✅ Phase B Reviewer PASS (${phaseBReviewResult.score}/100)`);
-
-        // [P2-2] Doc-Sync: Reviewer PASS 시 Notion 동기화 (Milestone 3)
+        console.log(`   ✅ Design 완료 (${phaseBReviewResult.score}/100)`);
         await this._triggerDocSync(taskId);
       }
 
-      // 리뷰 결과를 planResult에 추가
       planResult.reviewResult = phaseBReviewResult;
 
-      console.log('\n✅ Phase B 완료');
+      // Mixed Pipeline은 Phase B에서 종료
+      const report = metrics.generateReport();
+      await this.saveLog(taskId, report, {
+        analysis: analysisResult,
+        planning: planResult
+      });
 
-      // ========== Phase C: Code Implementation (Milestone 5) ==========
+      const finalResult = {
+        success: true,
+        taskId,
+        pipeline: 'mixed',
+        prdType: 'MIXED',
+        // Phase A 결과
+        analysis: {
+          outputs: analysisResult.outputs,
+          queries: analysisResult.queries,
+          data: analysisResult.data,
+          insights: analysisResult.insights,
+          summary: analysisResult.summary
+        },
+        // Phase B 결과
+        planning: {
+          ia: planResult.ia,
+          wireframe: planResult.wireframe,
+          sdd: planResult.sdd,
+          handoff: planResult.handoff,
+          reviewResult: phaseBReviewResult
+        },
+        metrics: report
+      };
+
+      // 실행 완료 보고서 출력 (v3.3.0)
+      this.printCompletionReport(finalResult);
+
+      return finalResult;
+
+    } catch (error) {
+      console.error('\n❌ Mixed 파이프라인 에러:', error.message);
+      metrics.addError('mixed', error.message);
+
+      return {
+        success: false,
+        taskId,
+        pipeline: 'mixed',
+        error: error.message,
+        metrics: metrics.generateReport()
+      };
+    }
+  }
+
+  /**
+   * Full 파이프라인 실행 (Phase A → Phase B → Phase C)
+   *
+   * ROLE_ARCHITECTURE.md 정의:
+   * - Full: Phase A → B → C 전체 (End-to-End)
+   *
+   * @param {string} taskId - 태스크 ID
+   * @param {string} taskDescription - 작업 설명
+   * @param {string} prdContent - PRD 내용
+   * @param {Object} options - 추가 옵션
+   * @returns {Object} - 통합 결과
+   */
+  async runFullPipeline(taskId, taskDescription, prdContent, options = {}) {
+    const metrics = new MetricsTracker(taskId);
+
+    try {
+      // ========== Phase A: Analysis ==========
+      console.log('\n📊 Phase A: Analysis...');
+      metrics.startPhase('analysis');
+
+      const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
+      parsedPRD.type = 'FULL';
+      parsedPRD.pipeline = 'full';
+      parsedPRD.originalText = prdContent;
+
+      if (options.dbConfig) {
+        parsedPRD.dbConnection = options.dbConfig;
+      }
+
+      const analysisOutputPath = this.analysisDir(taskId);
+      const analysisResult = await this.analysisAgent.analyze(parsedPRD, taskId, {
+        outputDir: analysisOutputPath
+      });
+      metrics.endPhase('analysis', analysisResult.success ? 'success' : 'partial');
+
+      if (analysisResult.usage) {
+        metrics.addPhaseTokens('phase_a', analysisResult.usage.inputTokens, analysisResult.usage.outputTokens);
+      }
+
+      console.log(`   ✅ Analysis 완료`);
+
+      // ========== Phase B: Design ==========
+      console.log('\n📋 Phase B: Design...');
+      metrics.startPhase('design');
+
+      const enrichedPrdContent = this.enrichPRDWithAnalysis(prdContent, analysisResult);
+      const planResult = await this.leader.plan(taskDescription, enrichedPrdContent);
+      metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      metrics.endPhase('design', 'success');
+
+      if (this.saveFiles) {
+        await this.savePlanningDocs(taskId, planResult);
+      }
+
+      // Phase B Reviewer
+      const phaseBReviewResult = await this._validateDesignDocuments(planResult, prdContent);
+
+      if (!phaseBReviewResult.passed) {
+        console.warn(`   ⚠️ Review FAIL (${phaseBReviewResult.score}/100)`);
+        metrics.addError('design_review', phaseBReviewResult.summary);
+      } else {
+        console.log(`   ✅ Design 완료 (${phaseBReviewResult.score}/100)`);
+        await this._triggerDocSync(taskId);
+      }
+
+      planResult.reviewResult = phaseBReviewResult;
+
+      // ========== Phase C: Code Implementation ==========
       let codeResult = null;
 
-      // Phase B Reviewer PASS 시에만 Phase C 실행
       if (phaseBReviewResult.passed && planResult.handoff) {
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('⚙️  [Phase C] Code Implementation 시작...');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
+        console.log('\n⚙️  Phase C: Code...');
         metrics.startPhase('coding');
 
         try {
-          // SubAgent 초기화 (CoderSkill 소유)
-          const subAgent = new SubAgent({
-            projectRoot: this.projectRoot,
-            ...this.providerConfig
-          });
-          if (subAgent.initialize) {
-            await subAgent.initialize();
-          }
-
-          // HANDOFF 기반 코드 생성
-          codeResult = await subAgent.execute({
-            caseId: taskId,
-            taskId,
-            projectRoot: this.projectRoot,
-            designDocs: {
-              ia: planResult.ia,
-              wireframe: planResult.wireframe,
-              sdd: planResult.sdd
-            },
+          // CodeAgent 사용 (SubAgent 대체)
+          codeResult = await this.codeAgent.implement({
+            sdd: planResult.sdd,
+            wireframe: planResult.wireframe,
+            ia: planResult.ia,
             handoff: planResult.handoff
           });
 
-          // P1-3: Phase C 토큰 추적
           if (codeResult?.usage) {
             metrics.addPhaseTokens('phase_c', codeResult.usage.inputTokens, codeResult.usage.outputTokens);
           }
@@ -1399,13 +1534,12 @@ export class Orchestrator {
         coding: codeResult
       });
 
-      console.log('\n🎉 Mixed 파이프라인 완료');
 
       const finalResult = {
         success: true,
         taskId,
-        pipeline: 'mixed',
-        prdType: 'MIXED',
+        pipeline: 'full',
+        prdType: 'FULL',
         // Phase A 결과
         analysis: {
           outputs: analysisResult.outputs,
@@ -1419,9 +1553,10 @@ export class Orchestrator {
           ia: planResult.ia,
           wireframe: planResult.wireframe,
           sdd: planResult.sdd,
-          handoff: planResult.handoff
+          handoff: planResult.handoff,
+          reviewResult: phaseBReviewResult
         },
-        // Phase C 결과 (Milestone 5)
+        // Phase C 결과
         coding: codeResult ? {
           files: codeResult.files,
           report: codeResult.report,
@@ -1430,19 +1565,18 @@ export class Orchestrator {
         metrics: report
       };
 
-      // 실행 완료 보고서 출력 (v3.3.0)
       this.printCompletionReport(finalResult);
 
       return finalResult;
 
     } catch (error) {
-      console.error('\n❌ Mixed 파이프라인 에러:', error.message);
-      metrics.addError('mixed', error.message);
+      console.error('\n❌ Full 파이프라인 에러:', error.message);
+      metrics.addError('full', error.message);
 
       return {
         success: false,
         taskId,
-        pipeline: 'mixed',
+        pipeline: 'full',
         error: error.message,
         metrics: metrics.generateReport()
       };
@@ -1458,23 +1592,16 @@ export class Orchestrator {
    * @returns {Object} - 통합 결과
    */
   async runParallelPipeline(taskId, taskDescription, prdContent, options = {}) {
-    console.log('   → Parallel 파이프라인 실행 (Design || Code 병렬)\n');
-
     const metrics = new MetricsTracker(taskId);
 
     try {
       // ========== Phase 1: Leader Planning ==========
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📋 [Phase 1] Leader Planning...');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
+      console.log('\n📋 Phase 1: Planning...');
       metrics.startPhase('planning');
 
       const planResult = await this.leader.plan(taskDescription, prdContent);
       metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
       metrics.endPhase('planning', 'success');
-
-      console.log('✅ Planning 완료');
 
       // HANDOFF 누락 시 자동 생성
       if (!planResult.handoff && planResult.sdd) {
@@ -1482,85 +1609,65 @@ export class Orchestrator {
       }
 
       // ========== Phase 2: 병렬 실행 (Design + Code) ==========
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🚀 [Phase 2] 병렬 실행 시작 (Design || Code)...');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
+      console.log('\n🚀 Phase 2: Parallel (Design || Code)...');
       metrics.startPhase('parallel_execution');
 
       const parallelStart = Date.now();
 
-      // Promise.allSettled로 병렬 실행 (부분 실패 허용)
-      const results = await Promise.allSettled([
-        // Design Agent: 설계 문서 보완
+      // Code Agent 실행 (Design은 Leader 결과 사용)
+      const codeSettled = await Promise.allSettled([
+        // Code Agent
         (async () => {
-          console.log('   📝 [Design Agent] 설계 문서 보완 시작...');
-          const result = await this.subagent.implementDesign(planResult.handoff, {
-            documentType: 'all',
-            prdAnalysis: planResult.gapCheck
-          });
-          console.log(`   ✅ [Design Agent] 완료 (${Object.keys(result.files).length}개 파일)`);
-          return result;
-        })(),
-
-        // Code Agent: 코드 구현
-        (async () => {
-          console.log('   ⚙️  [Code Agent] 코드 구현 시작...');
           const result = await this.codeAgent.implement({
             sdd: planResult.sdd,
             wireframe: planResult.wireframe,
             ia: planResult.ia,
             handoff: planResult.handoff
           });
-          console.log(`   ✅ [Code Agent] 완료 (${Object.keys(result.files).length}개 파일)`);
           return result;
         })()
       ]);
 
-      // 결과 추출 (실패 시 기본값 사용)
-      const designSettled = results[0];
-      const codeSettled = results[1];
+      // Design 결과는 Leader 결과에서 구성
+      const designResult = {
+        files: {
+          'IA.md': planResult.ia,
+          'Wireframe.md': planResult.wireframe,
+          'SDD.md': planResult.sdd,
+          'HANDOFF.md': planResult.handoff
+        },
+        usage: { inputTokens: 0, outputTokens: 0 },
+        success: true
+      };
 
-      const designResult = designSettled.status === 'fulfilled'
-        ? designSettled.value
+      const codeResult = codeSettled[0].status === 'fulfilled'
+        ? codeSettled[0].value
         : { files: {}, usage: { inputTokens: 0, outputTokens: 0 }, success: false };
 
-      const codeResult = codeSettled.status === 'fulfilled'
-        ? codeSettled.value
-        : { files: {}, usage: { inputTokens: 0, outputTokens: 0 }, success: false };
-
-      // 부분 실패 로깅
-      if (designSettled.status === 'rejected') {
-        console.error(`   ❌ [Design Agent] 실패: ${designSettled.reason?.message || designSettled.reason}`);
-      }
-      if (codeSettled.status === 'rejected') {
-        console.error(`   ❌ [Code Agent] 실패: ${codeSettled.reason?.message || codeSettled.reason}`);
+      // 코드 실패 로깅
+      if (codeSettled[0].status === 'rejected') {
+        console.error(`   ❌ [Code Agent] 실패: ${codeSettled[0].reason?.message || codeSettled[0].reason}`);
       }
 
-      // 둘 다 실패한 경우 조기 종료
-      if (designSettled.status === 'rejected' && codeSettled.status === 'rejected') {
-        const errorMsg = `Design Agent와 Code Agent 모두 실패: Design(${designSettled.reason?.message}), Code(${codeSettled.reason?.message})`;
-        console.error(`\n❌ 병렬 실행 완전 실패: ${errorMsg}`);
+      // Code Agent 실패한 경우 조기 종료
+      if (codeSettled[0].status === 'rejected') {
+        const errorMsg = `Code Agent 실패: ${codeSettled[0].reason?.message || codeSettled[0].reason}`;
+        console.error(`\n❌ 실행 실패: ${errorMsg}`);
         metrics.endPhase('parallel_execution', 'fail');
         metrics.addError('parallel_execution', errorMsg);
         throw new Error(errorMsg);
       }
 
       const parallelDuration = ((Date.now() - parallelStart) / 1000).toFixed(2);
-      console.log(`\n⏱️  병렬 실행 완료: ${parallelDuration}s`);
+      console.log(`   ✅ 실행 완료 (${parallelDuration}s)`);
 
-      metrics.addTokens('subagent', designResult.usage?.inputTokens || 0, designResult.usage?.outputTokens || 0);
+      metrics.addTokens('leader', designResult.usage?.inputTokens || 0, designResult.usage?.outputTokens || 0);
       metrics.addTokens('codeagent', codeResult.usage?.inputTokens || 0, codeResult.usage?.outputTokens || 0);
 
-      const parallelStatus = designSettled.status === 'fulfilled' && codeSettled.status === 'fulfilled'
-        ? 'success'
-        : 'partial';
+      const parallelStatus = codeSettled[0].status === 'fulfilled' ? 'success' : 'partial';
       metrics.endPhase('parallel_execution', parallelStatus);
 
       // ========== Phase 3: 결과 병합 ==========
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔗 [Phase 3] 결과 병합...');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // 설계 문서 병합
       const designFiles = {};
@@ -1593,20 +1700,9 @@ export class Orchestrator {
         ...codeResult.files
       };
 
-      console.log(`   - 설계 문서: ${Object.keys(designFiles).length}개`);
-      console.log(`   - 코드 파일: ${Object.keys(codeResult.files).length}개`);
-      console.log(`   - 총 파일: ${Object.keys(allFiles).length}개`);
-
       // ========== Phase 4: Output Validation ==========
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 [Phase 4] Output Validation...');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-      const outputs = this.subagent.filesToOutputs(allFiles);
-      const validationResult = this.subagent.validateOutputs(outputs, planResult.gapCheck);
-
-      console.log(`   - 전체 통과: ${validationResult.passed ? '✅' : '❌'}`);
-      console.log(`   - PRD 매칭: ${validationResult.prdMatch?.matched || 0}/${validationResult.prdMatch?.total || 0}`);
+      const outputs = this._filesToOutputs(allFiles);
+      const validationResult = this._validateOutputs(outputs, planResult.gapCheck);
 
       // 파일 저장
       if (this.saveFiles) {
@@ -1619,7 +1715,6 @@ export class Orchestrator {
           fs.writeFileSync(path.join(docsDir, fileName), content);
         }
         await this.codeAgent.saveFiles(codeResult.files);
-        console.log(`   📁 파일 저장 완료`);
       }
 
       // 결과 리포트
@@ -1630,10 +1725,6 @@ export class Orchestrator {
         code: codeResult,
         validation: validationResult
       });
-
-      metrics.printReport();
-
-      console.log('\n🎉 Parallel 파이프라인 완료');
 
       return {
         success: validationResult.passed,
@@ -1891,11 +1982,11 @@ export class Orchestrator {
         };
       }
 
-      // ReviewerSkill 호출 (design_documents 스코프)
-      const reviewResult = await reviewer.validate({
+      // ReviewerSkill 호출 (design_documents 스코프 + prd_scope)
+      const reviewResult = await reviewer.review({
         prd: { content: prdContent },
         outputs: designDocuments,
-        validationScope: ['structure', 'completeness', 'prd_match']
+        validationScope: ['structure', 'completeness', 'prd_match', 'prd_scope']
       });
 
       // 추가 검증: 문서 구조 확인
@@ -2001,162 +2092,194 @@ export class Orchestrator {
   // ========== 실행 완료 보고 템플릿 (v3.3.0) ==========
 
   /**
-   * 실행 완료 후 사용자 친화적 보고서 출력
-   * @param {Object} result - 파이프라인 실행 결과
+   * 파이프라인 시각화 문자열 생성
+   */
+  _getPipelineVisual(pipelineType) {
+    const visuals = {
+      'analysis': '📊 Analysis Only (Data Extraction)',
+      'design': '🎨 Design Only (IA → Wireframe → SDD)',
+      'mixed': '🔀 Mixed Pipeline (📊 Analysis → 🎨 Design)',
+      'full': '🔀 Full Pipeline (📊 Analysis → 🎨 Design → ⚙️ Code)',
+      'parallel': '⚡ Parallel Pipeline (🎨 Design || ⚙️ Code)'
+    };
+    return visuals[pipelineType] || `🔄 Custom Pipeline (${pipelineType})`;
+  }
+
+  /**
+   * 에러 원인 분석 및 해결책 제안
+   */
+  _analyzeFailureRootCause(error) {
+    const errorMsg = typeof error === 'string' ? error : error?.message || '';
+
+    if (/ECONNREFUSED|Access denied|connection/i.test(errorMsg)) {
+      return {
+        issue: 'DB 연결 실패',
+        suggestion: '.env의 DB 정보와 VPN/방화벽을 확인하세요.'
+      };
+    }
+    if (/Review failed|max retries/i.test(errorMsg)) {
+      return {
+        issue: '품질 기준 미달',
+        suggestion: 'PRD 요구사항이 너무 복잡하거나 모호합니다. Task를 쪼개거나 PRD를 구체화하세요.'
+      };
+    }
+    if (/Token limit|context length/i.test(errorMsg)) {
+      return {
+        issue: '토큰 초과',
+        suggestion: 'CONTEXT_MODE를 변경하거나 불필요한 문서를 로딩에서 제외하세요.'
+      };
+    }
+    if (/OUTPUT_PATH_BLOCKED|SANDBOX_VIOLATION/i.test(errorMsg)) {
+      return {
+        issue: '보안 차단',
+        suggestion: 'orchestrator/security/path-validator.js의 허용 경로를 확인하세요.'
+      };
+    }
+    return {
+      issue: '런타임 에러',
+      suggestion: '로그 상세(workspace/logs/)를 확인하세요.'
+    };
+  }
+
+  /**
+   * 실행 가능한 명령어 생성
+   */
+  _generateRunCommands(result, caseId) {
+    const commands = [];
+    const files = result.coding?.files || result.files || {};
+    const fileKeys = Object.keys(files);
+
+    // Backend 감지
+    if (fileKeys.some(f => f.includes('backend') || f.includes('package.json'))) {
+      commands.push({ type: 'Backend', cmd: 'cd backend && npm install && npm run dev' });
+    }
+
+    // Frontend 감지
+    if (fileKeys.some(f => f.includes('frontend') || f.includes('public/index.html'))) {
+      commands.push({ type: 'Frontend', cmd: 'cd frontend && npm install && npm run dev' });
+    }
+
+    // SQL 파일 감지
+    if (fileKeys.some(f => f.endsWith('.sql'))) {
+      commands.push({ type: 'SQL', cmd: `SQL 클라이언트에서 docs/cases/${caseId}/analysis/results/ 내 쿼리 실행` });
+    }
+
+    return commands.length > 0 ? commands : null;
+  }
+
+  /**
+   * 실행 완료 보고서 출력 (v4.0.0 - CLI UX 개편)
    */
   printCompletionReport(result) {
-    const divider = '━'.repeat(60);
-
-    console.log(`\n${divider}`);
-    console.log(`📊 실행 완료 보고서`);
-    console.log(divider);
-
-    // 1. 기본 정보
-    console.log(`\n🏷️  Task ID: ${result.taskId}`);
-    console.log(`📌 파이프라인: ${result.pipeline || 'design'}`);
-    console.log(`📅 완료 시각: ${new Date().toLocaleString('ko-KR')}`);
-    console.log(`✅ 성공 여부: ${result.success ? '성공' : '실패'}`);
-
-    // 2. 산출물 위치 안내
-    console.log(`\n📁 산출물 위치`);
-    console.log(`${'─'.repeat(40)}`);
-
+    const divider = '━'.repeat(68);
     const taskId = result.taskId;
     const caseId = this.extractCaseId(taskId);
-    const projectRoot = this.projectRoot;
+    const pipelineType = result.pipeline || 'design';
+    const pipelineVisual = this._getPipelineVisual(pipelineType);
 
-    // 설계 문서
-    if (result.planning || result.files) {
-      const docsDir = path.join('docs', 'cases', caseId);
-      console.log(`\n📝 설계 문서:`);
-      console.log(`   ${path.join(projectRoot, docsDir)}/`);
-
-      const designFiles = ['IA.md', 'Wireframe.md', 'SDD.md', 'HANDOFF.md'];
-      for (const file of designFiles) {
-        const filePath = path.join(projectRoot, docsDir, file);
-        if (fs.existsSync(filePath)) {
-          console.log(`   ├─ ${file} ✅`);
-        }
-      }
-    }
-
-    // 분석 결과 (Analysis/Mixed 파이프라인)
-    if (result.analysis || result.pipeline === 'analysis' || result.pipeline === 'mixed') {
-      // [Fix v4.3.0] Case-Centric 경로 사용
-      const caseAnalysisDir = path.join('docs', 'cases', caseId, 'analysis');
-      console.log(`\n📊 분석 결과:`);
-      console.log(`   ${path.join(projectRoot, caseAnalysisDir)}/`);
-
-      if (result.analysis?.outputs || result.outputs) {
-        const outputs = result.analysis?.outputs || result.outputs || [];
-        outputs.forEach(output => {
-          if (output.filePath) {
-            console.log(`   ├─ ${path.basename(output.filePath)} ✅`);
-          }
-        });
-      }
-
-      // SQL 쿼리 파일
-      const sqlDir = path.join(projectRoot, caseAnalysisDir, 'results');
-      if (fs.existsSync(sqlDir)) {
-        const sqlFiles = fs.readdirSync(sqlDir).filter(f => f.endsWith('.sql'));
-        if (sqlFiles.length > 0) {
-          console.log(`   📂 SQL 쿼리: ${sqlFiles.length}개`);
-        }
-      }
-
-      // 결과 데이터
-      const resultsDir = path.join(projectRoot, caseAnalysisDir, 'results');
-      if (fs.existsSync(resultsDir)) {
-        const resultFiles = fs.readdirSync(resultsDir);
-        if (resultFiles.length > 0) {
-          console.log(`   📂 결과 데이터: ${resultFiles.length}개`);
-        }
-      }
-    }
-
-    // 코드 파일 (Design+Code 파이프라인)
-    if (result.code?.files || (result.files && Object.keys(result.files).some(f => f.endsWith('.js') || f.endsWith('.ts')))) {
-      const codeFiles = result.code?.files || result.files;
-      const srcDir = path.join('src', 'features');
-      console.log(`\n💻 구현 코드:`);
-      console.log(`   ${path.join(projectRoot, srcDir)}/`);
-
-      const jsFiles = Object.keys(codeFiles).filter(f => f.endsWith('.js') || f.endsWith('.ts'));
-      jsFiles.slice(0, 5).forEach(file => {
-        console.log(`   ├─ ${path.basename(file)}`);
-      });
-      if (jsFiles.length > 5) {
-        console.log(`   └─ ... 외 ${jsFiles.length - 5}개`);
-      }
-    }
-
-    // 실행 로그
-    console.log(`\n📋 실행 로그:`);
-    console.log(`   ${path.join(projectRoot, 'orchestrator', 'logs', `${taskId}.json`)}`);
-
-    // 3. 실행 요약
-    console.log(`\n📈 실행 요약`);
-    console.log(`${'─'.repeat(40)}`);
-
+    // 토큰 및 시간 계산
+    let totalTokens = 0;
+    let duration = 'N/A';
     if (result.metrics) {
-      const metrics = result.metrics;
-      console.log(`   ⏱️  총 소요 시간: ${metrics.duration || 'N/A'}`);
-      console.log(`   🔄 재시도 횟수: ${metrics.retryCount || 0}회`);
-
-      if (metrics.tokens) {
-        const totalTokens = (metrics.tokens.leader || 0) +
-                           (metrics.tokens.subagent || 0) +
-                           (metrics.tokens.codeagent || 0);
-        console.log(`   🎟️  토큰 사용량: ${totalTokens.toLocaleString()}`);
+      const m = result.metrics;
+      // generateReport()의 summary.totalDuration 사용 (포맷된 문자열)
+      duration = m.summary?.totalDuration || m.duration || 'N/A';
+      // 토큰 합산: tokens.grandTotal 또는 개별 합산
+      if (m.tokens?.grandTotal) {
+        totalTokens = m.tokens.grandTotal;
+      } else if (m.tokens) {
+        totalTokens = (m.tokens.leader?.total || 0) + (m.tokens.codeagent?.total || 0);
+      }
+      // Phase별 토큰 (phaseUsage)
+      if (m.phaseUsage) {
+        const phaseTotal = (m.phaseUsage.phase_a_usage?.total || 0) +
+                          (m.phaseUsage.phase_b_usage?.total || 0) +
+                          (m.phaseUsage.phase_c_usage?.total || 0);
+        if (phaseTotal > totalTokens) totalTokens = phaseTotal;
       }
     }
 
-    // 분석 요약 (Analysis 파이프라인)
-    if (result.summary || result.analysis?.summary) {
-      const summary = result.summary || result.analysis?.summary;
-      console.log(`\n   📊 분석 요약:`);
-      console.log(`      - 쿼리 성공: ${summary.queriesSuccess}/${summary.queriesTotal}`);
-      console.log(`      - 총 데이터 행: ${summary.totalRows?.toLocaleString() || 0}`);
-      if (summary.insightsFound > 0) {
-        console.log(`      - 발견 인사이트: ${summary.insightsFound}개`);
-      }
+    // ========== 헤더 ==========
+    console.log(`\n${divider}`);
+    console.log(`🚀 [System B] Execution Report`);
+    console.log(divider);
+
+    console.log(`🏷️  Task     : ${taskId}`);
+    console.log(`🌊  Pipeline : ${pipelineVisual}`);
+    console.log(`⏱️  Duration : ${duration} (${totalTokens.toLocaleString()} tokens)`);
+    console.log(`🏁  Status   : ${result.success ? '✅ Success' : '❌ Failed'}`);
+
+    // ========== 1. Phase Execution Summary ==========
+    console.log(`\n1️⃣  Phase Execution Summary`);
+
+    // Phase A
+    if (result.analysis || pipelineType === 'analysis' || pipelineType === 'mixed' || pipelineType === 'full') {
+      const analysisStatus = result.analysis?.success !== false ? '✅ Pass' : '⚠️ Partial';
+      const analysisDetail = result.analysis?.summary
+        ? `${result.analysis.summary.totalRows?.toLocaleString() || 0}행 분석`
+        : 'N/A';
+      console.log(`   • 📊 Phase A (Analysis) : ${analysisStatus} - ${analysisDetail}`);
+    } else {
+      console.log(`   • 📊 Phase A (Analysis) : ⏭️ Skip`);
     }
 
-    // 4. 다음 단계 안내
-    console.log(`\n🔜 다음 단계`);
-    console.log(`${'─'.repeat(40)}`);
+    // Phase B
+    if (result.planning || pipelineType !== 'analysis') {
+      const designStatus = result.planning?.reviewResult?.passed !== false ? '✅ Pass' : '⚠️ Fail';
+      const designDetail = result.planning?.sdd ? 'SDD, IA, Wireframe 생성됨' : 'N/A';
+      console.log(`   • 🎨 Phase B (Design)   : ${designStatus} - ${designDetail}`);
+    } else {
+      console.log(`   • 🎨 Phase B (Design)   : ⏭️ Skip`);
+    }
+
+    // Phase C
+    if (result.coding || pipelineType === 'full') {
+      const codingStatus = result.coding?.files ? '✅ Pass' : '⏭️ Skip';
+      const fileCount = result.coding?.files ? Object.keys(result.coding.files).length : 0;
+      const codingDetail = fileCount > 0 ? `${fileCount}개 파일 생성` : 'N/A';
+      console.log(`   • ⚙️  Phase C (Coding)   : ${codingStatus} - ${codingDetail}`);
+    } else {
+      console.log(`   • ⚙️  Phase C (Coding)   : ⏭️ Skip`);
+    }
+
+    // ========== 2. Artifacts & Locations ==========
+    console.log(`\n2️⃣  Artifacts & Locations`);
+    console.log(`   • 📂 Docs     : ./docs/cases/${caseId}/  (SDD, IA, Wireframe)`);
+
+    if (pipelineType === 'analysis' || pipelineType === 'mixed' || pipelineType === 'full') {
+      console.log(`   • 💾 Data     : ./docs/cases/${caseId}/analysis/  (SQL Results)`);
+    }
+
+    if (pipelineType === 'full' && result.coding?.files) {
+      console.log(`   • 💻 Code     : ./backend/src/, ./frontend/src/`);
+    }
+
+    // ========== 3. Next Actions & Commands ==========
+    console.log(`\n3️⃣  Next Actions & Commands`);
 
     if (!result.success) {
-      console.log(`   ⚠️  실패 원인 확인: workspace/logs/${taskId}.json`);
-      console.log(`   🔧 수정 후 재실행 필요`);
+      const rootCause = this._analyzeFailureRootCause(result.error);
+      console.log(`   🔴 [Suspected Issue] ${rootCause.issue}`);
+      console.log(`   🛠️  [Suggestion]      ${rootCause.suggestion}`);
     } else {
-      // [Fix v4.3.0] Case-Centric 경로로 통일
-      if (result.pipeline === 'analysis') {
-        console.log(`   1. 분석 결과 검토: docs/cases/${caseId}/analysis/`);
-        console.log(`   2. 인사이트 기반 액션 플랜 수립`);
-        console.log(`   3. 필요시 Design 파이프라인으로 후속 작업`);
-      } else if (result.pipeline === 'mixed') {
-        console.log(`   1. 분석 결과 검토: docs/cases/${caseId}/analysis/`);
-        console.log(`   2. 설계 문서 검토: docs/cases/${caseId}/`);
-        console.log(`   3. 개발팀 HANDOFF.md 전달`);
+      const runCommands = this._generateRunCommands(result, caseId);
+
+      if (runCommands && runCommands.length > 0) {
+        runCommands.forEach(c => {
+          console.log(`   👉 [${c.type}]  ${c.cmd}`);
+        });
+      } else if (pipelineType === 'analysis') {
+        console.log(`   👉 [Check]    open docs/cases/${caseId}/analysis/analysis_report.md`);
+      } else if (pipelineType === 'mixed') {
+        console.log(`   👉 [Check]    open docs/cases/${caseId}/HANDOFF.md`);
+        console.log(`   👉 [Next]     Full 파이프라인으로 구현 진행 (pipeline: full)`);
       } else {
-        console.log(`   1. 설계 문서 검토: docs/cases/${caseId}/`);
-        console.log(`   2. 피드백 반영 후 개발팀 전달`);
-        console.log(`   3. 구현 진행 (HANDOFF.md 참조)`);
+        console.log(`   👉 [Check]    open docs/cases/${caseId}/HANDOFF.md`);
       }
     }
 
-    // 5. Human-in-the-Loop 안내
-    console.log(`\n👤 Human-in-the-Loop 체크포인트`);
-    console.log(`${'─'.repeat(40)}`);
-    console.log(`   ✋ 현재 시점: 실행 완료 후 검토 단계`);
-    console.log(`   📋 검토 항목:`);
-    console.log(`      - PRD 요구사항 충족 여부`);
-    console.log(`      - 설계 품질 및 일관성`);
-    console.log(`      - 비즈니스 로직 정확성`);
-
-    console.log(`\n${divider}\n`);
+    console.log(divider);
+    console.log('');
   }
 
   /**
@@ -2356,7 +2479,7 @@ export class Orchestrator {
 
     // 파일 저장
     if (this.saveFiles) {
-      await this.subagent.saveFiles(codingResult.files);
+      await this._saveFiles(codingResult.files, taskId);
     }
 
     // Review
@@ -2493,25 +2616,511 @@ export class Orchestrator {
    * @returns {Array} - 위험 쿼리 목록
    */
   /**
+   * v1.3.0: PRD Gap Check 실패 리포트 출력
+   * README.md 예상 출력 형식에 맞춰 FAIL 리포트 생성
+   *
+   * @param {string} taskId - 작업 ID
+   * @param {string} prdType - PRD 유형
+   * @param {string} pipeline - 파이프라인
+   * @param {Object} gapCheck - Gap Check 결과
+   * @param {Object} metrics - 메트릭스 객체
+   */
+  _printGapCheckFailReport(taskId, _prdType, pipeline, gapCheck, metrics) {
+    const duration = typeof metrics?.getTotalDuration === 'function'
+      ? metrics.formatDuration(metrics.getTotalDuration())
+      : '0.0s';
+    const tokenObj = typeof metrics?.getTotalTokens === 'function' ? metrics.getTotalTokens() : { total: 0 };
+    const tokens = tokenObj?.total || 0;
+    const missingFields = gapCheck?.missing || [];
+    const pipelineLabel = pipeline === 'analysis' ? 'Analysis Only (A)' :
+                          pipeline === 'mixed' ? 'Mixed (A→B)' : 'Design Only (B)';
+
+    // 누락된 필드 간단 표시 (괄호 제거)
+    const shortMissing = missingFields
+      .map(m => m.replace(/\([^)]*\)/g, '').trim())
+      .filter(m => m.length > 0);
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 [System B] Execution Report');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🏷️  Task     : ${taskId}`);
+    console.log(`🌊  Pipeline : ${pipelineLabel}`);
+    console.log(`⏱️  Duration : ${duration} (${tokens.toLocaleString()} tokens)`);
+    console.log(`🏁  Status   : ❌ Failed`);
+    console.log('');
+    console.log('1️⃣  Phase Execution Summary');
+    console.log('   • 📊 Phase A (Analysis) : ⏭️ Skip');
+    console.log(`   • 🎨 Phase B (Design)   : ⚠️ Fail - PRD Gap: ${shortMissing.join(', ')} 누락`);
+    console.log('');
+    console.log('3️⃣  Next Actions & Commands');
+    console.log(`   🔴 [Suspected Issue] PRD 불완전 - ${missingFields.length}개 섹션 누락`);
+    console.log(`   🛠️  [Suggestion]      "${shortMissing.join('", "')}" 섹션을 추가해주세요`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  }
+
+  /**
+   * 잘못된 파이프라인 FAIL 리포트 출력
+   * @param {string} taskId - 태스크 ID
+   * @param {string} invalidPipeline - 유효하지 않은 파이프라인 값
+   * @param {Object} metrics - 메트릭스 객체
+   */
+  _printInvalidPipelineFailReport(taskId, invalidPipeline, metrics) {
+    const duration = typeof metrics?.getTotalDuration === 'function'
+      ? metrics.formatDuration(metrics.getTotalDuration())
+      : '0.0s';
+    const tokenObj = typeof metrics?.getTotalTokens === 'function' ? metrics.getTotalTokens() : { total: 0 };
+    const tokens = tokenObj?.total || 0;
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 [System B] Execution Report');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🏷️  Task     : ${taskId}`);
+    console.log(`🌊  Pipeline : Invalid (${invalidPipeline})`);
+    console.log(`⏱️  Duration : ${duration} (${tokens} tokens)`);
+    console.log('🏁  Status   : ❌ Failed');
+    console.log('');
+    console.log('1️⃣  Phase Execution Summary');
+    console.log('   • 📊 Phase A (Analysis) : ⏭️ Skip');
+    console.log(`   • 🎨 Phase B (Design)   : ⚠️ Fail - 유효하지 않은 파이프라인: "${invalidPipeline}"`);
+    console.log('');
+    console.log('3️⃣  Next Actions & Commands');
+    console.log(`   🔴 [Suspected Issue] 유효하지 않은 파이프라인 지정: "${invalidPipeline}"`);
+    console.log('   🛠️  [Suggestion]      유효한 파이프라인: "analysis", "design", "mixed", "full"');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  }
+
+  // ========== 보안 검증 메서드 (Case 04: SQL Injection 방어) ==========
+
+  /**
+   * PRD 내 SQL 블록 보안 검증
+   * @param {string} prdContent - PRD 원본 내용
+   * @param {string} taskId - 태스크 ID
+   * @returns {Object} { passed, violations, blockedCount }
+   */
+  _validatePRDSecurity(prdContent, taskId) {
+    const violations = [];
+    const sqlValidator = new SQLValidator({ strictMode: true });
+
+    // 1. PRD에서 SQL 코드 블록 추출
+    const sqlBlocks = this._extractSQLBlocks(prdContent);
+
+    // 2. 각 SQL 블록 검증
+    for (const block of sqlBlocks) {
+      const result = sqlValidator.validate(block.sql);
+
+      if (!result.valid) {
+        for (const violation of result.violations) {
+          violations.push({
+            ...violation,
+            sql: block.sql.substring(0, 100),
+            blockIndex: block.index
+          });
+
+          // 보안 로그 출력 (README.md 예상 형식)
+          const timestamp = new Date().toISOString();
+          if (violation.type === 'WRITE_COMMAND_FORBIDDEN') {
+            const cmdType = this._detectWriteCommandType(block.sql);
+            console.log(`🔒 [${timestamp}] [DANGEROUS_QUERY_BLOCKED] ${cmdType} statement detected`);
+          } else if (violation.type === 'SENSITIVE_COLUMN_ACCESS') {
+            for (const col of violation.columns || []) {
+              console.log(`🔒 [${timestamp}] [SENSITIVE_COLUMN_ACCESS] ${col} access blocked`);
+            }
+          } else if (violation.type === 'FORBIDDEN_PATTERN') {
+            console.log(`🔒 [${timestamp}] [FORBIDDEN_PATTERN] ${violation.message}`);
+          }
+        }
+      }
+    }
+
+    // 3. PRD 텍스트 내 프롬프트 인젝션 패턴 검사
+    const promptInjections = this._detectPromptInjection(prdContent);
+    for (const injection of promptInjections) {
+      const timestamp = new Date().toISOString();
+      console.log(`🔒 [${timestamp}] [PROMPT_INJECTION_DETECTED] ${injection.pattern}`);
+      violations.push({
+        type: 'PROMPT_INJECTION',
+        severity: 'CRITICAL',
+        message: `프롬프트 인젝션 시도 감지: ${injection.pattern}`,
+        pattern: injection.pattern
+      });
+    }
+
+    const blockedCount = violations.filter(v =>
+      v.severity === 'CRITICAL' || v.severity === 'ERROR'
+    ).length;
+
+    return {
+      passed: blockedCount === 0,
+      violations,
+      blockedCount,
+      totalChecked: sqlBlocks.length
+    };
+  }
+
+  /**
+   * PRD에서 SQL 코드 블록 추출
+   */
+  _extractSQLBlocks(prdContent) {
+    const blocks = [];
+
+    // ```sql ... ``` 형식
+    const sqlCodeBlockRegex = /```sql\s*([\s\S]*?)```/gi;
+    let match;
+    let index = 0;
+
+    while ((match = sqlCodeBlockRegex.exec(prdContent)) !== null) {
+      const sqlContent = match[1].trim();
+      // 세미콜론으로 여러 쿼리 분리
+      const queries = sqlContent.split(';').filter(q => q.trim());
+
+      for (const sql of queries) {
+        blocks.push({
+          sql: sql.trim(),
+          index: index++,
+          raw: match[0]
+        });
+      }
+    }
+
+    // 인라인 SQL 패턴 (SELECT, INSERT, UPDATE, DELETE, DROP 등으로 시작)
+    const inlineSQLRegex = /(?:SELECT|INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER)\s+[^`\n]+/gi;
+    while ((match = inlineSQLRegex.exec(prdContent)) !== null) {
+      // 이미 코드 블록에서 추출한 것과 중복 방지
+      const sql = match[0].trim();
+      if (!blocks.some(b => b.sql.includes(sql.substring(0, 50)))) {
+        blocks.push({
+          sql,
+          index: index++,
+          raw: match[0]
+        });
+      }
+    }
+
+    return blocks;
+  }
+
+  /**
+   * 쓰기 명령어 타입 감지
+   */
+  _detectWriteCommandType(sql) {
+    const upperSQL = sql.toUpperCase();
+    if (upperSQL.includes('DROP')) return 'DROP';
+    if (upperSQL.includes('DELETE')) return 'DELETE';
+    if (upperSQL.includes('UPDATE')) return 'UPDATE';
+    if (upperSQL.includes('INSERT')) return 'INSERT';
+    if (upperSQL.includes('TRUNCATE')) return 'TRUNCATE';
+    if (upperSQL.includes('ALTER')) return 'ALTER';
+    return 'WRITE';
+  }
+
+  /**
+   * 프롬프트 인젝션 패턴 감지
+   */
+  _detectPromptInjection(content) {
+    const injections = [];
+    const patterns = [
+      { regex: /ignore\s+(previous|all)\s+instructions/i, name: 'ignore instructions' },
+      { regex: /rm\s+-rf/i, name: 'rm -rf pattern' },
+      { regex: /execute:\s*`[^`]+`/i, name: 'execute command' },
+      { regex: /system\s*\(\s*['"][^'"]+['"]\s*\)/i, name: 'system call' },
+      { regex: /eval\s*\(/i, name: 'eval pattern' },
+    ];
+
+    for (const { regex, name } of patterns) {
+      if (regex.test(content)) {
+        injections.push({ pattern: name, match: content.match(regex)?.[0] });
+      }
+    }
+
+    return injections;
+  }
+
+  /**
+   * 보안 FAIL 리포트 출력
+   */
+  _printSecurityFailReport(taskId, securityCheck, metrics) {
+    const duration = typeof metrics?.getTotalDuration === 'function'
+      ? metrics.formatDuration(metrics.getTotalDuration())
+      : '0.0s';
+    const tokenObj = typeof metrics?.getTotalTokens === 'function' ? metrics.getTotalTokens() : { total: 0 };
+    const tokens = tokenObj?.total || 0;
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 [System B] Execution Report');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🏷️  Task     : ${taskId}`);
+    console.log(`🌊  Pipeline : Analysis Only (A)`);
+    console.log(`⏱️  Duration : ${duration} (${tokens} tokens)`);
+    console.log('🏁  Status   : ❌ Failed');
+    console.log('');
+    console.log('1️⃣  Phase Execution Summary');
+    console.log(`   • 📊 Phase A (Analysis) : ❌ Blocked - 보안 위반 쿼리 차단됨`);
+    console.log('   • 🎨 Phase B (Design)   : ⏭️ Skip');
+    console.log('');
+    console.log('3️⃣  Next Actions & Commands');
+    console.log(`   🔴 [Suspected Issue] 보안 정책 위반 - 위험 쿼리 ${securityCheck.blockedCount}개 차단됨`);
+    console.log('   🛠️  [Suggestion]      SELECT 쿼리만 허용됩니다. INSERT/UPDATE/DELETE/DROP 금지');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // 감사 로그 경로 안내
+    const today = new Date().toISOString().split('T')[0];
+    console.log(`\n⚠️ 보안 로그: orchestrator/logs/audit/audit-${today}.jsonl`);
+  }
+
+  // ========== Case 05: PRD 크기 검증 (초대형 PRD) ==========
+
+  /**
+   * 초대형 PRD Partial 리포트 출력 (Case 05)
+   */
+  _printOversizedPRDReport(taskId, featureCheck, reviewResult, metricsReport) {
+    const duration = metricsReport?.duration || '0.0s';
+    const tokens = metricsReport?.tokens?.total || 0;
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 [System B] Execution Report');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🏷️  Task     : ${taskId}`);
+    console.log(`🌊  Pipeline : Mixed (A→B)`);
+    console.log(`⏱️  Duration : ${duration} (${tokens.toLocaleString()} tokens)`);
+    console.log('🏁  Status   : ⚠️ Partial');
+    console.log('');
+    console.log('1️⃣  Phase Execution Summary');
+    console.log('   • 📊 Phase A (Analysis) : ⚠️ Partial - Mock 데이터 사용');
+    console.log(`   • 🎨 Phase B (Design)   : ⚠️ Fail - 요구사항 과다 (${featureCheck.featureCount}개 기능)`);
+    console.log('');
+    console.log('3️⃣  Next Actions & Commands');
+    console.log('   🔴 [Suspected Issue] PRD 범위 과다 - 단일 iteration에서 처리 불가');
+    console.log('   🛠️  [Suggestion]      PRD를 여러 Phase로 분할하거나 핵심 기능만 선별해주세요');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    console.log('\n⚠️ 토큰 사용량이 높습니다. PRD 분할을 권장합니다.');
+  }
+
+  // ========== Case 09: 보호된 경로 검증 ==========
+
+  /**
+   * PRD 내 보호된 경로 접근 시도 감지
+   * @param {string} prdContent - PRD 원본 내용
+   * @returns {Object} { passed, violations }
+   */
+  _validateProtectedPaths(prdContent) {
+    const violations = [];
+    const timestamp = new Date().toISOString();
+
+    // 1. 보호된 경로 직접 참조 감지
+    for (const protectedPath of PROTECTED_PATHS) {
+      const regex = new RegExp(protectedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      if (regex.test(prdContent)) {
+        console.log(`🔒 [${timestamp}] [PROTECTED_PATH_ACCESS] ${protectedPath}`);
+        violations.push({
+          type: 'PROTECTED_PATH_ACCESS',
+          path: protectedPath,
+          severity: 'CRITICAL'
+        });
+      }
+    }
+
+    // 2. Path Traversal 패턴 감지 (../ 패턴)
+    const traversalRegex = /\.\.\/[^\s]+/g;
+    let traversalMatch;
+    while ((traversalMatch = traversalRegex.exec(prdContent)) !== null) {
+      console.log(`🔒 [${timestamp}] [PATH_TRAVERSAL_DETECTED] ${traversalMatch[0]}`);
+      violations.push({
+        type: 'PATH_TRAVERSAL',
+        path: traversalMatch[0],
+        severity: 'CRITICAL'
+      });
+    }
+
+    // 3. 프롬프트 인젝션 (기존 메서드 재사용)
+    const promptInjections = this._detectPromptInjection(prdContent);
+    for (const injection of promptInjections) {
+      console.log(`🔒 [${timestamp}] [PROMPT_INJECTION_DETECTED] ${injection.pattern}`);
+      violations.push({
+        type: 'PROMPT_INJECTION',
+        pattern: injection.pattern,
+        severity: 'CRITICAL'
+      });
+    }
+
+    return {
+      passed: violations.length === 0,
+      violations,
+      blockedCount: violations.length
+    };
+  }
+
+  /**
+   * 보호된 경로 FAIL 리포트 출력 (Case 09)
+   */
+  _printProtectedPathFailReport(taskId, violations, metrics) {
+    const duration = typeof metrics?.getTotalDuration === 'function'
+      ? metrics.formatDuration(metrics.getTotalDuration())
+      : '0.0s';
+    const tokenObj = typeof metrics?.getTotalTokens === 'function' ? metrics.getTotalTokens() : { total: 0 };
+    const tokens = tokenObj?.total || 0;
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 [System B] Execution Report');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🏷️  Task     : ${taskId}`);
+    console.log(`🌊  Pipeline : Design Only (B)`);
+    console.log(`⏱️  Duration : ${duration} (${tokens} tokens)`);
+    console.log('🏁  Status   : ❌ Failed');
+    console.log('');
+    console.log('1️⃣  Phase Execution Summary');
+    console.log('   • 📊 Phase A (Analysis) : ⏭️ Skip');
+    console.log('   • 🎨 Phase B (Design)   : ❌ Blocked - 보안 정책 위반');
+    console.log('');
+    console.log('3️⃣  Next Actions & Commands');
+    console.log('   🔴 [Suspected Issue] Constitution 보호 및 Path Traversal 시도 차단');
+    console.log('   🛠️  [Suggestion]      .claude/rules/*, CLAUDE.md는 수정 불가합니다');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    const today = new Date().toISOString().split('T')[0];
+    console.log(`\n⚠️ 보안 로그: orchestrator/logs/audit/audit-${today}.jsonl`);
+  }
+
+  // ========== 유틸리티 메서드 (SubAgent 대체) ==========
+
+  /**
+   * 파일 목록을 Output 형식으로 변환
+   * @param {Object} files - { filename: content } 형태
+   * @returns {Array} - Output 배열
+   */
+  _filesToOutputs(files) {
+    if (!files || typeof files !== 'object') return [];
+
+    return Object.entries(files).map(([filename, content]) => ({
+      filename,
+      content,
+      type: this._inferFileType(filename)
+    }));
+  }
+
+  /**
+   * 파일 타입 추론
+   */
+  _inferFileType(filename) {
+    if (filename.endsWith('.md')) return 'markdown';
+    if (filename.endsWith('.ts') || filename.endsWith('.tsx')) return 'typescript';
+    if (filename.endsWith('.js') || filename.endsWith('.jsx')) return 'javascript';
+    if (filename.endsWith('.sql')) return 'sql';
+    return 'text';
+  }
+
+  /**
+   * Output 검증
+   * @param {Array} outputs - Output 배열
+   * @param {Object} gapCheck - PRD Gap Check 결과
+   * @returns {Object} - 검증 결과
+   */
+  _validateOutputs(outputs, gapCheck) {
+    const deliverables = gapCheck?.deliverables || [];
+    const total = deliverables.length;
+
+    // 간단한 매칭: 파일 개수 기준
+    const matched = Math.min(outputs.length, total);
+
+    return {
+      passed: outputs.length > 0,
+      prdMatch: {
+        total,
+        matched,
+        missing: deliverables.slice(matched).map(d => d.item || d)
+      },
+      syntaxErrors: [],
+      schemaErrors: []
+    };
+  }
+
+  /**
+   * 파일 저장
+   * @param {Object} files - { path: content } 형태
+   * @param {string} taskId - 태스크 ID
+   */
+  async _saveFiles(files, taskId) {
+    const savedFiles = [];
+    const caseId = this.extractCaseId(taskId);
+    const baseDir = path.join(this.projectRoot, 'docs', 'cases', caseId);
+
+    for (const [filePath, content] of Object.entries(files)) {
+      const fullPath = path.join(baseDir, filePath);
+      const dir = path.dirname(fullPath);
+
+      // 디렉토리 생성
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      // 파일 저장
+      fs.writeFileSync(fullPath, content, 'utf-8');
+      savedFiles.push(fullPath);
+      console.log(`   📄 Saved: ${filePath}`);
+    }
+
+    console.log(`   ✅ ${savedFiles.length}개 파일 저장 완료`);
+    return savedFiles;
+  }
+
+  /**
    * P1-2: 라우팅 결정 로직
    * PRD 유형에 따라 적절한 파이프라인을 선택하고 결정 사유를 반환
    *
    * @param {string} prdType - QUANTITATIVE | QUALITATIVE | MIXED
    * @param {string} pipeline - analysis | design | mixed
    * @param {Object} options - 실행 옵션 (mode, pipeline 오버라이드)
-   * @returns {{ selectedPipeline: string, reason: string }}
+   * @returns {{ selectedPipeline: string, reason: string, invalidPipeline?: string }}
    */
   _determineRoutingDecision(prdType, pipeline, options = {}) {
+    // 유효한 파이프라인 목록
+    const VALID_PIPELINES = ['analysis', 'design', 'mixed', 'full', 'auto'];
+
     // 1. CLI 옵션으로 명시적 파이프라인 지정된 경우 (최우선)
     if (options.pipeline && options.pipeline !== 'auto') {
+      // CLI 옵션 유효성 검사
+      if (!VALID_PIPELINES.includes(options.pipeline)) {
+        return {
+          selectedPipeline: null,
+          reason: `CLI 옵션 유효하지 않음 (--pipeline ${options.pipeline})`,
+          invalidPipeline: options.pipeline
+        };
+      }
       return {
         selectedPipeline: options.pipeline,
         reason: `CLI 옵션 명시 (--pipeline ${options.pipeline})`
       };
     }
 
-    // 2. PRD 파일에 pipeline 필드가 명시된 경우
-    if (pipeline && pipeline !== 'design') {
+    // 2. PRD 파일에 pipeline 필드가 명시된 경우 (design 포함)
+    if (pipeline) {
+      // PRD pipeline 필드 유효성 검사
+      if (!VALID_PIPELINES.includes(pipeline)) {
+        // Case 10: 숫자형 또는 타입 불일치 → 기본값 폴백 (경고만)
+        // Case 03: 문자열이지만 유효하지 않음 → FAIL
+        const isNumericOrTypeMismatch = /^\d+$/.test(pipeline) ||
+          pipeline === '[object Object]' ||
+          pipeline === 'null' ||
+          pipeline === 'undefined' ||
+          pipeline === 'NaN';
+
+        if (isNumericOrTypeMismatch) {
+          // 타입 불일치: 기본값으로 폴백 (경고)
+          console.log(`   ⚠️ Pipeline "${pipeline}" 타입 불일치 → 기본값 "design" 적용`);
+          return {
+            selectedPipeline: 'design',
+            reason: `PRD pipeline 타입 불일치 (${pipeline}) → 기본값 design 폴백`,
+            typeMismatch: pipeline
+          };
+        }
+
+        // 유효하지 않은 문자열 파이프라인 → FAIL
+        return {
+          selectedPipeline: null,
+          reason: `PRD pipeline 필드 유효하지 않음 (pipeline: ${pipeline})`,
+          invalidPipeline: pipeline
+        };
+      }
       return {
         selectedPipeline: pipeline,
         reason: `PRD pipeline 필드 명시 (pipeline: ${pipeline})`

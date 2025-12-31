@@ -21,7 +21,7 @@
 
 import path from 'path';
 import { RoleLoader } from '../utils/role-loader.js';
-import { ReviewerSkill } from '../skills/reviewer/index.js';
+import { ReviewerSkill } from '../tools/reviewer/index.js';
 
 // 검증 항목 정의
 const VALIDATION_RULES = {

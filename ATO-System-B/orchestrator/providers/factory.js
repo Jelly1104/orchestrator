@@ -48,11 +48,10 @@ export class ProviderFactory {
       try {
         const provider = this.create(name, configs[name] || {});
         if (provider.isAvailable()) {
-          console.log(`[ProviderFactory] Using provider: ${name}`);
           return provider;
         }
       } catch (e) {
-        console.warn(`[ProviderFactory] Provider ${name} 초기화 실패: ${e.message}`);
+        // Provider 초기화 실패 - 다음 시도
       }
     }
 
@@ -75,11 +74,9 @@ export class ProviderFactory {
         const provider = this.create(name, configs[name] || {});
 
         if (!provider.isAvailable()) {
-          console.warn(`[ProviderFactory] ${name} is not available, skipping...`);
           continue;
         }
 
-        console.log(`[ProviderFactory] Trying provider: ${name}`);
         const result = await provider.sendMessage(systemPrompt, userMessage);
 
         return {
@@ -87,7 +84,6 @@ export class ProviderFactory {
           provider: name
         };
       } catch (error) {
-        console.warn(`[ProviderFactory] ${name} 실패: ${error.message}`);
         errors.push({ provider: name, error: error.message });
       }
     }
