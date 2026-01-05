@@ -78,14 +78,13 @@ async function testAnalysisAgent() {
   const prdAnalyzer = new PRDAnalyzer();
 
   const classification = prdAnalyzer.classifyPRDv2(CASE4_PRD);
-  console.log(`  - type: ${classification.type}`);
   console.log(`  - pipeline: ${classification.pipeline}`);
 
-  if (classification.type !== 'QUANTITATIVE') {
-    console.error('  ❌ 유형 판별 실패: QUANTITATIVE 예상');
+  if (classification.pipeline !== 'analysis') {
+    console.error('  ❌ 파이프라인 판별 실패: analysis 예상');
     return;
   }
-  console.log('  ✓ PRD 유형 판별 성공');
+  console.log('  ✓ 파이프라인 판별 성공');
 
   const parsed = prdAnalyzer.parsePRD(CASE4_PRD);
   console.log(`  - 목적: ${parsed.objective.substring(0, 50)}...`);

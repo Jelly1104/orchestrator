@@ -1,14 +1,18 @@
 # TDD_WORKFLOW.md
 
 > **문서 버전**: 1.3.2
+
 > **최종 업데이트**: 2025-12-23
+
 > **물리적 경로**: `.claude/rules/TDD_WORKFLOW.md`
+
 > **상위 문서**: `CLAUDE.md`
-> **대상**: 기능 개발 / 버그 수정 담당 서브 에이전트
+
+> **대상**: 기능 개발 / 버그 수정 담당 ROLE
 
 ---
 
-## 🎯 이 문서의 목적
+## 이 문서의 목적
 
 **"테스트 없는 코드는 레거시(Legacy)다."**
 
@@ -17,7 +21,7 @@ AI 에이전트는 이 문서의 프로세스를 따르지 않는 기능 구현�
 
 ---
 
-## 📋 사전 조건
+## 사전 조건
 
 - [ ] `CLAUDE.md` 아키텍처 원칙 숙지
 - [ ] `DOMAIN_SCHEMA.md`의 관련 테이블 및 컬럼 확인 (필수)
@@ -25,17 +29,17 @@ AI 에이전트는 이 문서의 프로세스를 따르지 않는 기능 구현�
 
 ---
 
-## 🧠 AI 사고 프로세스 (Thinking Process)
+## AI 사고 프로세스 (Thinking Process)
 
 작업 시작 전, 반드시 다음 `<thinking>` 블록을 출력하고 스스로 검토해야 합니다.
 
 ```xml
 <thinking>
 1. 요구사항 분석: 사용자가 원하는 기능의 핵심 가치는 무엇인가?
-2. 스키마 체크: 
+2. 스키마 체크:
    - 사용할 테이블은 무엇인가? (예: BOARD_MUZZIMA)
    - 실제 컬럼명은 무엇인가? (예: id(x) -> BOARD_IDX(o))
-3. 테스트 전략: 
+3. 테스트 전략:
    - Happy Path와 Edge Case는 무엇인가?
    - 대용량 테이블(COMMENT 등) 조회 시 인덱스 전략은?
 4. 토큰 전략: 전체 파일을 다시 출력할 필요가 있는가? (부분 수정 권장)
@@ -44,7 +48,7 @@ AI 에이전트는 이 문서의 프로세스를 따르지 않는 기능 구현�
 
 ---
 
-## 🆕 기능 개발 시
+## 기능 개발 시
 
 ### 🔴 Phase 1: Red - 실패하는 테스트 작성
 
@@ -55,13 +59,13 @@ AI 에이전트는 이 문서의 프로세스를 따르지 않는 기능 구현�
 
 ```typescript
 // ✅ 좋은 예: 실제 레거시 스키마 반영
-describe('게시글 생성', () => {
-  it('필수 값(제목/내용/작성자)이 있으면 성공해야 한다', () => {
+describe("게시글 생성", () => {
+  it("필수 값(제목/내용/작성자)이 있으면 성공해야 한다", () => {
     // Arrange
-    const input = { 
-      TITLE: '테스트 제목', 
-      CONTENT: '내용', 
-      U_ID: 'doc123' // (NOT userId - 스키마 준수)
+    const input = {
+      TITLE: "테스트 제목",
+      CONTENT: "내용",
+      U_ID: "doc123", // (NOT userId - 스키마 준수)
     };
     // Act
     const result = createBoard(input);
@@ -91,10 +95,10 @@ describe('게시글 생성', () => {
 // *.ts
 export function createBoard(input: CreateBoardInput): BoardResult {
   // 최소 구현: 입력받은 값을 그대로 리턴하는 수준이라도 OK
-  return { 
-    BOARD_IDX: 1, 
-    ...input, 
-    REG_DATE: new Date() 
+  return {
+    BOARD_IDX: 1,
+    ...input,
+    REG_DATE: new Date(),
   };
 }
 ```
@@ -127,13 +131,13 @@ export function createBoard(input: CreateBoardInput): BoardResult {
 
 ---
 
-### 🔁 사이클 반복
+### 사이클 반복
 
 새로운 요구사항마다 **Red → Green → Refactor** 반복
 
 ---
 
-## 🐛 버그 수정 시
+## 버그 수정 시
 
 ### 🔴 Phase 1: 버그 재현(Reproduction)
 
@@ -143,12 +147,12 @@ export function createBoard(input: CreateBoardInput): BoardResult {
 - **작성**: 버그 상황을 그대로 코드로 옮김
 
 ```typescript
-describe('Bug #1234 - 댓글 카운트 오류', () => {
-  it('댓글이 삭제되면 댓글 수가 감소해야 한다', () => {
+describe("Bug #1234 - 댓글 카운트 오류", () => {
+  it("댓글이 삭제되면 댓글 수가 감소해야 한다", () => {
     // 현재 이 테스트는 FAIL 해야 함 (버그가 있으므로 안 줄어듦)
     const initialCount = 10;
     const result = deleteComment(mockCommentId);
-    expect(result.currentCount).toBe(9); 
+    expect(result.currentCount).toBe(9);
   });
 });
 ```
@@ -179,7 +183,7 @@ describe('Bug #1234 - 댓글 카운트 오류', () => {
 
 ---
 
-## 🚦 품질 게이트 (Definition of Done)
+## 품질 게이트 (Definition of Done)
 
 작업을 완료했다고 보고하기 전, 스스로 검증하세요.
 
@@ -193,7 +197,7 @@ describe('Bug #1234 - 댓글 카운트 오류', () => {
 
 ---
 
-## 📝 작업 완료 보고
+## 작업 완료 보고
 
 ```
 ✅ Phase 완료[Refactor]
@@ -208,17 +212,17 @@ describe('Bug #1234 - 댓글 카운트 오류', () => {
 
 ---
 
-## 📉 출력 제한 가이드 (Output Throttling)
+## 출력 제한 가이드 (Output Throttling)
 
 **토큰 낭비와 무한 출력 공격을 방지합니다.**
 
 ### 출력 제한 기준
 
-| 출력 유형 | 권장 | 경고 | 금지 |
-|---------|------|------|------|
-| 코드 | ≤200줄 | 200~500줄 | >500줄 (분할 필수) |
-| 추론/설명 | ≤100줄 | 100~300줄 | >300줄 (요약 필수) |
-| 전체 응답 | ≤500줄 | 500~1000줄 | >1000줄 (거부) |
+| 출력 유형 | 권장   | 경고       | 금지               |
+| --------- | ------ | ---------- | ------------------ |
+| 코드      | ≤200줄 | 200~500줄  | >500줄 (분할 필수) |
+| 추론/설명 | ≤100줄 | 100~300줄  | >300줄 (요약 필수) |
+| 전체 응답 | ≤500줄 | 500~1000줄 | >1000줄 (거부)     |
 
 ### 위반 시 대응
 
@@ -248,12 +252,12 @@ describe('Bug #1234 - 댓글 카운트 오류', () => {
 
 ---
 
-## 📚 관련 문서
+## 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `CLAUDE.md` | 프로젝트 헌법 및 아키텍처 원칙 |
-| `DOMAIN_SCHEMA.md` | DB 스키마 및 제약사항 (**필독**) |
+| 문서                  | 역할                                      |
+| --------------------- | ----------------------------------------- |
+| `CLAUDE.md`           | 프로젝트 헌법 및 아키텍처 원칙            |
+| `DOMAIN_SCHEMA.md`    | DB 스키마 및 제약사항 (**필독**)          |
 | `VALIDATION_GUIDE.md` | 산출물 검증 기준, Quality Gates (Phase 4) |
-| `CODE_STYLE.md` | 린트 규칙 및 네이밍 컨벤션 |
-| `DB_ACCESS_POLICY.md` | DB 접근 권한 및 보안 정책 |
+| `CODE_STYLE.md`       | 린트 규칙 및 네이밍 컨벤션                |
+| `DB_ACCESS_POLICY.md` | DB 접근 권한 및 보안 정책                 |

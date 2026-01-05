@@ -286,10 +286,19 @@ export class DocSyncTool extends BaseTool {
    */
   async syncCase(caseId, options = {}) {
     const projectRoot = options.projectRoot || this.options.projectRoot || process.cwd();
-    const casePath = path.join(projectRoot, 'docs', 'cases', caseId);
+    const taskId = options.taskId || options.runId || null;
+    // 문서 경로 불일치 대응: {caseId}/{taskId}/... 우선, 없으면 {caseId}/...
+    const primaryCasePath = taskId
+      ? path.join(projectRoot, 'docs', 'cases', caseId, taskId)
+      : path.join(projectRoot, 'docs', 'cases', caseId);
+    const fallbackCasePath = path.join(projectRoot, 'docs', 'cases', caseId);
+    const casePath = fs.existsSync(primaryCasePath) ? primaryCasePath : fallbackCasePath;
 
     this.log('========== Uploading documents to Notion... ==========');
     this.log(`Case: ${caseId}`);
+    if (taskId) {
+      this.log(`Task: ${taskId}`);
+    }
     this.log(`Path: ${casePath}`);
     this.log(`Mode: ${this.mockMode ? 'Mock' : 'Live'}`);
 

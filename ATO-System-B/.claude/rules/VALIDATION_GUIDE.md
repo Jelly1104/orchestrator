@@ -1,23 +1,25 @@
 # 검증 통합 가이드 v2.2
 
 > **문서 버전**: 2.2.0
+
 > **최종 업데이트**: 2025-12-29
+
 > **물리적 경로**: `.claude/rules/VALIDATION_GUIDE.md`
+
 > **다이어그램**: README.md 섹션 4 참조
 
 ---
 
 ## 로딩 설정
 
-| Role | 로딩 문서 |
-|------|----------|
-| OutputValidator | 이 문서 |
-| Leader (Review Mode) | 이 문서 |
-| Implementation Leader | 이 문서 |
+| Role                  | 로딩 문서 |
+| --------------------- | --------- |
+| Leader (Review Mode)  | 이 문서   |
+| Implementation Leader | 이 문서   |
 
 ---
 
-## 1. PRD Gap Check
+## PRD Gap Check
 
 ### 필수 항목 (4개)
 
@@ -34,21 +36,21 @@
 
 ---
 
-## 2. Output Validation
+## Output Validation
 
-### 2.1 Syntax/Lint 검증
+### Syntax/Lint 검증
 
-| 대상 | 검증 항목 | 심각도 |
-|------|----------|--------|
-| SQL | INSERT/UPDATE/DELETE 금지 | 🚨 ERROR |
-| SQL | DROP/TRUNCATE/ALTER 금지 | 🚨 ERROR |
-| SQL | SELECT * 사용 | ⚠️ WARNING |
-| SQL | 대용량 테이블 LIMIT 없음 | ⚠️ WARNING |
-| Markdown | 내용 비어있음 | 🚨 ERROR |
+| 대상     | 검증 항목                 | 심각도     |
+| -------- | ------------------------- | ---------- |
+| SQL      | INSERT/UPDATE/DELETE 금지 | 🚨 ERROR   |
+| SQL      | DROP/TRUNCATE/ALTER 금지  | 🚨 ERROR   |
+| SQL      | SELECT \* 사용            | ⚠️ WARNING |
+| SQL      | 대용량 테이블 LIMIT 없음  | ⚠️ WARNING |
+| Markdown | 내용 비어있음             | 🚨 ERROR   |
 
 > **구현 참조**: DB_ACCESS_POLICY.md의 **쿼리 검증** 섹션
 
-### 2.2 PRD 체크리스트 매칭
+### PRD 체크리스트 매칭
 
 ```
 1단계: 파일명 직접 매칭 (fuzzy)
@@ -58,7 +60,7 @@
 ⚡ 매칭률 ≥ 50% → MATCHED
 ```
 
-### 2.3 스키마 정합성 검증
+### 스키마 정합성 검증
 
 ```
 SQL 쿼리 파싱 → 테이블/컬럼 추출 → DOMAIN_SCHEMA.md 대조
@@ -71,25 +73,25 @@ SQL 쿼리 파싱 → 테이블/컬럼 추출 → DOMAIN_SCHEMA.md 대조
 
 ---
 
-## 3. Quality Gates
+## Quality Gates
 
-### 3.1 코드 품질
+### 코드 품질
 
-| 항목 | 기준 |
-|------|------|
-| Schema Compliance | DOMAIN_SCHEMA.md 실제 컬럼명 사용 |
-| Hallucination Check | 존재하지 않는 테이블/컬럼 금지 |
-| 함수 길이 | ≤ 30줄 |
-| 중첩 깊이 | ≤ 3단계 |
-| TypeScript | `any` 타입 금지 |
+| 항목                | 기준                              |
+| ------------------- | --------------------------------- |
+| Schema Compliance   | DOMAIN_SCHEMA.md 실제 컬럼명 사용 |
+| Hallucination Check | 존재하지 않는 테이블/컬럼 금지    |
+| 함수 길이           | ≤ 30줄                            |
+| 중첩 깊이           | ≤ 3단계                           |
+| TypeScript          | `any` 타입 금지                   |
 
-### 3.2 테스트
+### 테스트
 
 - [ ] 커버리지 ≥ 90%
 - [ ] 모든 테스트 PASS
 - [ ] 테스트 독립성
 
-### 3.3 보안
+### 보안
 
 > **상세 정책**: DB_ACCESS_POLICY.md 참조
 
@@ -98,15 +100,15 @@ SQL 쿼리 파싱 → 테이블/컬럼 추출 → DOMAIN_SCHEMA.md 대조
 - [ ] Full Scan 방지: COMMENT, USER_LOGIN 조회 시 인덱스 필수
 - [ ] SQL Injection: 파라미터 바인딩 사용
 
-### 3.4 성능
+### 성능
 
-| 유형 | 목표 | 최대 허용 |
-|------|------|----------|
-| 단순 조회 | < 100ms | 200ms |
-| 복합 조회 | < 200ms | 500ms |
-| 대용량 조회 | < 500ms | 1,000ms |
+| 유형        | 목표    | 최대 허용 |
+| ----------- | ------- | --------- |
+| 단순 조회   | < 100ms | 200ms     |
+| 복합 조회   | < 200ms | 500ms     |
+| 대용량 조회 | < 500ms | 1,000ms   |
 
-### 3.5 Safety Check
+### Safety Check
 
 - [ ] `.claude/rules/` 내 파일 변경 없음
 - [ ] `CLAUDE.md` 변경 없음
@@ -114,7 +116,7 @@ SQL 쿼리 파싱 → 테이블/컬럼 추출 → DOMAIN_SCHEMA.md 대조
 
 ---
 
-## 4. 재시도 정책
+## 재시도 정책
 
 ```yaml
 Review FAIL 시:
@@ -130,7 +132,7 @@ Review FAIL 시:
 
 ---
 
-## 5. 도메인 키워드 맵
+## 도메인 키워드 맵
 
 ```yaml
 회원: ["u_alive", "active", "segment", "활성"]
@@ -144,18 +146,18 @@ Review FAIL 시:
 
 ---
 
-## 6. 보안 게이트
+## 보안 게이트
 
 > **상세 정책**: DB_ACCESS_POLICY.md 참조
 
 ### 입력 검증
 
-| 항목 | 검증 규칙 | 위반 시 조치 |
-|------|----------|-------------|
-| taskId | `/^[a-zA-Z0-9_-]+$/` | 즉시 거부 |
-| taskDescription | 최대 10,000자 | 잘라내기 |
-| prdContent | 최대 50,000자 | DoS 차단 |
-| 파일 경로 | projectRoot 외부 금지 | 즉시 중단 |
+| 항목            | 검증 규칙             | 위반 시 조치 |
+| --------------- | --------------------- | ------------ |
+| taskId          | `/^[a-zA-Z0-9_-]+$/`  | 즉시 거부    |
+| taskDescription | 최대 10,000자         | 잘라내기     |
+| prdContent      | 최대 50,000자         | DoS 차단     |
+| 파일 경로       | projectRoot 외부 금지 | 즉시 중단    |
 
 ### 프롬프트 인젝션 방어
 
@@ -174,38 +176,38 @@ MAX_RETRIES_PER_HOUR: 20
 
 ---
 
-## 7. 검증 결과 보고 형식
+## 검증 결과 보고 형식
 
 ```markdown
 # 검증 결과 종합
 
 ## 전체 평가: [PASS / FAIL]
 
-| Phase | 결과 | 핵심 지표 |
-|-------|------|----------|
-| PRD Gap Check | ✅ PASS | 필수 4/4 |
+| Phase             | 결과    | 핵심 지표                 |
+| ----------------- | ------- | ------------------------- |
+| PRD Gap Check     | ✅ PASS | 필수 4/4                  |
 | Output Validation | ✅ PASS | Syntax 6/6, PRD 매칭 100% |
-| Quality Gates | ✅ PASS | Schema 100%, 테스트 93% |
+| Quality Gates     | ✅ PASS | Schema 100%, 테스트 93%   |
 ```
 
 ---
 
 ## 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| DOMAIN_SCHEMA.md | 스키마 정합성 검증 기준 |
+| 문서                | 역할                        |
+| ------------------- | --------------------------- |
+| DOMAIN_SCHEMA.md    | 스키마 정합성 검증 기준     |
 | DB_ACCESS_POLICY.md | 금지 패턴 정규식, 보안 정책 |
-| PRD_GUIDE.md | PRD 유형/파이프라인 정의 |
+| PRD_GUIDE.md        | PRD 유형/파이프라인 정의    |
 
 ---
 
 ## 변경 이력
 
-| 버전 | 날짜 | 변경 내용 |
-|------|------|----------|
+| 버전  | 날짜       | 변경 내용                                                        |
+| ----- | ---------- | ---------------------------------------------------------------- |
 | 2.2.0 | 2025-12-29 | 300줄 다이어트: 다이어그램→README.md, 보안→DB_ACCESS_POLICY 참조 |
-| 2.1.0 | 2025-12-23 | 보안 게이트 섹션 추가 |
+| 2.1.0 | 2025-12-23 | 보안 게이트 섹션 추가                                            |
 
 ---
 

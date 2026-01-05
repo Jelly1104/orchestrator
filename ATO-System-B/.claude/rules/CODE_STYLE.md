@@ -1,8 +1,11 @@
 # CODE_STYLE.md - 코딩 스타일 가이드 (범용)
 
 > **문서 버전**: 1.3.1
+
 > **최종 업데이트**: 2025-12-23
+
 > **물리적 경로**: `.claude/rules/CODE_STYLE.md`
+
 > **상위 문서**: `CLAUDE.md` > **대상**: 모든 AI 에이전트
 
 ---
@@ -16,7 +19,7 @@
 
 ---
 
-## 🛠️ 기술 스택
+## 기술 스택
 
 프로젝트별 기술 스택 및 버전은 `PROJECT_STACK.md`에서 정의합니다.
 
@@ -33,9 +36,9 @@
 
 ---
 
-## 📐 공통 원칙 (General Principles)
+## 공통 원칙 (General Principles)
 
-### 1.0 필수 조건 (전 영역 공통)
+### 필수 조건 (전 영역 공통)
 
 > **v1.3.0 추가**: CLAUDE.md에서 이관
 
@@ -50,7 +53,7 @@ Testing:
   - TDD 사이클 준수
 ```
 
-### 1.1 절대 금지 사항 (Never)
+### 절대 금지 사항 (Never)
 
 | 금지 항목                 | 설명                                                                                      |
 | ------------------------- | ----------------------------------------------------------------------------------------- |
@@ -59,7 +62,7 @@ Testing:
 | **Magic Number**          | 의미 불명한 숫자는 반드시 `const`로 추출                                                  |
 | **Legacy Renaming**       | **DB 컬럼명(`U_ID` 등)을 임의로 camelCase(`userId`)로 변환 금지.** (매핑 오류 원인 1순위) |
 
-### 1.2 함수 작성 규칙
+### 함수 작성 규칙
 
 - **길이**: 최대 30줄 (SRP 준수).
 - **Depth**: 들여쓰기 3단계 초과 금지 (Early Return 패턴 사용).
@@ -81,7 +84,7 @@ function process() {
 }
 ```
 
-### 1.3 하이브리드 네이밍 컨벤션 (Hybrid Naming)
+### 하이브리드 네이밍 컨벤션 (Hybrid Naming)
 
 AI는 아래 **두 가지 세계**를 명확히 구분해야 합니다.
 
@@ -102,7 +105,7 @@ AI는 아래 **두 가지 세계**를 명확히 구분해야 합니다.
 
 ---
 
-## 🟦 2. TypeScript/JavaScript (FE)
+## TypeScript/JavaScript (FE)
 
 ### 2.1 타입 안정성 (Type Safety)
 
@@ -122,7 +125,7 @@ interface UserLegacyDto {
 }
 ```
 
-### 2.2 React 컴포넌트 & 파일 구조
+### React 컴포넌트 & 파일 구조
 
 **Feature-Sliced Design (FSD)** 패턴을 지향합니다.
 
@@ -139,9 +142,9 @@ src/
 
 ---
 
-## ☕ 3. Java/Kotlin (BE)
+## Java/Kotlin (BE)
 
-### 3.1 Legacy Entity Mapping
+### Legacy Entity Mapping
 
 JPA/MyBatis 사용 시, **DB 컬럼명과 필드명을 매핑**할 때 주의합니다.
 
@@ -160,16 +163,16 @@ public class User {
 }
 ```
 
-### 3.2 JavaDoc 필수 대상
+### JavaDoc 필수 대상
 
 - `public` 메서드 전체
 - 복잡한 비즈니스 로직 (특히 **예외 처리** 로직)
 
 ---
 
-## 🐦 4. Dart/Flutter (App)
+## Dart/Flutter (App)
 
-### 4.1 Null Safety
+### Null Safety
 
 Dart의 강점인 Null Safety를 무력화하지 마십시오.
 
@@ -182,16 +185,16 @@ print(name!); // 런타임 에러 위험
 print(name ?? 'Unknown');
 ```
 
-### 4.2 Widget 구조
+### Widget 구조
 
 - **const 생성자**를 적극 사용하여 리빌드 성능을 최적화합니다.
 - 비즈니스 로직은 Widget에서 분리하여 `Provider`나 `Bloc`으로 위임합니다.
 
 ---
 
-## ☁️ 5. Infrastructure (Terraform/Docker)
+## Infrastructure (Terraform/Docker)
 
-### 5.1 Terraform
+### Terraform
 
 - **리소스명**: `snake_case` (예: `aws_s3_bucket`)
 - **변수명**: 명확한 설명(`description`) 필수 포함
@@ -213,16 +216,16 @@ AND BOARD_IDX = 100;
 
 ---
 
-## 📚 관련 문서
+## 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `CLAUDE.md` | 최상위 헌법 (충돌 시 이 문서가 우선) |
-| `PROJECT_STACK.md` | 프로젝트별 기술 스택/버전 정의 |
-| `DOMAIN_SCHEMA.md` | DB 컬럼명 및 네이밍 기준 원천 (**필독**) |
-| `DB_ACCESS_POLICY.md` | DB 접근 권한, SQL 실행 제한 |
-| `VALIDATION_GUIDE.md` | 스타일 준수 여부 최종 검증 체크리스트 |
-| `TDD_WORKFLOW.md` | TDD 개발 절차 |
+| 문서                  | 역할                                     |
+| --------------------- | ---------------------------------------- |
+| `CLAUDE.md`           | 최상위 헌법 (충돌 시 이 문서가 우선)     |
+| `PROJECT_STACK.md`    | 프로젝트별 기술 스택/버전 정의           |
+| `DOMAIN_SCHEMA.md`    | DB 컬럼명 및 네이밍 기준 원천 (**필독**) |
+| `DB_ACCESS_POLICY.md` | DB 접근 권한, SQL 실행 제한              |
+| `VALIDATION_GUIDE.md` | 스타일 준수 여부 최종 검증 체크리스트    |
+| `TDD_WORKFLOW.md`     | TDD 개발 절차                            |
 
 ---
 

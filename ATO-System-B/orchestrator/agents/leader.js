@@ -462,14 +462,17 @@ PRD에 산출물 체크리스트가 있으면 반드시 해당 항목들을 모�
   buildGapCheckContext(gapCheckResult) {
     let context = "\n\n---\n## PRD 분석 결과 (Gap Check)\n\n";
 
-    // PRD 유형
-    const typeLabels = {
-      QUANTITATIVE: "정량적 (데이터 분석 중심)",
-      QUALITATIVE: "정성적 (설계/제안 중심)",
-      MIXED: "혼합 (분석 → 인사이트 → 제안)",
+    // 파이프라인
+    const pipelineLabels = {
+      analysis: "Analysis Only (A)",
+      design: "Design Only (B)",
+      analyzed_design: "Analyzed Design (A→B)",
+      ui_mockup: "UI Mockup (B→C)",
+      code: "Code Only (C)",
+      full: "Full (A→B→C)",
     };
-    context += `### PRD 유형: ${
-      typeLabels[gapCheckResult.prdType] || gapCheckResult.prdType
+    context += `### 파이프라인: ${
+      pipelineLabels[gapCheckResult.pipeline] || gapCheckResult.pipeline
     }\n\n`;
 
     // 산출물 체크리스트

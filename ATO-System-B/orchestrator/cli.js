@@ -17,7 +17,7 @@
  * @version 1.0.0
  */
 
-import { sessionStore, SessionStatus, HITLCheckpoint } from './state/session-store.js';
+import { sessionStore, SessionStatus, HITLCheckpoint, HITLDecision } from './state/session-store.js';
 
 const COMMANDS = {
   status: 'status',
@@ -29,6 +29,84 @@ const COMMANDS = {
 };
 
 /**
+ * --flag 또는 --flag=value 형태로 값을 추출
+ */
+function getFlagValue(args, flag) {
+  const direct = args.find(a => a === flag);
+  if (direct) {
+    const idx = args.indexOf(direct);
+    return args[idx + 1] && !args[idx + 1].startsWith('--') ? args[idx + 1] : null;
+  }
+
+  const withValue = args.find(a => a.startsWith(`${flag}=`));
+  if (withValue) {
+    return withValue.split('=').slice(1).join('=');
+  }
+  return null;
+}
+
+/**
+ * --decision 플래그 파싱
+ */
+function parseDecisionArgs(args) {
+  const decisionRaw = getFlagValue(args, '--decision');
+  if (!decisionRaw) return null;
+
+  const taskId = getFlagValue(args, '--taskId');
+  const comment = getFlagValue(args, '--comment') || '';
+  const ruleOverrideRaw = getFlagValue(args, '--rule-override');
+
+  let ruleOverride = null;
+  if (ruleOverrideRaw) {
+    try {
+      ruleOverride = JSON.parse(ruleOverrideRaw);
+    } catch {
+      ruleOverride = ruleOverrideRaw;
+    }
+  }
+
+  return { decisionRaw, taskId, comment, ruleOverride };
+}
+
+function normalizeDecision(decisionRaw) {
+  const value = (decisionRaw || '').toUpperCase();
+  if (['EXCEPTION_APPROVAL', 'EXCEPTION', 'RISK_ACCEPTANCE', 'RISK_ACCEPT'].includes(value)) {
+    return HITLDecision.EXCEPTION_APPROVAL;
+  }
+  if (value === 'RULE_OVERRIDE') {
+    return HITLDecision.RULE_OVERRIDE;
+  }
+  if (value === 'REJECT') {
+    return HITLDecision.REJECT;
+  }
+  throw new Error(`지원하지 않는 decision: ${decisionRaw}`);
+}
+
+function handleDecisionCommand({ taskId, decisionRaw, comment, ruleOverride }) {
+  if (!taskId) {
+    console.error('❌ 오류: --taskId가 필요합니다.');
+    console.log('   예: node cli.js --decision EXCEPTION_APPROVAL --taskId case-123 --comment "긴급 승인"');
+    process.exit(1);
+  }
+
+  const decision = normalizeDecision(decisionRaw);
+
+  const session = sessionStore.handleHITLDecision(taskId, decision, {
+    comment,
+    ruleOverride
+  });
+
+  console.log(`✅ HITL 결정 적용: ${decision}`);
+  console.log(`   Task ID: ${taskId}`);
+  if (comment) {
+    console.log(`   코멘트: ${comment}`);
+  }
+  if (decision === HITLDecision.RULE_OVERRIDE && ruleOverride) {
+    console.log('   규칙 수정 요청:', ruleOverride);
+  }
+}
+
+/**
  * 메인 CLI 엔트리포인트
  */
 async function main() {
@@ -36,6 +114,18 @@ async function main() {
   const command = args[0]?.toLowerCase();
   const taskId = args[1];
   const reason = args.slice(2).join(' ');
+
+  // --decision 플래그로 3-way 결정 처리
+  const decisionArgs = parseDecisionArgs(args);
+  if (decisionArgs) {
+    try {
+      handleDecisionCommand(decisionArgs);
+    } catch (error) {
+      console.error(`❌ 결정 처리 실패: ${error.message}`);
+      process.exit(1);
+    }
+    return;
+  }
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🎛️  HITL CLI Tool v1.0.0');
@@ -276,12 +366,15 @@ function showHelp() {
   console.log('  node cli.js reject <taskId>     세션 거부');
   console.log('  node cli.js session <taskId>    세션 상세 정보');
   console.log('  node cli.js list                모든 활성 세션 목록');
+  console.log('  node cli.js --decision <옵션> --taskId <id> [--comment "..."] [--rule-override "{...}"]');
   console.log('  node cli.js help                이 도움말 표시');
   console.log('\n📝 예시:\n');
   console.log('  node cli.js status');
   console.log('  node cli.js approve task-12345');
   console.log('  node cli.js reject task-12345 "설계 수정 필요"');
   console.log('  node cli.js session task-12345');
+  console.log('  node cli.js --decision EXCEPTION_APPROVAL --taskId task-12345 --comment "위험 수용"');
+  console.log('  node cli.js --decision RULE_OVERRIDE --taskId task-12345 --rule-override "{\\"rule\\":\\"sdd-check\\"}"');
 }
 
 // 실행

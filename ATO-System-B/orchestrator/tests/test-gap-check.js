@@ -28,7 +28,7 @@ async function runTest() {
 
   // 상세 결과
   console.log('\n📊 상세 분석 결과:\n');
-  console.log('PRD 유형:', result.prdType);
+  console.log('파이프라인:', result.pipeline);
   console.log('산출물 개수:', result.deliverables.length);
   console.log('레퍼런스 매칭:', result.reference ? result.reference.reference : '없음');
   console.log('데이터 테이블:', result.dataRequirements.map(r => r.table).join(', ') || '없음');

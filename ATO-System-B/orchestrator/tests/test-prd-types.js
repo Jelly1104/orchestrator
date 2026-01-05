@@ -17,6 +17,7 @@ const PRD_SAMPLES = {
   // 정량적 PRD (데이터 분석 중심)
   QUANTITATIVE: {
     name: '정량적 PRD - 월간 활성 사용자(MAU) 분석',
+    expectedPipeline: 'analysis',
     content: `
 # PRD: 월간 활성 사용자(MAU) 분석
 
@@ -54,6 +55,7 @@ const PRD_SAMPLES = {
   // 정성적 PRD (설계/제안 중심)
   QUALITATIVE: {
     name: '정성적 PRD - 알림 센터 UX 개선안',
+    expectedPipeline: 'design',
     content: `
 # PRD: 알림 센터 UX 개선안
 
@@ -88,6 +90,7 @@ const PRD_SAMPLES = {
   // 혼합 PRD (분석 → 인사이트 → 제안)
   MIXED: {
     name: '혼합 PRD - 이탈 회원 분석 및 리텐션 전략',
+    expectedPipeline: 'analyzed_design',
     content: `
 # PRD: 이탈 회원 분석 및 리텐션 전략
 
@@ -173,7 +176,7 @@ async function runAllTests() {
     console.log('📋 [Step 1] Gap Check 실행...');
     const prdAnalysis = await prdAnalyzer.analyze(sample.content);
 
-    console.log(`   - PRD 유형: ${prdAnalysis.prdType}`);
+    console.log(`   - 파이프라인: ${prdAnalysis.pipeline}`);
     console.log(`   - 산출물: ${prdAnalysis.deliverables.length}개`);
     console.log(`   - 데이터 테이블: ${prdAnalysis.dataRequirements.map(r => r.table).join(', ') || '없음'}`);
     console.log(`   - Gap: ${prdAnalysis.gaps.length}개`);
@@ -201,10 +204,14 @@ async function runAllTests() {
       });
     }
 
+    if (sample.expectedPipeline && prdAnalysis.pipeline !== sample.expectedPipeline) {
+      throw new Error(`파이프라인 불일치: 기대=${sample.expectedPipeline}, 실제=${prdAnalysis.pipeline}`);
+    }
+
     results.push({
       type,
       name: sample.name,
-      prdType: prdAnalysis.prdType,
+      pipeline: prdAnalysis.pipeline,
       deliverables: prdAnalysis.deliverables.length,
       gaps: prdAnalysis.gaps.length,
       validationPassed: validationResult.passed,
@@ -219,12 +226,12 @@ async function runAllTests() {
   console.log('═══════════════════════════════════════════════════════════════\n');
 
   console.log('┌────────────────┬────────────────┬──────────┬────────┬────────────┐');
-  console.log('│ PRD 유형       │ 분류 결과      │ 산출물   │ Gap    │ 검증 결과  │');
+  console.log('│ 샘플 유형      │ 파이프라인     │ 산출물   │ Gap    │ 검증 결과  │');
   console.log('├────────────────┼────────────────┼──────────┼────────┼────────────┤');
 
   results.forEach(r => {
     const typeStr = r.type.padEnd(14);
-    const classStr = r.prdType.padEnd(14);
+    const classStr = r.pipeline.padEnd(14);
     const delStr = `${r.deliverables}개`.padEnd(8);
     const gapStr = `${r.gaps}개`.padEnd(6);
     const valStr = r.validationPassed ? '✅ PASSED' : '❌ FAILED';

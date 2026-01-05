@@ -71,6 +71,21 @@ export const HITLCheckpoint = {
 };
 
 /**
+ * HITL 3-way 옵션 (TO-BE 아키텍처)
+ * ROLE_ARCHITECTURE.md 기반
+ *
+ * 검증 실패 시 3가지 옵션 제공:
+ * - EXCEPTION_APPROVAL: 이번 건만 예외 허용
+ * - RULE_OVERRIDE: 규칙 자체 수정 요청
+ * - REJECT: 해당 Phase 재작업
+ */
+export const HITLDecision = {
+  EXCEPTION_APPROVAL: 'EXCEPTION_APPROVAL',
+  RULE_OVERRIDE: 'RULE_OVERRIDE',
+  REJECT: 'REJECT'
+};
+
+/**
  * 세션 스토어 클래스
  */
 export class SessionStore {
@@ -211,11 +226,86 @@ export class SessionStore {
     session.status = SessionStatus.REJECTED;
     session.hitlContext.rejectedAt = new Date().toISOString();
     session.hitlContext.rejectionReason = reason;
+    session.hitlContext.decision = HITLDecision.REJECT;
     session.updatedAt = new Date().toISOString();
 
     this._save(taskId, session);
     this._removeHITLRequest(taskId);
     this._logHistory(taskId, 'HITL_REJECTED', { checkpoint: session.currentCheckpoint, reason });
+
+    return session;
+  }
+
+  /**
+   * HITL 3-way 결정 처리 (TO-BE 아키텍처)
+   *
+   * @param {string} taskId - 태스크 ID
+   * @param {string} decision - HITLDecision 값 (EXCEPTION_APPROVAL | RULE_OVERRIDE | REJECT)
+   * @param {Object} options - 추가 옵션
+   * @param {string} options.comment - 결정 사유/코멘트
+   * @param {Object} options.ruleOverride - Rule Override 시 규칙 수정 내용
+   * @returns {Object} 업데이트된 세션
+   */
+  handleHITLDecision(taskId, decision, options = {}) {
+    const session = this.get(taskId);
+    if (!session || session.status !== SessionStatus.PAUSED_HITL) {
+      throw new Error(`Invalid session state for HITL decision: ${taskId}`);
+    }
+
+    const { comment = '', ruleOverride = null } = options;
+
+    switch (decision) {
+      case HITLDecision.EXCEPTION_APPROVAL:
+        // 이번 건만 예외 허용 → 다음 Phase 진행
+        session.status = SessionStatus.APPROVED;
+        session.hitlContext.decision = HITLDecision.EXCEPTION_APPROVAL;
+        session.hitlContext.approvedAt = new Date().toISOString();
+        session.hitlContext.approverComment = comment;
+        session.hitlContext.isException = true; // 예외 플래그
+        this._logHistory(taskId, 'HITL_EXCEPTION_APPROVED', {
+          checkpoint: session.currentCheckpoint,
+          comment
+        });
+        break;
+
+      case HITLDecision.RULE_OVERRIDE:
+        // 규칙 수정 요청 → 관리자 검토 필요
+        session.status = SessionStatus.USER_INTERVENTION_REQUIRED;
+        session.hitlContext.decision = HITLDecision.RULE_OVERRIDE;
+        session.hitlContext.ruleOverrideAt = new Date().toISOString();
+        session.hitlContext.ruleOverrideRequest = {
+          comment,
+          proposedChange: ruleOverride,
+          requiresAdminReview: true
+        };
+        this._logHistory(taskId, 'HITL_RULE_OVERRIDE_REQUESTED', {
+          checkpoint: session.currentCheckpoint,
+          comment,
+          ruleOverride
+        });
+        break;
+
+      case HITLDecision.REJECT:
+        // 해당 Phase 재작업 지시
+        session.status = SessionStatus.REJECTED;
+        session.hitlContext.decision = HITLDecision.REJECT;
+        session.hitlContext.rejectedAt = new Date().toISOString();
+        session.hitlContext.rejectionReason = comment;
+        session.hitlContext.rerunPhase = session.currentPhase; // 재작업 Phase 기록
+        this._logHistory(taskId, 'HITL_REJECTED_FOR_REWORK', {
+          checkpoint: session.currentCheckpoint,
+          phase: session.currentPhase,
+          reason: comment
+        });
+        break;
+
+      default:
+        throw new Error(`Unknown HITL decision: ${decision}`);
+    }
+
+    session.updatedAt = new Date().toISOString();
+    this._save(taskId, session);
+    this._removeHITLRequest(taskId);
 
     return session;
   }
@@ -388,5 +478,6 @@ export default {
   sessionStore,
   SessionStore,
   SessionStatus,
-  HITLCheckpoint
+  HITLCheckpoint,
+  HITLDecision
 };

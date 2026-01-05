@@ -92,7 +92,7 @@ async function runTest() {
   const prdAnalyzer = new PRDAnalyzer(projectRoot);
   const prdAnalysis = await prdAnalyzer.analyze(prdContent);
 
-  console.log(`   PRD 유형: ${prdAnalysis.prdType}`);
+  console.log(`   파이프라인: ${prdAnalysis.pipeline}`);
   console.log(`   산출물 체크리스트: ${prdAnalysis.deliverables.length}개`);
   prdAnalysis.deliverables.forEach((d, i) => {
     console.log(`     ${i + 1}. ${d.item}`);

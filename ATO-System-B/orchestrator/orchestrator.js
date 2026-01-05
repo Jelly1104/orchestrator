@@ -78,7 +78,7 @@ import { SQLValidator } from './security/sql-validator.js';
 
 // Phase 0: Session Store 연동 (Pause/Resume 지원)
 const require = createRequire(import.meta.url);
-const { sessionStore, SessionStatus, HITLCheckpoint } = require('./state/session-store.js');
+const { sessionStore, SessionStatus, HITLCheckpoint, HITLDecision } = require('./state/session-store.js');
 
 // ========== 보안 상수 (하드코딩 - 사용자 설정 무시) ==========
 const SECURITY_LIMITS = {
@@ -634,13 +634,12 @@ export class Orchestrator {
     let result = null;
 
     try {
-      // ========== Phase 0: PRD v2 유형 판별 (P1-2: Auto-Routing) ==========
+      // ========== Phase 0: PRD 파이프라인 판별 (v2.0.0: type 제거) ==========
       const prdClassification = this.prdAnalyzer.classifyPRDv2(prdContent);
-      const prdType = prdClassification?.type || 'QUALITATIVE';
       const pipeline = prdClassification?.pipeline || 'design';
 
-      // P1-2: 명시적 라우팅 결정
-      const routingDecision = this._determineRoutingDecision(prdType, pipeline, options);
+      // P1-2: 명시적 라우팅 결정 (type 제거됨)
+      const routingDecision = this._determineRoutingDecision(pipeline, options);
 
       // ========== 잘못된 파이프라인 검사 - FAIL 처리 ==========
       if (routingDecision.invalidPipeline) {
@@ -655,18 +654,18 @@ export class Orchestrator {
           success: false,
           taskId,
           error: `유효하지 않은 파이프라인: ${routingDecision.invalidPipeline}`,
-          suggestion: '유효한 파이프라인: analysis, design, mixed'
+          suggestion: '유효한 파이프라인: analysis, design, analyzed_design, code, ui_mockup, full'
         };
       }
 
-      console.log(`   Pipeline: ${routingDecision.selectedPipeline} (${prdType})`);
+      console.log(`   Pipeline: ${routingDecision.selectedPipeline}`);
 
       // ========== v1.3.0: PRD Gap Check - HIGH severity gap 강제 FAIL ==========
       // 빈 PRD나 필수 항목 대부분 누락 시 autoApprove와 상관없이 즉시 FAIL
       const gapCheck = prdClassification?.gapCheck;
       if (gapCheck?.hasHighSeverityGaps) {
         // 즉시 FAIL 리포트 출력 (중복 메시지 없이 리포트만)
-        this._printGapCheckFailReport(taskId, prdType, routingDecision.selectedPipeline, gapCheck, metrics);
+        this._printGapCheckFailReport(taskId, routingDecision.selectedPipeline, gapCheck, metrics);
 
         metrics.endPhase('planning', 'fail');
 
@@ -690,7 +689,6 @@ export class Orchestrator {
           sessionStore.updatePhase(taskId, 'prd_review');
           await this.pauseForHITL(taskId, prdCheckpoint, {
             missing: gapCheck.missing,
-            prdType,
             pipeline,
             message: 'PRD에 필수 항목이 누락되었습니다. 검토 후 승인하거나 PRD를 보완해주세요.'
           });
@@ -719,12 +717,20 @@ export class Orchestrator {
         return await this.runAnalysisPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
-      if (selectedPipeline === 'mixed') {
-        return await this.runMixedPipeline(taskId, sanitizedDescription, prdContent, options);
+      if (selectedPipeline === 'analyzed_design') {
+        return await this.runAnalyzedDesignPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
       if (selectedPipeline === 'full') {
         return await this.runFullPipeline(taskId, sanitizedDescription, prdContent, options);
+      }
+
+      if (selectedPipeline === 'code') {
+        return await this.runCodePipeline(taskId, sanitizedDescription, prdContent, options);
+      }
+
+      if (selectedPipeline === 'ui_mockup') {
+        return await this.runUiMockupPipeline(taskId, sanitizedDescription, prdContent, options);
       }
 
       // QUALITATIVE → Design 파이프라인 (기본)
@@ -773,7 +779,7 @@ export class Orchestrator {
 
       // Gap Check 결과 로깅
       if (planResult.gapCheck) {
-        console.log(`   - PRD 유형: ${planResult.gapCheck.prdType}`);
+        console.log(`   - Pipeline: ${planResult.gapCheck.pipeline}`);
         console.log(`   - 산출물 체크리스트: ${planResult.gapCheck.deliverables?.length || 0}개`);
       }
 
@@ -1131,7 +1137,6 @@ export class Orchestrator {
     try {
       // PRD 파싱
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
-      parsedPRD.type = 'QUANTITATIVE';
       parsedPRD.pipeline = 'analysis';
       // [P2-1] Query Library를 위해 원본 텍스트 보존
       parsedPRD.originalText = prdContent;
@@ -1239,7 +1244,6 @@ export class Orchestrator {
         success: analysisResult.success,
         taskId,
         pipeline: 'analysis',
-        prdType: 'QUANTITATIVE',
         outputs: analysisResult.outputs,
         queries: analysisResult.queries,
         data: analysisResult.data,
@@ -1269,14 +1273,18 @@ export class Orchestrator {
   }
 
   /**
-   * Mixed 파이프라인 실행 (정량 → 정성 체이닝)
+   * Analyzed Design 파이프라인 실행 (Phase A → Phase B)
+   *
+   * ROLE_ARCHITECTURE.md 정의:
+   * - analyzed_design: Phase A(분석) → Phase B(설계)에서 종료
+   *
    * @param {string} taskId - 태스크 ID
    * @param {string} taskDescription - 작업 설명
    * @param {string} prdContent - PRD 내용
    * @param {Object} options - 추가 옵션
    * @returns {Object} - 통합 결과
    */
-  async runMixedPipeline(taskId, taskDescription, prdContent, options = {}) {
+  async runAnalyzedDesignPipeline(taskId, taskDescription, prdContent, options = {}) {
     const metrics = new MetricsTracker(taskId);
 
     try {
@@ -1285,8 +1293,7 @@ export class Orchestrator {
       metrics.startPhase('analysis');
 
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
-      parsedPRD.type = 'MIXED';
-      parsedPRD.pipeline = 'mixed';
+      parsedPRD.pipeline = 'analyzed_design';
       // [P2-1] Query Library를 위해 원본 텍스트 보존
       parsedPRD.originalText = prdContent;
 
@@ -1352,8 +1359,7 @@ export class Orchestrator {
           success: false,
           partial: true,
           taskId,
-          pipeline: 'mixed',
-          prdType: 'MIXED',
+          pipeline: 'analyzed_design',
           error: `PRD 범위 과다 - ${prdScopeResult.featureCount}개 기능 (최대 ${prdScopeResult.maxFeatures}개)`,
           prdScopeResult,
           metrics: report
@@ -1368,9 +1374,14 @@ export class Orchestrator {
         await this._triggerDocSync(taskId);
       }
 
+      const hitlRoute = await this.routeByValidationResult(taskId, phaseBReviewResult, 'B');
+      if (hitlRoute?.status === 'PAUSED_HITL') {
+        return hitlRoute;
+      }
+
       planResult.reviewResult = phaseBReviewResult;
 
-      // Mixed Pipeline은 Phase B에서 종료
+      // Analyzed Design Pipeline은 Phase B에서 종료
       const report = metrics.generateReport();
       await this.saveLog(taskId, report, {
         analysis: analysisResult,
@@ -1380,8 +1391,7 @@ export class Orchestrator {
       const finalResult = {
         success: true,
         taskId,
-        pipeline: 'mixed',
-        prdType: 'MIXED',
+        pipeline: 'analyzed_design',
         // Phase A 결과
         analysis: {
           outputs: analysisResult.outputs,
@@ -1407,13 +1417,13 @@ export class Orchestrator {
       return finalResult;
 
     } catch (error) {
-      console.error('\n❌ Mixed 파이프라인 에러:', error.message);
-      metrics.addError('mixed', error.message);
+      console.error('\n❌ Analyzed Design 파이프라인 에러:', error.message);
+      metrics.addError('analyzed_design', error.message);
 
       return {
         success: false,
         taskId,
-        pipeline: 'mixed',
+        pipeline: 'analyzed_design',
         error: error.message,
         metrics: metrics.generateReport()
       };
@@ -1441,7 +1451,6 @@ export class Orchestrator {
       metrics.startPhase('analysis');
 
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
-      parsedPRD.type = 'FULL';
       parsedPRD.pipeline = 'full';
       parsedPRD.originalText = prdContent;
 
@@ -1484,6 +1493,11 @@ export class Orchestrator {
       } else {
         console.log(`   ✅ Design 완료 (${phaseBReviewResult.score}/100)`);
         await this._triggerDocSync(taskId);
+      }
+
+      const hitlRoute = await this.routeByValidationResult(taskId, phaseBReviewResult, 'B');
+      if (hitlRoute?.status === 'PAUSED_HITL') {
+        return hitlRoute;
       }
 
       planResult.reviewResult = phaseBReviewResult;
@@ -1539,7 +1553,6 @@ export class Orchestrator {
         success: true,
         taskId,
         pipeline: 'full',
-        prdType: 'FULL',
         // Phase A 결과
         analysis: {
           outputs: analysisResult.outputs,
@@ -1577,6 +1590,219 @@ export class Orchestrator {
         success: false,
         taskId,
         pipeline: 'full',
+        error: error.message,
+        metrics: metrics.generateReport()
+      };
+    }
+  }
+
+  /**
+   * Code Only 파이프라인 실행 (Phase C만)
+   *
+   * ROLE_ARCHITECTURE.md 정의:
+   * - code: Phase C만 실행 (기존 SDD/HANDOFF 필수)
+   *
+   * @param {string} taskId - 태스크 ID
+   * @param {string} taskDescription - 작업 설명
+   * @param {string} prdContent - PRD 내용 (SDD/HANDOFF 포함)
+   * @param {Object} options - 추가 옵션
+   * @returns {Object} - 코딩 결과
+   */
+  async runCodePipeline(taskId, taskDescription, prdContent, options = {}) {
+    const metrics = new MetricsTracker(taskId);
+
+    try {
+      console.log('\n⚙️  Phase C: Code Only...');
+      metrics.startPhase('coding');
+
+      // PRD에서 SDD/HANDOFF 추출 (이미 설계 완료된 상태)
+      const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
+
+      // SDD와 HANDOFF가 필수
+      if (!parsedPRD.sdd && !options.sdd) {
+        throw new Error('Code 파이프라인은 SDD가 필수입니다. PRD에 SDD를 포함하거나 options.sdd를 전달하세요.');
+      }
+
+      const sdd = options.sdd || parsedPRD.sdd;
+      const handoff = options.handoff || parsedPRD.handoff;
+      const wireframe = options.wireframe || parsedPRD.wireframe;
+      const ia = options.ia || parsedPRD.ia;
+
+      // CodeAgent 실행
+      const codeResult = await this.codeAgent.implement({
+        sdd,
+        wireframe,
+        ia,
+        handoff
+      });
+
+      if (codeResult?.usage) {
+        metrics.addPhaseTokens('phase_c', codeResult.usage.inputTokens, codeResult.usage.outputTokens);
+      }
+
+      if (codeResult?.success) {
+        const fileCount = codeResult.files ? Object.keys(codeResult.files).length : 0;
+        console.log(`   ✅ Phase C 완료: ${fileCount}개 파일 생성`);
+        metrics.endPhase('coding', 'success');
+      } else {
+        console.warn('   ⚠️ Phase C: 코드 생성 결과 없음');
+        metrics.endPhase('coding', 'partial');
+      }
+
+      const report = metrics.generateReport();
+      await this.saveLog(taskId, report, { coding: codeResult });
+
+      const finalResult = {
+        success: true,
+        taskId,
+        pipeline: 'code',
+        coding: codeResult ? {
+          files: codeResult.files,
+          report: codeResult.report,
+          generatedFiles: codeResult.metadata?.generatedFiles || []
+        } : null,
+        metrics: report
+      };
+
+      this.printCompletionReport(finalResult);
+      return finalResult;
+
+    } catch (error) {
+      console.error('\n❌ Code 파이프라인 에러:', error.message);
+      metrics.addError('code', error.message);
+
+      return {
+        success: false,
+        taskId,
+        pipeline: 'code',
+        error: error.message,
+        metrics: metrics.generateReport()
+      };
+    }
+  }
+
+  /**
+   * UI Mockup 파이프라인 실행 (Phase B → Phase C)
+   *
+   * ROLE_ARCHITECTURE.md 정의:
+   * - ui_mockup: Phase B(설계) → Phase C(구현)
+   *
+   * @param {string} taskId - 태스크 ID
+   * @param {string} taskDescription - 작업 설명
+   * @param {string} prdContent - PRD 내용
+   * @param {Object} options - 추가 옵션
+   * @returns {Object} - 통합 결과
+   */
+  async runUiMockupPipeline(taskId, taskDescription, prdContent, options = {}) {
+    const metrics = new MetricsTracker(taskId);
+
+    try {
+      // ========== Phase B: Design ==========
+      console.log('\n📋 Phase B: Design...');
+      metrics.startPhase('design');
+
+      const planResult = await this.leader.plan(taskDescription, prdContent);
+      metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      metrics.endPhase('design', 'success');
+
+      if (this.saveFiles) {
+        await this.savePlanningDocs(taskId, planResult);
+      }
+
+      // Phase B Reviewer
+      const phaseBReviewResult = await this._validateDesignDocuments(planResult, prdContent);
+
+      if (!phaseBReviewResult.passed) {
+        console.warn(`   ⚠️ Review FAIL (${phaseBReviewResult.score}/100)`);
+        metrics.addError('design_review', phaseBReviewResult.summary);
+      } else {
+        console.log(`   ✅ Design 완료 (${phaseBReviewResult.score}/100)`);
+        await this._triggerDocSync(taskId);
+      }
+
+      const hitlRoute = await this.routeByValidationResult(taskId, phaseBReviewResult, 'B');
+      if (hitlRoute?.status === 'PAUSED_HITL') {
+        return hitlRoute;
+      }
+
+      planResult.reviewResult = phaseBReviewResult;
+
+      // ========== Phase C: Code Implementation ==========
+      let codeResult = null;
+
+      if (phaseBReviewResult.passed && planResult.handoff) {
+        console.log('\n⚙️  Phase C: Code...');
+        metrics.startPhase('coding');
+
+        try {
+          codeResult = await this.codeAgent.implement({
+            sdd: planResult.sdd,
+            wireframe: planResult.wireframe,
+            ia: planResult.ia,
+            handoff: planResult.handoff
+          });
+
+          if (codeResult?.usage) {
+            metrics.addPhaseTokens('phase_c', codeResult.usage.inputTokens, codeResult.usage.outputTokens);
+          }
+
+          if (codeResult?.success) {
+            const fileCount = codeResult.files ? Object.keys(codeResult.files).length : 0;
+            console.log(`   ✅ Phase C 완료: ${fileCount}개 파일 생성`);
+            metrics.endPhase('coding', 'success');
+          } else {
+            console.warn('   ⚠️ Phase C: 코드 생성 결과 없음');
+            metrics.endPhase('coding', 'partial');
+          }
+
+        } catch (codeError) {
+          console.error('\n❌ Phase C 에러:', codeError.message);
+          metrics.addError('coding', codeError.message);
+          metrics.endPhase('coding', 'fail');
+        }
+      } else {
+        console.log('\n⏭️  Phase C 스킵 (Phase B Reviewer FAIL 또는 HANDOFF 누락)');
+      }
+
+      const report = metrics.generateReport();
+      await this.saveLog(taskId, report, {
+        planning: planResult,
+        coding: codeResult
+      });
+
+      const finalResult = {
+        success: true,
+        taskId,
+        pipeline: 'ui_mockup',
+        // Phase B 결과
+        planning: {
+          ia: planResult.ia,
+          wireframe: planResult.wireframe,
+          sdd: planResult.sdd,
+          handoff: planResult.handoff,
+          reviewResult: phaseBReviewResult
+        },
+        // Phase C 결과
+        coding: codeResult ? {
+          files: codeResult.files,
+          report: codeResult.report,
+          generatedFiles: codeResult.metadata?.generatedFiles || []
+        } : null,
+        metrics: report
+      };
+
+      this.printCompletionReport(finalResult);
+      return finalResult;
+
+    } catch (error) {
+      console.error('\n❌ UI Mockup 파이프라인 에러:', error.message);
+      metrics.addError('ui_mockup', error.message);
+
+      return {
+        success: false,
+        taskId,
+        pipeline: 'ui_mockup',
         error: error.message,
         metrics: metrics.generateReport()
       };
@@ -1785,11 +2011,18 @@ export class Orchestrator {
       handoff += `\n`;
     }
 
-    // Mode
-    const prdType = gapCheck?.prdType || 'QUALITATIVE';
-    const mode = prdType === 'QUANTITATIVE' ? 'Analysis' :
-                 prdType === 'MIXED' ? 'Mixed (Analysis → Design)' : 'Design';
-    handoff += `## Mode\n${mode}\n\n`;
+    // Pipeline (v2.0.0: Mode → Pipeline 변경)
+    const pipelineValue = gapCheck?.pipeline || 'design';
+    const pipelineLabels = {
+      'analysis': 'Analysis (A)',
+      'design': 'Design (B)',
+      'code': 'Code (C)',
+      'analyzed_design': 'Analyzed Design (A→B)',
+      'ui_mockup': 'UI Mockup (B→C)',
+      'full': 'Full (A→B→C)'
+    };
+    const mode = pipelineLabels[pipelineValue] || 'Design (B)';
+    handoff += `## Pipeline\n${mode}\n\n`;
 
     // Required Outputs
     handoff += `## Required Outputs\n`;
@@ -2011,7 +2244,10 @@ export class Orchestrator {
           : `설계 문서 품질 미달 (${structureIssues.length}개 구조 이슈)`,
         docCount,
         issues: [...(reviewResult.issues || []), ...structureIssues],
-        details: reviewResult.details || {}
+        details: reviewResult.details || {},
+        hitlRequired: reviewResult.hitlRequired,
+        hitlTrigger: reviewResult.hitlTrigger,
+        hitl3WayOptions: reviewResult.hitl3WayOptions
       };
 
     } catch (error) {
@@ -2096,11 +2332,12 @@ export class Orchestrator {
    */
   _getPipelineVisual(pipelineType) {
     const visuals = {
-      'analysis': '📊 Analysis Only (Data Extraction)',
-      'design': '🎨 Design Only (IA → Wireframe → SDD)',
-      'mixed': '🔀 Mixed Pipeline (📊 Analysis → 🎨 Design)',
-      'full': '🔀 Full Pipeline (📊 Analysis → 🎨 Design → ⚙️ Code)',
-      'parallel': '⚡ Parallel Pipeline (🎨 Design || ⚙️ Code)'
+      'analysis': '📊 Analysis Only (Phase A)',
+      'design': '🎨 Design Only (Phase B)',
+      'code': '⚙️ Code Only (Phase C)',
+      'analyzed_design': '🔀 Analyzed Design (Phase A → B)',
+      'ui_mockup': '🎨 UI Mockup (Phase B → C)',
+      'full': '🔀 Full Pipeline (Phase A → B → C)'
     };
     return visuals[pipelineType] || `🔄 Custom Pipeline (${pipelineType})`;
   }
@@ -2213,7 +2450,7 @@ export class Orchestrator {
     console.log(`\n1️⃣  Phase Execution Summary`);
 
     // Phase A
-    if (result.analysis || pipelineType === 'analysis' || pipelineType === 'mixed' || pipelineType === 'full') {
+    if (result.analysis || pipelineType === 'analysis' || pipelineType === 'analyzed_design' || pipelineType === 'full') {
       const analysisStatus = result.analysis?.success !== false ? '✅ Pass' : '⚠️ Partial';
       const analysisDetail = result.analysis?.summary
         ? `${result.analysis.summary.totalRows?.toLocaleString() || 0}행 분석`
@@ -2246,7 +2483,7 @@ export class Orchestrator {
     console.log(`\n2️⃣  Artifacts & Locations`);
     console.log(`   • 📂 Docs     : ./docs/cases/${caseId}/  (SDD, IA, Wireframe)`);
 
-    if (pipelineType === 'analysis' || pipelineType === 'mixed' || pipelineType === 'full') {
+    if (pipelineType === 'analysis' || pipelineType === 'analyzed_design' || pipelineType === 'full') {
       console.log(`   • 💾 Data     : ./docs/cases/${caseId}/analysis/  (SQL Results)`);
     }
 
@@ -2270,7 +2507,7 @@ export class Orchestrator {
         });
       } else if (pipelineType === 'analysis') {
         console.log(`   👉 [Check]    open docs/cases/${caseId}/analysis/analysis_report.md`);
-      } else if (pipelineType === 'mixed') {
+      } else if (pipelineType === 'analyzed_design') {
         console.log(`   👉 [Check]    open docs/cases/${caseId}/HANDOFF.md`);
         console.log(`   👉 [Next]     Full 파이프라인으로 구현 진행 (pipeline: full)`);
       } else {
@@ -2360,8 +2597,8 @@ export class Orchestrator {
 
           if (pipeline === 'analysis') {
             return await this.runAnalysisPipeline(taskId, taskDescription, prdContent, options);
-          } else if (pipeline === 'mixed') {
-            return await this.runMixedPipeline(taskId, taskDescription, prdContent, options);
+          } else if (pipeline === 'analyzed_design') {
+            return await this.runAnalyzedDesignPipeline(taskId, taskDescription, prdContent, options);
           }
           // design 파이프라인: Planning부터 시작
           return await this._resumeDesignPipeline(taskId, session, metrics, options);
@@ -2553,25 +2790,59 @@ export class Orchestrator {
   }
 
   /**
-   * HITL Pause 후 우아한 프로세스 종료
+   * HITL Graceful Exit (TO-BE: 3-way 옵션 포함)
+   *
    * @param {string} taskId - 태스크 ID
    * @param {string} checkpoint - 체크포인트 유형
+   * @param {Object} hitlContext - HITL 컨텍스트 (3-way 옵션 포함)
    * @returns {Object} - 종료 상태 반환
    */
-  _gracefulExitForHITL(taskId, checkpoint) {
+  _gracefulExitForHITL(taskId, checkpoint, hitlContext = {}) {
+    const { hitl3WayOptions, hitlTrigger, phase } = hitlContext;
+
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`⏸️  HITL 체크포인트 도달: ${checkpoint}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`   Task ID: ${taskId}`);
     console.log(`   상태: 사용자 승인 대기 중`);
+
+    // 트리거 사유 표시
+    if (hitlTrigger && hitlTrigger.length > 0) {
+      console.log(`   트리거: ${hitlTrigger.join(', ')}`);
+    }
+
     console.log('');
-    console.log('   📋 다음 단계:');
-    console.log('      1. Viewer에서 산출물 검토');
-    console.log('      2. 승인 또는 거부 결정');
-    console.log('      3. 승인 후 동일 taskId로 재실행하여 Resume');
-    console.log('');
+
+    // TO-BE: 3-way 옵션 표시
+    if (hitl3WayOptions) {
+      console.log('   🎯 3-way 결정 옵션:');
+      console.log('   ┌─────────────────────────────────────────────────────────────┐');
+      console.log(`   │ [1] ${hitl3WayOptions.EXCEPTION_APPROVAL.label.padEnd(12)} │ ${hitl3WayOptions.EXCEPTION_APPROVAL.description}`);
+      console.log(`   │ [2] ${hitl3WayOptions.RULE_OVERRIDE.label.padEnd(12)} │ ${hitl3WayOptions.RULE_OVERRIDE.description}`);
+      console.log(`   │ [3] ${hitl3WayOptions.REJECT.label.padEnd(12)} │ ${hitl3WayOptions.REJECT.description}`);
+      console.log('   └─────────────────────────────────────────────────────────────┘');
+      console.log('');
+    } else {
+      // 기존 방식 (단순 승인/거부)
+      console.log('   📋 다음 단계:');
+      console.log('      1. Viewer에서 산출물 검토');
+      console.log('      2. 승인 또는 거부 결정');
+      console.log('      3. 승인 후 동일 taskId로 재실행하여 Resume');
+      console.log('');
+    }
+
     console.log('   🔄 Resume 명령:');
     console.log(`      node cli.js --taskId=${taskId}`);
+
+    // 3-way 결정 명령어
+    if (hitl3WayOptions) {
+      console.log('');
+      console.log('   📝 결정 명령:');
+      console.log(`      node cli.js --taskId=${taskId} --decision=EXCEPTION_APPROVAL`);
+      console.log(`      node cli.js --taskId=${taskId} --decision=RULE_OVERRIDE --comment="규칙 수정 필요"`);
+      console.log(`      node cli.js --taskId=${taskId} --decision=REJECT --comment="재작업 필요"`);
+    }
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     // 프로세스 종료 (상태는 session-store에 저장됨)
@@ -2581,7 +2852,10 @@ export class Orchestrator {
       status: 'PAUSED_HITL',
       checkpoint,
       message: `HITL checkpoint reached: ${checkpoint}. Process exiting. Resume after approval.`,
-      resumeCommand: `node cli.js --taskId=${taskId}`
+      resumeCommand: `node cli.js --taskId=${taskId}`,
+      // TO-BE: 3-way 옵션 정보 포함
+      hitl3WayOptions: hitl3WayOptions || null,
+      hitlTrigger: hitlTrigger || null
     };
 
     // 비동기 종료 (로그 출력 완료 후)
@@ -2593,6 +2867,123 @@ export class Orchestrator {
     }
 
     return exitResult;
+  }
+
+  /**
+   * HITL 3-way 결정 처리 (TO-BE 아키텍처)
+   *
+   * CLI에서 --decision 옵션으로 호출됨
+   *
+   * @param {string} taskId - 태스크 ID
+   * @param {string} decision - HITLDecision 값
+   * @param {Object} options - 추가 옵션
+   * @returns {Object} - 처리 결과
+   */
+  handleHITLDecision(taskId, decision, options = {}) {
+    const validDecisions = Object.values(HITLDecision);
+    if (!validDecisions.includes(decision)) {
+      throw new Error(`Invalid HITL decision: ${decision}. Valid options: ${validDecisions.join(', ')}`);
+    }
+
+    const session = sessionStore.handleHITLDecision(taskId, decision, options);
+
+    console.log(`\n✅ HITL 결정 처리 완료: ${decision}`);
+    console.log(`   Task ID: ${taskId}`);
+    console.log(`   상태: ${session.status}`);
+
+    if (decision === HITLDecision.EXCEPTION_APPROVAL) {
+      console.log('\n   → 예외 승인됨. 다음 Phase 진행 가능.');
+      console.log(`   Resume: node cli.js --taskId=${taskId}`);
+    } else if (decision === HITLDecision.RULE_OVERRIDE) {
+      console.log('\n   → 규칙 수정 요청됨. 관리자 검토 필요.');
+      console.log(`   요청 내용: ${options.comment || 'N/A'}`);
+    } else if (decision === HITLDecision.REJECT) {
+      console.log('\n   → 거부됨. 해당 Phase 재작업 필요.');
+      console.log(`   사유: ${options.comment || 'N/A'}`);
+      console.log(`   재작업 Phase: ${session.hitlContext?.rerunPhase || 'N/A'}`);
+    }
+
+    return session;
+  }
+
+  /**
+   * 검증 결과 기반 HITL 라우팅 (TO-BE 아키텍처)
+   *
+   * ReviewerTool 결과의 hitlRequired 플래그를 기반으로 라우팅
+   *
+   * @param {string} taskId - 태스크 ID
+   * @param {Object} validationResult - ReviewerTool 검증 결과
+   * @param {string} phase - 현재 Phase (A, B, C)
+   * @returns {Object} - { shouldContinue, hitlTriggered, session }
+   */
+  async routeByValidationResult(taskId, validationResult, phase = 'B') {
+    const { passed, hitlRequired, hitlTrigger, hitl3WayOptions, score, issues } = validationResult;
+
+    // 자동 검증 PASS → HITL 없이 다음 Phase 진행
+    if (passed && !hitlRequired) {
+      console.log(`\n✅ ImpLeader 자동 검증 PASS (Score: ${score})`);
+      return {
+        shouldContinue: true,
+        hitlTriggered: false,
+        session: null
+      };
+    }
+
+    // 자동 검증 FAIL → HITL 트리거
+    console.log(`\n❌ ImpLeader 자동 검증 FAIL (Score: ${score})`);
+    console.log(`   트리거: ${hitlTrigger?.join(', ') || 'GENERAL_FAIL'}`);
+
+    // HITL 체크포인트 결정
+    const checkpoint = this._mapPhaseToCheckpoint(phase);
+
+    // 세션 저장 및 HITL 일시정지
+    sessionStore.updatePhase(taskId, phase);
+    await this.pauseForHITL(taskId, checkpoint, {
+      validationResult: {
+        score,
+        issues: issues?.length || 0,
+        trigger: hitlTrigger
+      },
+      hitl3WayOptions,
+      message: validationResult.summary
+    });
+
+    // Graceful Exit (3-way 옵션 포함)
+    if (isEnabled('HITL_GRACEFUL_EXIT')) {
+      return this._gracefulExitForHITL(taskId, checkpoint, {
+        hitl3WayOptions,
+        hitlTrigger,
+        phase
+      });
+    }
+
+    // Fallback: 폴링 방식
+    const approval = await this.waitForApproval(taskId);
+    if (!approval.approved) {
+      throw new Error(`Validation failed and HITL rejected: ${approval.session?.hitlContext?.rejectionReason || 'No reason'}`);
+    }
+
+    return {
+      shouldContinue: true,
+      hitlTriggered: true,
+      session: approval.session
+    };
+  }
+
+  /**
+   * Phase를 HITL 체크포인트로 매핑
+   */
+  _mapPhaseToCheckpoint(phase) {
+    const mapping = {
+      'A': HITLCheckpoint.QUERY_REVIEW,
+      'B': HITLCheckpoint.DESIGN_APPROVAL,
+      'C': HITLCheckpoint.MANUAL_FIX,
+      'analysis': HITLCheckpoint.QUERY_REVIEW,
+      'design': HITLCheckpoint.DESIGN_APPROVAL,
+      'code': HITLCheckpoint.MANUAL_FIX,
+      'review': HITLCheckpoint.MANUAL_FIX
+    };
+    return mapping[phase] || HITLCheckpoint.DESIGN_APPROVAL;
   }
 
   /**
@@ -2616,16 +3007,16 @@ export class Orchestrator {
    * @returns {Array} - 위험 쿼리 목록
    */
   /**
-   * v1.3.0: PRD Gap Check 실패 리포트 출력
+   * v2.0.0: PRD Gap Check 실패 리포트 출력
    * README.md 예상 출력 형식에 맞춰 FAIL 리포트 생성
+   * (v2.0.0: prdType 매개변수 제거)
    *
    * @param {string} taskId - 작업 ID
-   * @param {string} prdType - PRD 유형
    * @param {string} pipeline - 파이프라인
    * @param {Object} gapCheck - Gap Check 결과
    * @param {Object} metrics - 메트릭스 객체
    */
-  _printGapCheckFailReport(taskId, _prdType, pipeline, gapCheck, metrics) {
+  _printGapCheckFailReport(taskId, pipeline, gapCheck, metrics) {
     const duration = typeof metrics?.getTotalDuration === 'function'
       ? metrics.formatDuration(metrics.getTotalDuration())
       : '0.0s';
@@ -2633,7 +3024,10 @@ export class Orchestrator {
     const tokens = tokenObj?.total || 0;
     const missingFields = gapCheck?.missing || [];
     const pipelineLabel = pipeline === 'analysis' ? 'Analysis Only (A)' :
-                          pipeline === 'mixed' ? 'Mixed (A→B)' : 'Design Only (B)';
+                          pipeline === 'analyzed_design' ? 'Analyzed Design (A→B)' :
+                          pipeline === 'code' ? 'Code Only (C)' :
+                          pipeline === 'ui_mockup' ? 'UI Mockup (B→C)' :
+                          pipeline === 'full' ? 'Full (A→B→C)' : 'Design Only (B)';
 
     // 누락된 필드 간단 표시 (괄호 제거)
     const shortMissing = missingFields
@@ -2685,7 +3079,7 @@ export class Orchestrator {
     console.log('');
     console.log('3️⃣  Next Actions & Commands');
     console.log(`   🔴 [Suspected Issue] 유효하지 않은 파이프라인 지정: "${invalidPipeline}"`);
-    console.log('   🛠️  [Suggestion]      유효한 파이프라인: "analysis", "design", "mixed", "full"');
+    console.log('   🛠️  [Suggestion]      유효한 파이프라인: "analysis", "design", "analyzed_design", "code", "ui_mockup", "full"');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   }
 
@@ -3064,17 +3458,16 @@ export class Orchestrator {
   }
 
   /**
-   * P1-2: 라우팅 결정 로직
-   * PRD 유형에 따라 적절한 파이프라인을 선택하고 결정 사유를 반환
+   * P1-2: 라우팅 결정 로직 (v2.0.0: type 제거, pipeline만 사용)
+   * 파이프라인 필드 기반으로 라우팅 결정
    *
-   * @param {string} prdType - QUANTITATIVE | QUALITATIVE | MIXED
-   * @param {string} pipeline - analysis | design | mixed
+   * @param {string} pipeline - analysis | design | analyzed_design | code | ui_mockup | full
    * @param {Object} options - 실행 옵션 (mode, pipeline 오버라이드)
    * @returns {{ selectedPipeline: string, reason: string, invalidPipeline?: string }}
    */
-  _determineRoutingDecision(prdType, pipeline, options = {}) {
-    // 유효한 파이프라인 목록
-    const VALID_PIPELINES = ['analysis', 'design', 'mixed', 'full', 'auto'];
+  _determineRoutingDecision(pipeline, options = {}) {
+    // 유효한 파이프라인 목록 (6개 타입)
+    const VALID_PIPELINES = ['analysis', 'design', 'analyzed_design', 'code', 'ui_mockup', 'full', 'auto'];
 
     // 1. CLI 옵션으로 명시적 파이프라인 지정된 경우 (최우선)
     if (options.pipeline && options.pipeline !== 'auto') {
@@ -3092,12 +3485,11 @@ export class Orchestrator {
       };
     }
 
-    // 2. PRD 파일에 pipeline 필드가 명시된 경우 (design 포함)
+    // 2. PRD 파일에 pipeline 필드가 명시된 경우
     if (pipeline) {
       // PRD pipeline 필드 유효성 검사
       if (!VALID_PIPELINES.includes(pipeline)) {
-        // Case 10: 숫자형 또는 타입 불일치 → 기본값 폴백 (경고만)
-        // Case 03: 문자열이지만 유효하지 않음 → FAIL
+        // 숫자형 또는 타입 불일치 → 기본값 폴백 (경고만)
         const isNumericOrTypeMismatch = /^\d+$/.test(pipeline) ||
           pipeline === '[object Object]' ||
           pipeline === 'null' ||
@@ -3127,22 +3519,10 @@ export class Orchestrator {
       };
     }
 
-    // 3. PRD type 기반 자동 추론
-    const typeToReason = {
-      'QUANTITATIVE': 'PRD type: QUANTITATIVE → 데이터 분석 전용',
-      'QUALITATIVE': 'PRD type: QUALITATIVE → 설계 문서 생성',
-      'MIXED': 'PRD type: MIXED → 분석 후 설계'
-    };
-
-    const typeToPipeline = {
-      'QUANTITATIVE': 'analysis',
-      'QUALITATIVE': 'design',
-      'MIXED': 'mixed'
-    };
-
+    // 3. pipeline 미지정 → 기본값 design
     return {
-      selectedPipeline: typeToPipeline[prdType] || 'design',
-      reason: typeToReason[prdType] || 'PRD type 미지정 → 기본값 design'
+      selectedPipeline: 'design',
+      reason: 'PRD pipeline 미지정 → 기본값 design'
     };
   }
 

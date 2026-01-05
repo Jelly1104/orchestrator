@@ -444,19 +444,19 @@ graph TD
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  🎯 Role-Based Collaboration Model                                │
+│  🎯 Role-Based Collaboration Model                                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. No Agents - Role 기반 정의                                               │
-│     • 모든 구성원은 기능 중심의 역할(Role)로 정의                               │
-│     • Agent 용어 폐기, Role 용어 사용                                         │
+│  1. No Agents - Role 기반 정의                                                │
+│     • 모든 구성원은 기능 중심의 역할(Role)로 정의                                    │
+│     • Agent 용어 폐기, Role 용어 사용                                            │
 │                                                                             │
-│  2. 실행/검증 분리 (Execution & Verification Separation)                     │
-│     • 만드는 자(Executor)와 검사하는 자(Impl Leader)를 분리                     │
-│     • 황금률: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."        │
+│  2. 실행/검증 분리 (Execution & Verification Separation)                       │
+│     • 만드는 자(Executor)와 검사하는 자(Impl Leader)를 분리                        │
+│     • 황금률: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."                 │
 │                                                                             │
 │  3. Universal Quality Gate                                                  │
-│     • 모든 Phase는 Implementation Leader의 검증을 통과해야 Leader에게 보고      │
+│     • 모든 Phase는 Implementation Leader의 검증을 통과해야 Leader에게 보고           │
 │                                                                             │
 │  4. Multi-LLM Provider 지원                                                  │
 │     • Claude (Primary) → GPT-4 → Gemini (Fallback Chain)                    │
@@ -468,32 +468,32 @@ graph TD
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ⚠️ 코드 구현 시 강제 규칙                                                    │
+│  ⚠️ 코드 구현 시 강제 규칙                                                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. Leader는 tools 배열이 비어 있어야 합니다.                                 │
-│     └── 시스템 프롬프트에 Tool Definition 포함 금지                          │
-│     └── 하위 Role 호출하는 Delegation 인터페이스만 보유                       │
+│  1. Leader는 tools 배열이 비어 있어야 합니다.                                      │
+│     └── 시스템 프롬프트에 Tool Definition 포함 금지                                │
+│     └── 하위 Role 호출하는 Delegation 인터페이스만 보유                             │
 │                                                                             │
-│  2. Orchestrator는 '판단'하지 않습니다.                                       │
-│     └── "PRD 내용에 따라 분기" 같은 로직 금지 (Leader의 몫)                   │
-│     └── Leader가 출력한 { router: "..." } 에 따라 기계적 스위칭만 수행        │
+│  2. Orchestrator는 '판단'하지 않습니다.                                          │
+│     └── "PRD 내용에 따라 분기" 같은 로직 금지 (Leader의 몫)                         │
+│     └── Leader가 출력한 { router: "..." } 에 따라 기계적 스위칭만 수행               │
 │                                                                             │
-│  3. Doc-Sync는 'Hook'입니다.                                                 │
-│     └── Leader가 "Notion에 올려줘" 지시 금지                                  │
-│     └── Leader는 "Phase 완료"만 선언                                         │
-│     └── Orchestrator가 onPhaseComplete 훅에서 DocSyncTool 자동 실행          │
+│  3. Doc-Sync는 'Hook'입니다.                                                  │
+│     └── Leader가 "Notion에 올려줘" 지시 금지                                     │
+│     └── Leader는 "Phase 완료"만 선언                                            │
+│     └── Orchestrator가 onPhaseComplete 훅에서 DocSyncTool 자동 실행              │
 │                                                                             │
-│  4. Router 값 (6개 타입)                                                     │
+│  4. Router 값 (6개 타입)                                                      │
 │     ┌──────────────────┬───────────────┬────────────────────────────────┐   │
-│     │ router           │ Phase 조합     │ 설명                           │   │
+│     │ router           │ Phase 조합     │ 설명                            │   │
 │     ├──────────────────┼───────────────┼────────────────────────────────┤   │
-│     │ "analysis"       │ A만           │ SQL 분석, 리포트                │   │
+│     │ "analysis"       │ A만           │ SQL 분석, 리포트                  │   │
 │     │ "design"         │ B만           │ IA/Wireframe/SDD               │   │
-│     │ "code"           │ C만           │ HANDOFF 기반 구현만            │   │
-│     │ "analyzed_design"│ A → B         │ 분석 후 설계                   │   │
-│     │ "ui_mockup"      │ B → C         │ 설계 후 화면 구현              │   │
-│     │ "full"           │ A → B → C     │ 전체 파이프라인                │   │
+│     │ "code"           │ C만           │ HANDOFF, SDD 기반 구현만          │   │
+│     │ "analyzed_design"│ A → B         │ 분석 후 설계                      │   │
+│     │ "ui_mockup"      │ B → C         │ 설계 후 화면 구현                  │   │
+│     │ "full"           │ A → B → C     │ 전체 파이프라인                    │   │
 │     └──────────────────┴───────────────┴────────────────────────────────┘   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -686,55 +686,100 @@ PRD 입력
 
 ```mermaid
 graph TD
-    %% 사용자 및 진입점
-    User([👤 User / CLI]) -->|Task & PRD| ORC[🤖 Orchestrator]
-
-    %% Phase 0: 라우팅
+    User([👤 User / CLI]) -->|PRD| ORC[🤖 Orchestrator]
     ORC -->|PRD 전달| Leader[🧠 Leader<br/>PM & Commander]
-    Leader -->|파이프라인 전략 수립| Router{Pipeline Router}
+    Leader -->|파이프라인 전략 수립| Handoff[📋 HANDOFF 생성]
+    Handoff --> Router{Pipeline Router}
 
-    %% 1. Analysis Pipeline (Phase A)
-    Router -->|Quantitative / Mixed| ANA[🕵️ Analyzer]
-    ANA -->|QueryTool| DB[(Legacy DB)]
-    ANA -->|분석 결과| IMP_A[👮 ImpLeader<br/>Schema Validation]
-    IMP_A -- Pass --> Leader
-    IMP_A -- Fail --> ANA
+    %% 6개 Router 타입 분기
+    Router -->|"analysis"| ANA_Only[🕵️ Analyzer]
+    Router -->|"design"| DSG_Only[📐 Designer]
+    Router -->|"code"| CODE_Only[💻 Coder]
+    Router -->|"analyzed_design"| ANA_AB[🕵️ Analyzer]
+    Router -->|"ui_mockup"| DSG_BC[📐 Designer]
+    Router -->|"full"| ANA_Full[🕵️ Analyzer]
 
-    %% 2. Design Pipeline (Phase B)
-    Router -->|Qualitative / Mixed| DSG[📐 Designer]
+    %% ═══════════════════════════════════════
+    %% analysis (A만)
+    %% ═══════════════════════════════════════
+    ANA_Only -->|QueryTool| DB1[(production DB)]
+    ANA_Only -->|분석 결과| IMP_A1[👮 ImpLeader]
+    IMP_A1 -- 결과 보고 --> Leader_A[🧠 Leader]
+    IMP_A1 -- Fail --> ANA_Only
+    Leader_A --> HITL_A[📢 HITL]
+    HITL_A -->|Approved| End_A([✅ 분석 리포트])
 
-    subgraph "Phase B: Design"
-        DSG -->|UX Planner 모드| IA_Wire[IA.md & Wireframe.md]
-        DSG -->|System Architect 모드| SDD[SDD.md]
-    end
+    %% ═══════════════════════════════════════
+    %% design (B만)
+    %% ═══════════════════════════════════════
+    DSG_Only -->|IA/WF/SDD| IMP_B1[👮 ImpLeader]
+    IMP_B1 -- 결과 보고 --> Leader_B[🧠 Leader]
+    IMP_B1 -- Fail --> DSG_Only
+    Leader_B --> HITL_B[📢 HITL]
+    HITL_B -->|Approved| End_B([✅ 설계 산출물])
 
-    SDD -->|설계 패키지| IMP_B[👮 ImpLeader<br/>Feasibility Check]
-    IMP_B -- Pass --> Handoff[🧠 Leader<br/>HANDOFF.md 확정]
-    IMP_B -- Fail --> DSG
+    %% ═══════════════════════════════════════
+    %% code (C만)
+    %% ═══════════════════════════════════════
+    CODE_Only -->|TDD Cycle| IMP_C1[👮 ImpLeader]
+    IMP_C1 -- 결과 보고 --> Leader_C[🧠 Leader]
+    IMP_C1 -- Fail --> CODE_Only
+    Leader_C --> HITL_C[📢 HITL]
+    HITL_C -->|Approved| End_C([✅ 코드 산출물])
 
-    %% 3. Implementation Pipeline (Phase C)
-    Handoff -->|개발 명세 전달| CODE[💻 Coder]
+    %% ═══════════════════════════════════════
+    %% analyzed_design (A → B)
+    %% ═══════════════════════════════════════
+    ANA_AB -->|QueryTool| DB2[(production DB)]
+    ANA_AB -->|분석 결과| IMP_A2[👮 ImpLeader]
+    IMP_A2 -- Pass --> DSG_AB[📐 Designer]
+    IMP_A2 -- Fail --> ANA_AB
+    DSG_AB -->|IA/WF/SDD| IMP_B2[👮 ImpLeader]
+    IMP_B2 -- Fail --> DSG_AB
+    IMP_B2 -- 결과 보고 --> Leader_AB[🧠 Leader]
+    Leader_AB --> HITL_AB[📢 HITL]
+    HITL_AB -->|Approved| End_AB([✅ 분석+설계])
 
-    subgraph "Phase C: Implementation"
-        CODE -->|TDD Cycle| Artifacts[코드 산출물]
-    end
+    %% ═══════════════════════════════════════
+    %% ui_mockup (B → C)
+    %% ═══════════════════════════════════════
+    DSG_BC -->|IA/WF/SDD| IMP_B3[👮 ImpLeader]
+    IMP_B3 -- Pass --> CODE_BC[💻 Coder]
+    IMP_B3 -- Fail --> DSG_BC
+    CODE_BC -->|TDD Cycle| IMP_C3[👮 ImpLeader]
+    IMP_C3 -- 결과 보고 --> Leader_BC[🧠 Leader]
+    IMP_C3 -- Fail --> CODE_BC
+    Leader_BC --> HITL_BC[📢 HITL]
+    HITL_BC -->|Approved| End_BC([✅ 설계+구현])
 
-    Artifacts -->|품질 검증| IMP_C[👮 ImpLeader<br/>Code Review]
-    IMP_C -- Pass --> Leader_Final[🧠 Leader<br/>최종 검토]
-    IMP_C -- Fail --> CODE
+    %% ═══════════════════════════════════════
+    %% full (A → B → C)
+    %% ═══════════════════════════════════════
+    ANA_Full -->|QueryTool| DB3[(production DB)]
+    ANA_Full -->|분석 결과|IMP_A3[👮 ImpLeader]
+    IMP_A3 -- Pass --> DSG_Full[📐 Designer]
+    IMP_A3 -- Fail --> ANA_Full
+    DSG_Full -->|IA/WF/SDD| IMP_B4[👮 ImpLeader]
+    IMP_B4 -- Pass --> CODE_Full[💻 Coder]
+    IMP_B4 -- Fail --> DSG_Full
+    CODE_Full -->|TDD Cycle| IMP_C4[👮 ImpLeader]
+    IMP_C4 -- 결과 보고 --> Leader_Full[🧠 Leader]
+    IMP_C4 -- Fail --> CODE_Full
+    Leader_Full --> HITL_Full[📢 HITL]
+    HITL_Full -->|Approved| End_Full([🎉 Deploy])
 
-    %% 4. HITL & Deploy
-    Leader_Final --> HITL[📢 HITL Approval]
-    HITL -->|Approved| End([🎉 Deploy])
-    HITL -->|Rejected| Feedback[Feedback Loop]
-    Feedback --> CODE
-
+    %% ═══════════════════════════════════════
     %% Styles
+    %% ═══════════════════════════════════════
     style Leader fill:#f9f,stroke:#333,stroke-width:2px
-    style IMP_A fill:#e6ffe6,stroke:#2e7d32
-    style IMP_B fill:#e6ffe6,stroke:#2e7d32
-    style IMP_C fill:#e6ffe6,stroke:#2e7d32
-    style HITL fill:#f96,stroke:#333,stroke-width:2px,color:white
+    style Handoff fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    style Router fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    style HITL_A fill:#f96,stroke:#333,color:white
+    style HITL_B fill:#f96,stroke:#333,color:white
+    style HITL_C fill:#f96,stroke:#333,color:white
+    style HITL_AB fill:#f96,stroke:#333,color:white
+    style HITL_BC fill:#f96,stroke:#333,color:white
+    style HITL_Full fill:#f96,stroke:#333,color:white
 ```
 
 ### 5-3. 문서 파이프라인 플로우
@@ -742,86 +787,91 @@ graph TD
 > **원본 위치**: DOCUMENT_PIPELINE.md 섹션 전체 파이프라인
 
 ```mermaid
-flowchart TD
-    %% Entry
-    Start((Start)) --> PRD_Submit[👤 User: PRD 제출]
-    PRD_Submit --> Leader_Analyze[🧠 Leader: PRD 분석<br/>파이프라인 전략 수립]
-
-    Leader_Analyze --> PRD_Route{PRD 유형<br/>분류}
-
-    PRD_Route -- Data --> PhaseA
-    PRD_Route -- Design --> PhaseB
-    PRD_Route -- Mixed --> PhaseA
-
+flowchart LR
     %% ═══════════════════════════════════════
-    %% Phase A: Analysis (Data Foundation)
+    %% 문서 생성/소비 흐름
     %% ═══════════════════════════════════════
-    subgraph PhaseA ["🟦 Phase A: Analysis (Data Foundation)"]
-        direction TB
-        A_Command[🧠 Leader → 🕵️ Analyzer<br/>데이터 분석 명령]
-        A_Command --> A_Query[🕵️ Analyzer: QueryTool 실행]
-        A_Query --> A_Report[🕵️ Analyzer → 👮 ImpLeader<br/>분석 결과 검증 요청]
-        A_Report --> A_QA{👮 ImpLeader<br/>Schema Validation}
-        A_QA -- Fail --> A_Fix[🕵️ Analyzer: 쿼리 수정]
-        A_Fix --> A_Query
-        A_QA -- Pass --> A_Submit[🕵️ Analyzer → 🧠 Leader<br/>분석 리포트 제출]
+
+    subgraph Input ["📥 입력"]
+        PRD[PRD.md]
     end
 
-    A_Submit --> HITL_A[📢 HITL: 전략 승인<br/>PM Check]
-    HITL_A -- Approved --> PhaseB
-    HITL_A -- Rejected --> A_Command
-
-    %% ═══════════════════════════════════════
-    %% Phase B: Design (Blueprint)
-    %% ═══════════════════════════════════════
-    subgraph PhaseB ["🟨 Phase B: Design (Blueprint)"]
-        direction TB
-        B_Command[🧠 Leader → 📐 Designer<br/>기획 시각화 & 기술 설계 명령]
-
-        B_Command --> B_UX[📐 Designer: UX Planner 모드<br/>IA.md & Wireframe.md]
-        B_UX --> B_Arch[📐 Designer: System Architect 모드<br/>SDD.md 작성]
-        B_Arch --> B_Report[📐 Designer → 👮 ImpLeader<br/>설계 패키지 검증 요청]
-
-        B_Report --> B_QA{👮 ImpLeader<br/>Feasibility Check<br/>PRD↔Wire↔SDD 정합성}
-        B_QA -- Fail --> B_Fix[📐 Designer: 설계 수정]
-        B_Fix --> B_UX
-        B_QA -- Pass --> B_Verify[👮 ImpLeader → 🧠 Leader<br/>✅ Verified Blueprint]
+    subgraph LeaderPhase ["🧠 Leader"]
+        HANDOFF[HANDOFF.md]
     end
 
-    B_Verify --> Handoff[🧠 Leader: HANDOFF.md 확정<br/>개발 명세서]
-    Handoff --> HITL_B[📢 HITL: 설계 승인<br/>Design Freeze]
-    HITL_B -- Approved --> PhaseC
-    HITL_B -- Rejected --> B_Command
-
-    %% ═══════════════════════════════════════
-    %% Phase C: Implementation (Construction)
-    %% ═══════════════════════════════════════
-    subgraph PhaseC ["🟩 Phase C: Implementation (Construction)"]
+    subgraph PhaseA ["🟦 Phase A: Analysis"]
         direction TB
-        C_Command[🧠 Leader → 💻 Coder<br/>소프트웨어 구현 명령<br/>HANDOFF 기반]
-
-        C_Command --> C_TDD[💻 Coder: TDD Cycle<br/>Red → Green → Refactor]
-        C_TDD --> C_Report[💻 Coder → 👮 ImpLeader<br/>코드 품질 검증 요청]
-
-        C_Report --> C_QA{👮 ImpLeader<br/>Code Review<br/>보안 & 로직 검증}
-        C_QA -- Fail --> C_Fix[💻 Coder: 코드 수정]
-        C_Fix --> C_TDD
-        C_QA -- Pass --> C_Verify[👮 ImpLeader → 🧠 Leader<br/>✅ Verified Code]
+        Query[query.sql]
+        Result[result.json]
+        Report[report.md]
+        Query --> Result --> Report
     end
 
-    C_Verify --> HITL_C[📢 HITL: 배포 승인<br/>Release]
-    HITL_C -- Approved --> Deploy((🎉 Deploy))
-    HITL_C -- Rejected --> C_Command
+    subgraph PhaseB ["🟨 Phase B: Design"]
+        direction TB
+        subgraph UX ["UX Planner 모드"]
+            IA[IA.md]
+            WF[Wireframe.md]
+            IA --> WF
+        end
+        subgraph Arch ["System Architect 모드"]
+            SDD[SDD.md]
+        end
+    end
+
+    subgraph PhaseC ["🟩 Phase C: Implementation"]
+        direction TB
+        BE[backend/src/*]
+        FE[frontend/src/*]
+        TEST[tests/*]
+    end
+
+    subgraph Output ["📤 산출물 저장소"]
+        direction TB
+        DOCS[docs/cases/case-id/]
+        CODE[src/features/]
+    end
+
+    %% ═══════════════════════════════════════
+    %% 문서 흐름
+    %% ═══════════════════════════════════════
+    PRD -->|"🧠 Leader 분석"| HANDOFF
+
+    HANDOFF -->|"분석 명령"| PhaseA
+    HANDOFF -->|"설계 명령"| PhaseB
+    HANDOFF -->|"구현 명령"| PhaseC
+
+    PhaseA -->|"분석 결과 반영"| PhaseB
+    WF -->|"화면 스펙 참조"| PhaseC
+    SDD -->|"기술 스펙 참조"| PhaseC
+
+    %% ═══════════════════════════════════════
+    %% 산출물 저장
+    %% ═══════════════════════════════════════
+    Report -->|"저장"| DOCS
+    IA -->|"저장"| DOCS
+    WF -->|"저장"| DOCS
+    SDD -->|"저장"| DOCS
+    HANDOFF -->|"저장"| DOCS
+
+    BE -->|"저장"| CODE
+    FE -->|"저장"| CODE
+    TEST -->|"저장"| CODE
 
     %% ═══════════════════════════════════════
     %% Styles
     %% ═══════════════════════════════════════
-    style HITL_A fill:#f96,stroke:#333,stroke-width:2px,color:white
-    style HITL_B fill:#f96,stroke:#333,stroke-width:2px,color:white
-    style HITL_C fill:#f96,stroke:#333,stroke-width:2px,color:white
+    style PRD fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style HANDOFF fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    style LeaderPhase fill:#f9f,stroke:#333,stroke-width:2px
     style PhaseA fill:#e6f0ff,stroke:#4a90d9
     style PhaseB fill:#fff5e6,stroke:#d9a04a
     style PhaseC fill:#e6ffe6,stroke:#4ad94a
+    style UX fill:#fff8e1,stroke:#f9a825
+    style Arch fill:#fff8e1,stroke:#f9a825
+    style DOCS fill:#f3e5f5,stroke:#7b1fa2
+    style CODE fill:#f3e5f5,stroke:#7b1fa2
 ```
 
 ### 5-4. JIT Injection 원칙

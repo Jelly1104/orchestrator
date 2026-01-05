@@ -903,7 +903,7 @@ export class OutputValidator {
   /**
    * 산출물 유형 매칭 (개선: 유연한 유형 매핑)
    */
-  matchDeliverableType(outputType, prdType) {
+  matchDeliverableType(outputType, deliverableType) {
     const typeMap = {
       'SQL': ['sql', 'query', 'sql_query', '쿼리', 'code'], // Code도 SQL 포함 가능
       'Markdown': ['markdown', 'report', 'document', '리포트', '문서'],
@@ -915,14 +915,14 @@ export class OutputValidator {
     };
 
     const normalizedOutput = (outputType || '').toLowerCase();
-    const normalizedPrd = (prdType || '').toLowerCase();
+    const normalizedDeliverable = (deliverableType || '').toLowerCase();
 
     // 동일 유형이면 바로 매칭
-    if (normalizedOutput === normalizedPrd) return true;
+    if (normalizedOutput === normalizedDeliverable) return true;
 
-    // PRD 유형에 대해 허용된 출력 유형 체크
-    for (const [prdKey, aliases] of Object.entries(typeMap)) {
-      if (prdKey.toLowerCase() === normalizedPrd || aliases.includes(normalizedPrd)) {
+    // 산출물 유형에 대해 허용된 출력 유형 체크
+    for (const [deliverableKey, aliases] of Object.entries(typeMap)) {
+      if (deliverableKey.toLowerCase() === normalizedDeliverable || aliases.includes(normalizedDeliverable)) {
         if (aliases.includes(normalizedOutput)) {
           return true;
         }

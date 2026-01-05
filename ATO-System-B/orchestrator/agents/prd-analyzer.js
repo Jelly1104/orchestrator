@@ -1,18 +1,33 @@
 /**
- * PRD Analyzer - PRD 파싱, 유형 판별, Gap Check
+ * PRD Analyzer - PRD 파싱, 파이프라인 판별, Gap Check
  *
  * Leader Agent가 plan() 전에 실행하여:
- * 1. PRD 유형 판별 (정량/정성/혼합)
- * 2. 필수 항목 체크
+ * 1. 파이프라인 판별 (6개 타입)
+ * 2. 필수 항목 체크 (5개: 목적, 타겟유저, 핵심기능, 성공지표, 파이프라인)
  * 3. 산출물 체크리스트 추출
  * 4. 레퍼런스 매칭
  * 5. Gap Check 결과 생성
+ *
+ * @version 2.0.0 - type 필드 제거, pipeline만 사용
  */
 
 import fs from 'fs';
 import path from 'path';
 
-// 키워드 정의
+// 파이프라인별 키워드 정의 (PRD_GUIDE.md 기반)
+const PIPELINE_KEYWORDS = {
+  analysis: ['분석', '통계', '세그먼트', '코호트', 'KPI', 'SQL', '쿼리', '리포트'],
+  design: ['설계', 'UX', 'UI', '제안', 'IA', 'Wireframe', '화면구조'],
+  code: ['구현만', '코딩', '이미 설계됨', 'HANDOFF 기반'],
+  analyzed_design: ['분석 → 설계', '데이터 기반 UX', '인사이트 → 제안'],
+  ui_mockup: ['설계 → 화면구현', 'IA/WF 기반 UI 코드', '화면만 구현'],
+  full: ['전체 파이프라인', '처음부터 끝까지', '분석→설계→구현']
+};
+
+// 유효한 파이프라인 값 (6개)
+const VALID_PIPELINES = ['analysis', 'design', 'code', 'analyzed_design', 'ui_mockup', 'full'];
+
+// 내부 분류용 키워드 (레거시 지원)
 const QUANTITATIVE_KEYWORDS = [
   '분석', '통계', '세그먼트', '코호트', 'KPI',
   '수치', '비율', '퍼센트', '증가', '감소',
@@ -29,36 +44,47 @@ const QUALITATIVE_KEYWORDS = [
 ];
 
 // 레퍼런스 맵 (PRD_REFERENCE_MAP.md 기반)
+// v1.3.0: searchQuery, action 필드 추가 (프론트 검색 연동용)
 const REFERENCE_MAP = {
   'segment_analysis': {
     keywords: ['세그먼트', '분석', '패턴', '코호트'],
     reference: 'Amplitude Segmentation',
     pattern: '필터 → 그룹핑 → 비교 → 인사이트',
-    category: '데이터 분석 > 세그먼트 분석'
+    category: '데이터 분석 > 세그먼트 분석',
+    searchQuery: 'Amplitude segmentation cohort analysis UI pattern',
+    action: 'USER_SEARCHABLE'
   },
   'kpi_dashboard': {
     keywords: ['KPI', '대시보드', '지표', '모니터링'],
     reference: 'Google Analytics / Metabase',
     pattern: 'KPI 카드 + 트렌드 차트 + 필터',
-    category: '시각화 > 통계 대시보드'
+    category: '시각화 > 통계 대시보드',
+    searchQuery: 'KPI dashboard UI design best practice',
+    action: 'USER_SEARCHABLE'
   },
   'admin_crud': {
     keywords: ['관리', '목록', '등록', '수정', '삭제', '어드민'],
     reference: 'Admin 템플릿',
     pattern: '검색 + 필터 + 테이블 + 페이지네이션',
-    category: 'CRUD > 관리 페이지'
+    category: 'CRUD > 관리 페이지',
+    searchQuery: 'admin dashboard CRUD table UI pattern',
+    action: 'USER_SEARCHABLE'
   },
   'onboarding': {
     keywords: ['온보딩', '가이드', '튜토리얼', '첫 사용', '웰컴'],
     reference: 'Slack / Notion 온보딩',
     pattern: '단계별 진행 → 체크리스트 → 완료',
-    category: '온보딩 > 스텝 가이드'
+    category: '온보딩 > 스텝 가이드',
+    searchQuery: 'user onboarding flow UI UX best practice',
+    action: 'USER_SEARCHABLE'
   },
   'ux_design': {
     keywords: ['UX', '설계', '사용자 경험', '인터랙션'],
     reference: '일반 UX 패턴',
     pattern: '사용자 리서치 → 와이어프레임 → 프로토타입',
-    category: '설계 > UX 설계'
+    category: '설계 > UX 설계',
+    searchQuery: 'UX design wireframe prototype pattern',
+    action: 'USER_SEARCHABLE'
   }
 };
 
@@ -73,14 +99,14 @@ export class PRDAnalyzer {
    */
   async analyze(prdContent) {
     const result = {
-      prdType: null,
       requiredFields: {},
       deliverables: [],
       reference: null,
       dataRequirements: [],
       gaps: [],
       missing: [],          // HITL 트리거용 누락 항목 배열
-      confirmationNeeded: []
+      confirmationNeeded: [],
+      pipeline: 'design'
     };
 
     // 1. 필수 항목 체크
@@ -89,14 +115,14 @@ export class PRDAnalyzer {
     // 2. 산출물 체크리스트 추출
     result.deliverables = this.extractDeliverables(prdContent);
 
-    // 3. 유형 판별
-    result.prdType = this.classifyPRD(prdContent, result.deliverables);
+    // 3. 파이프라인 판별 (pipeline만 사용)
+    result.pipeline = this.inferPipelineFromContent(prdContent, result.deliverables);
 
     // 4. 레퍼런스 매칭
     result.reference = this.matchReference(prdContent);
 
-    // 5. 데이터 요구사항 추출 (정량적일 때)
-    if (result.prdType === 'QUANTITATIVE' || result.prdType === 'MIXED') {
+    // 5. 데이터 요구사항 추출 (분석 단계 포함 파이프라인)
+    if (['analysis', 'analyzed_design', 'full'].includes(result.pipeline)) {
       result.dataRequirements = this.extractDataRequirements(prdContent);
     }
 
@@ -309,43 +335,10 @@ export class PRDAnalyzer {
   }
 
   /**
-   * PRD 유형 판별
+   * PRD 파이프라인 판별 (type 기반 로직 제거)
    */
   classifyPRD(prdContent, deliverables) {
-    let quantScore = 0;
-    let qualScore = 0;
-
-    // 키워드 점수
-    const contentLower = prdContent.toLowerCase();
-    QUANTITATIVE_KEYWORDS.forEach(kw => {
-      if (contentLower.includes(kw.toLowerCase())) quantScore++;
-    });
-    QUALITATIVE_KEYWORDS.forEach(kw => {
-      if (contentLower.includes(kw.toLowerCase())) qualScore++;
-    });
-
-    // 산출물 점수
-    deliverables.forEach(d => {
-      if (['SQL', 'ANALYSIS'].includes(d.type)) quantScore += 2;
-      if (['DESIGN', 'PROPOSAL'].includes(d.type)) qualScore += 2;
-      if (d.type === 'REPORT') {
-        quantScore += 1;
-        qualScore += 1;
-      }
-    });
-
-    // 판별
-    if (quantScore > 0 && qualScore > 0) {
-      // 둘 다 있으면 비율로 판단
-      const ratio = quantScore / (quantScore + qualScore);
-      if (ratio > 0.7) return 'QUANTITATIVE';
-      if (ratio < 0.3) return 'QUALITATIVE';
-      return 'MIXED';
-    } else if (quantScore > qualScore) {
-      return 'QUANTITATIVE';
-    } else {
-      return 'QUALITATIVE';
-    }
+    return this.inferPipelineFromContent(prdContent, deliverables);
   }
 
   /**
@@ -455,10 +448,8 @@ export class PRDAnalyzer {
     }
 
     // 정량적인데 데이터 요구사항 없음
-    if (
-      (analysisResult.prdType === 'QUANTITATIVE' || analysisResult.prdType === 'MIXED') &&
-      analysisResult.dataRequirements.length === 0
-    ) {
+    const needsData = ['analysis', 'analyzed_design', 'full'].includes(analysisResult.pipeline);
+    if (needsData && analysisResult.dataRequirements.length === 0) {
       gaps.push({ type: 'NO_DATA_REQUIREMENTS', severity: 'MEDIUM' });
       missing.push('데이터 요구사항(테이블/컬럼)');
     }
@@ -480,10 +471,10 @@ export class PRDAnalyzer {
   generateConfirmations(analysisResult) {
     const confirmations = [];
 
-    // 유형 확인
+    // 파이프라인 확인
     confirmations.push({
-      type: 'PRD_TYPE',
-      question: `PRD 유형을 "${this.getPRDTypeLabel(analysisResult.prdType)}"로 판별했습니다. 맞습니까?`,
+      type: 'PIPELINE',
+      question: `파이프라인을 "${this.getPipelineLabel(analysisResult.pipeline)}"로 판별했습니다. 맞습니까?`,
       options: ['Y', 'N'],
       default: 'Y'
     });
@@ -528,19 +519,17 @@ export class PRDAnalyzer {
   }
 
   /**
-   * PRD v2 유형 판별 (Orchestrator에서 호출)
-   * v1.2.0: gapCheck 결과 포함 (HITL 트리거 연동)
+   * PRD 파이프라인 판별 (Orchestrator에서 호출)
+   * v2.0.0: type 필드 제거, pipeline만 반환
    * @param {string} prdContent - PRD 텍스트 내용
-   * @returns {Object} - { type, pipeline, gapCheck }
+   * @returns {Object} - { pipeline, gapCheck }
    */
   classifyPRDv2(prdContent) {
     if (!prdContent || typeof prdContent !== 'string') {
-      return { type: 'QUALITATIVE', pipeline: 'design', gapCheck: null };
+      return { pipeline: 'design', gapCheck: null };
     }
 
-    // PRD v2 명시적 type 필드 추출
-    const typeMatch = prdContent.match(/type\s*:\s*(QUANTITATIVE|QUALITATIVE|MIXED)/i);
-    // pipeline 필드 - 모든 값을 캡처 (유효성 검사는 orchestrator에서)
+    // pipeline 필드 추출 (PRD에서 명시적으로 지정된 경우)
     // 테이블 형식: | **Pipeline** | value | 또는 일반 형식: Pipeline: value
     const pipelineMatch = prdContent.match(/\|\s*\*{0,2}Pipeline\*{0,2}\s*\|\s*([^\s|]+)/i)
       || prdContent.match(/pipeline\s*[:\|]\s*(\S+)/i);
@@ -551,33 +540,32 @@ export class PRDAnalyzer {
     // Gap Check 실행 (동기 버전)
     const gapCheckResult = this._runGapCheckSync(prdContent, deliverables);
 
-    // type이 명시된 경우
-    if (typeMatch) {
-      const type = typeMatch[1].toUpperCase();
-      const pipeline = pipelineMatch
-        ? pipelineMatch[1].toLowerCase()
-        : this.inferPipeline(type, prdContent, deliverables);
-      return { type, pipeline, gapCheck: gapCheckResult };
+    // pipeline이 명시적으로 지정된 경우
+    if (pipelineMatch) {
+      const pipeline = pipelineMatch[1].toLowerCase();
+      // 유효한 파이프라인인지 확인
+      if (VALID_PIPELINES.includes(pipeline)) {
+        return { pipeline, gapCheck: gapCheckResult };
+      }
     }
 
-    // v2 필드가 없으면 기존 로직으로 추론
-    const inferredType = this.classifyPRD(prdContent, deliverables);
+    // pipeline이 없으면 콘텐츠 기반으로 추론
+    const inferredPipeline = this.inferPipelineFromContent(prdContent, deliverables);
 
-    // pipeline이 명시적으로 지정된 경우 그 값을 사용 (유효성 검사는 orchestrator에서)
-    const inferredPipeline = pipelineMatch
-      ? pipelineMatch[1].toLowerCase()
-      : this.inferPipeline(inferredType, prdContent, deliverables);
-
-    return { type: inferredType, pipeline: inferredPipeline, gapCheck: gapCheckResult };
+    return { pipeline: inferredPipeline, gapCheck: gapCheckResult };
   }
 
   /**
    * Gap Check 동기 버전 (classifyPRDv2용)
+   * v2.0.0: pipeline 기반으로 변경 (type 제거)
    */
   _runGapCheckSync(prdContent, deliverables) {
     const requiredFields = this.checkRequiredFields(prdContent);
-    const prdType = this.classifyPRD(prdContent, deliverables);
-    const dataRequirements = (prdType === 'QUANTITATIVE' || prdType === 'MIXED')
+    const pipeline = this.inferPipelineFromContent(prdContent, deliverables);
+
+    // analysis 관련 파이프라인일 때만 데이터 요구사항 체크
+    const needsDataRequirements = ['analysis', 'analyzed_design', 'full'].includes(pipeline);
+    const dataRequirements = needsDataRequirements
       ? this.extractDataRequirements(prdContent)
       : [];
     const reference = this.matchReference(prdContent);
@@ -606,7 +594,7 @@ export class PRDAnalyzer {
       gaps.push({ type: 'NO_DELIVERABLES', severity: 'HIGH' });
       missing.push('산출물 체크리스트');
     }
-    if ((prdType === 'QUANTITATIVE' || prdType === 'MIXED') && dataRequirements.length === 0) {
+    if (needsDataRequirements && dataRequirements.length === 0) {
       gaps.push({ type: 'NO_DATA_REQUIREMENTS', severity: 'MEDIUM' });
       missing.push('데이터 요구사항(테이블/컬럼)');
     }
@@ -615,7 +603,7 @@ export class PRDAnalyzer {
     }
 
     return {
-      prdType,
+      pipeline,
       requiredFields,
       deliverables,
       dataRequirements,
@@ -627,58 +615,115 @@ export class PRDAnalyzer {
   }
 
   /**
-   * type에서 pipeline 추론
-   *
-   * ROLE_ARCHITECTURE.md 정의:
-   * - analysis: Phase A만
-   * - design: Phase B만
-   * - mixed: Phase A → B
-   * - full: Phase A → B → C
-   *
-   * @param {string} type - PRD 유형 (QUANTITATIVE, QUALITATIVE, MIXED)
-   * @param {string} prdContent - PRD 원본 텍스트 (Phase C 산출물 감지용)
+   * 콘텐츠 기반 파이프라인 추론
+   * PRD_GUIDE.md의 키워드 기반 판별 + 산출물 기반 판별 로직
+   * @param {string} prdContent - PRD 텍스트
    * @param {Array} deliverables - 산출물 목록
    * @returns {string} - pipeline 타입
    */
-  inferPipeline(type, prdContent = '', deliverables = []) {
-    // 기본 매핑
-    const mapping = {
-      'QUANTITATIVE': 'analysis',
-      'QUALITATIVE': 'design',
-      'MIXED': 'mixed'
-    };
+  inferPipelineFromContent(prdContent, deliverables = []) {
+    const contentLower = prdContent.toLowerCase();
+    const scores = {};
 
-    const basePipeline = mapping[type] || 'design';
-
-    // MIXED 타입일 때 Phase C 산출물이 있으면 full로 승격
-    if (type === 'MIXED' && prdContent) {
-      // Phase C 관련 키워드 감지
-      const phaseCKeywords = [
-        /phase\s*c/i,
-        /코드\s*(구현|생성)/i,
-        /code\s*implementation/i,
-        /backend|frontend/i,
-        /express|react|api\s*서버/i,
-        /\.ts|\.js|\.tsx/i
-      ];
-
-      const hasPhaseCOutput = phaseCKeywords.some(pattern => pattern.test(prdContent));
-
-      // 산출물에서 코드 관련 항목 감지
-      const hasCodeDeliverable = deliverables.some(d =>
-        /code|backend|frontend|서버|api|구현/i.test(d)
-      );
-
-      if (hasPhaseCOutput || hasCodeDeliverable) {
-        return 'full';
+    // 각 파이프라인별 키워드 점수 계산
+    for (const [pipeline, keywords] of Object.entries(PIPELINE_KEYWORDS)) {
+      scores[pipeline] = 0;
+      for (const kw of keywords) {
+        if (contentLower.includes(kw.toLowerCase())) {
+          scores[pipeline]++;
+        }
       }
     }
 
-    return basePipeline;
+    // 산출물 기반 점수 가산
+    for (const d of deliverables) {
+      const item = (typeof d === 'string' ? d : d.item || '').toLowerCase();
+      const type = typeof d === 'object' ? d.type : '';
+
+      if (/sql|쿼리/.test(item) || type === 'SQL') {
+        scores.analysis += 2;
+        scores.analyzed_design += 1;
+        scores.full += 1;
+      }
+      if (/설계|ia|wireframe|sdd/.test(item) || type === 'DESIGN') {
+        scores.design += 2;
+        scores.analyzed_design += 1;
+        scores.ui_mockup += 1;
+        scores.full += 1;
+      }
+      if (/코드|구현|backend|frontend/.test(item) || type === 'CODE') {
+        scores.code += 2;
+        scores.ui_mockup += 1;
+        scores.full += 1;
+      }
+    }
+
+    // Phase C 관련 키워드 감지 (상세)
+    const phaseCPatterns = [
+      /phase\s*c/i, /코드\s*(구현|생성)/i, /code\s*implementation/i,
+      /backend|frontend/i, /express|react|api\s*서버/i, /\.ts|\.js|\.tsx/i
+    ];
+    const hasPhaseCOutput = phaseCPatterns.some(p => p.test(prdContent));
+
+    // SDD/HANDOFF 존재 여부 (code 파이프라인 감지용)
+    const hasExistingSDD = /##\s*SDD|software\s*design\s*document/i.test(prdContent);
+    const hasExistingHandoff = /##\s*HANDOFF|##\s*Mode/i.test(prdContent);
+
+    // 최고 점수 파이프라인 결정
+    let bestPipeline = 'design';
+    let bestScore = 0;
+
+    for (const [pipeline, score] of Object.entries(scores)) {
+      if (score > bestScore) {
+        bestScore = score;
+        bestPipeline = pipeline;
+      }
+    }
+
+    // 특수 케이스 처리
+    if (hasExistingSDD && hasExistingHandoff) {
+      return 'code'; // 이미 설계 완료 → 구현만
+    }
+
+    if (hasPhaseCOutput && bestPipeline === 'design') {
+      return 'ui_mockup'; // 설계 + 코드 산출물 → B→C
+    }
+
+    if (hasPhaseCOutput && bestPipeline === 'analysis') {
+      return 'full'; // 분석 + 코드 산출물 → A→B→C
+    }
+
+    // 점수가 낮으면 기본값
+    if (bestScore < 2) {
+      return 'design';
+    }
+
+    return bestPipeline;
+  }
+
+  /**
+   * @deprecated v2.0.0부터 inferPipelineFromContent() 사용
+   * 레거시 호환용 - type에서 pipeline 추론
+   */
+  inferPipeline(type, prdContent = '', deliverables = []) {
+    // 레거시 type이 있으면 기본 매핑 적용
+    const mapping = {
+      'QUANTITATIVE': 'analysis',
+      'QUALITATIVE': 'design',
+      'MIXED': 'analyzed_design'
+    };
+
+    // type이 없으면 콘텐츠 기반 추론
+    if (!type || !mapping[type]) {
+      return this.inferPipelineFromContent(prdContent, deliverables);
+    }
+
+    return mapping[type];
   }
 
   /**
    * PRD 파싱 (구조화된 객체로 변환)
+   * v2.0.0: type 필드 제거, pipeline만 사용
    * @param {string} prdContent - PRD 텍스트 내용
    * @returns {Object} - 파싱된 PRD 객체
    */
@@ -692,7 +737,6 @@ export class PRDAnalyzer {
       기능: [],
       successCriteria: [],
       성공지표: [],
-      type: 'QUALITATIVE',
       pipeline: 'design',
       deliverables: [],
       산출물: [],
@@ -716,9 +760,8 @@ export class PRDAnalyzer {
       parsed.타겟 = parsed.targetUser;
     }
 
-    // 유형/파이프라인 추출
+    // 파이프라인 추출 (type 제거됨)
     const classification = this.classifyPRDv2(prdContent);
-    parsed.type = classification.type;
     parsed.pipeline = classification.pipeline;
 
     // 산출물 추출
@@ -773,15 +816,18 @@ export class PRDAnalyzer {
   }
 
   /**
-   * PRD 유형 라벨
+   * 파이프라인 라벨
    */
-  getPRDTypeLabel(type) {
+  getPipelineLabel(pipeline) {
     const labels = {
-      'QUANTITATIVE': '정량적 (데이터 분석 중심)',
-      'QUALITATIVE': '정성적 (설계/제안 중심)',
-      'MIXED': '혼합 (분석 → 인사이트 → 제안)'
+      analysis: 'Analysis Only (A)',
+      design: 'Design Only (B)',
+      analyzed_design: 'Analyzed Design (A→B)',
+      ui_mockup: 'UI Mockup (B→C)',
+      code: 'Code Only (C)',
+      full: 'Full (A→B→C)'
     };
-    return labels[type] || type;
+    return labels[pipeline] || pipeline;
   }
 
   /**
@@ -803,8 +849,8 @@ export class PRDAnalyzer {
     output += `   - 핵심 기능: ${rf.coreFeatures.exists ? '✓' : '✗ (누락)'}\n`;
     output += `   - 성공 지표: ${rf.successCriteria.exists ? '✓' : '✗ (누락)'}\n\n`;
 
-    // PRD 유형
-    output += `📊 PRD 유형: ${this.getPRDTypeLabel(analysisResult.prdType)}\n\n`;
+    // 파이프라인
+    output += `📊 파이프라인: ${this.getPipelineLabel(analysisResult.pipeline)}\n\n`;
 
     // 레퍼런스
     if (analysisResult.reference) {

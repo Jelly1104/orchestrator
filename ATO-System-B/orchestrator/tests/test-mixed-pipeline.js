@@ -31,13 +31,12 @@ console.log('='.repeat(60));
 console.log('\n[Step 1] PRD 분류 테스트...');
 const prdAnalyzer = new PRDAnalyzer();
 const classification = prdAnalyzer.classifyPRDv2(prdContent);
-console.log('  PRD 유형:', classification.type);
 console.log('  파이프라인:', classification.pipeline);
-console.log('  점수:', JSON.stringify(classification.scores));
+console.log('  GapCheck:', JSON.stringify(classification.gapCheck || {}));
 
-if (classification.type !== 'MIXED' || classification.pipeline !== 'mixed') {
-  console.warn('⚠️ PRD 분류 결과:', classification.type, '/', classification.pipeline);
-  console.warn('  (MIXED 강제 적용)');
+if (classification.pipeline !== 'analyzed_design') {
+  console.warn('⚠️ PRD 분류 결과:', classification.pipeline);
+  console.warn('  (analyzed_design 강제 적용)');
 }
 console.log('✅ PRD 분류 완료');
 
@@ -166,8 +165,7 @@ try {
   const summaryPath = path.join(outputDir, 'test-summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify({
     taskId,
-    prdType: 'MIXED',
-    pipeline: 'mixed',
+    pipeline: 'analyzed_design',
     phases: {
       analysis: {
         success: result.analysis?.queries?.length > 0,

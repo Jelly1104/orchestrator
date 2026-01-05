@@ -31,14 +31,13 @@ console.log('='.repeat(60));
 console.log('\n[Step 1] PRD 분류 테스트...');
 const prdAnalyzer = new PRDAnalyzer();
 const classification = prdAnalyzer.classifyPRDv2(prdContent);
-console.log('  PRD 유형:', classification.type);
 console.log('  파이프라인:', classification.pipeline);
 
-if (classification.type !== 'QUALITATIVE' || classification.pipeline !== 'design') {
-  console.error('❌ PRD 분류 오류! 예상: QUALITATIVE/design');
+if (classification.pipeline !== 'design') {
+  console.error('❌ PRD 분류 오류! 예상: design');
   process.exit(1);
 }
-console.log('✅ PRD 분류 정상 (QUALITATIVE/design)');
+console.log('✅ PRD 분류 정상 (design)');
 
 // Step 2: Orchestrator 초기화
 console.log('\n[Step 2] Orchestrator 초기화...');
@@ -136,7 +135,6 @@ try {
   const summaryPath = path.join(outputDir, 'test-summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify({
     taskId,
-    prdType: classification.type,
     pipeline: classification.pipeline,
     success: result.success,
     elapsedTime: parseFloat(elapsedTime),

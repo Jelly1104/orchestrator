@@ -211,7 +211,7 @@ function parseArgs(args) {
 
     mode: null, // 'design', 'parallel', null(기본)
 
-    pipeline: null, // 'analysis', 'mixed', 'parallel', null(자동 감지)
+    pipeline: null, // 'analysis', 'design', 'analyzed_design', 'code', 'ui_mockup', 'full', null(자동 감지)
   };
 
   let i = 0;
@@ -232,7 +232,7 @@ function parseArgs(args) {
     } else if (arg === "--mode") {
       options.mode = args[++i]; // 'design', 'parallel'
     } else if (arg === "--pipeline") {
-      options.pipeline = args[++i]; // 'analysis', 'mixed', 'parallel'
+      options.pipeline = args[++i]; // 'analysis', 'design', 'analyzed_design', 'code', 'ui_mockup', 'full'
     } else if (arg === "--parallel") {
       options.pipeline = "parallel"; // 단축 옵션
     } else if (!arg.startsWith("-")) {
@@ -284,7 +284,7 @@ node orchestrator/index.js --prd docs/PRD.md "작업 설명"
 
 --mode <mode> 실행 모드: design (설계만), parallel (병렬)
 
---pipeline <type> 파이프라인: analysis, mixed, parallel
+--pipeline <type> 파이프라인: analysis, design, analyzed_design, code, ui_mockup, full
 
 --parallel 병렬 파이프라인 단축 옵션
 
@@ -302,7 +302,10 @@ node orchestrator/index.js --prd docs/PRD.md "작업 설명"
 
 - analysis: Leader → Analysis Agent (SQL 분석)
 
-- mixed: Leader → Analysis → Design (체이닝)
+- analyzed_design: Leader → Analysis → Design (A→B)
+- code: HANDOFF/SDD → Code Agent (C만)
+- ui_mockup: Leader → Design → Code (B→C)
+- full: Leader → Analysis → Design → Code (A→B→C)
 
 
 
@@ -491,12 +494,18 @@ async function main() {
     if (result.success) {
       // 완료된 Phase 목록 구성
       const completedPhases = [];
-      if (result.pipeline === "mixed") {
+      if (result.pipeline === "analyzed_design") {
         completedPhases.push("Phase A (Analysis)", "Phase B (Design)");
       } else if (result.pipeline === "analysis") {
         completedPhases.push("Phase A (Analysis)");
       } else if (result.pipeline === "design" || result.planning) {
         completedPhases.push("Phase B (Design)");
+      } else if (result.pipeline === "code") {
+        completedPhases.push("Phase C (Code)");
+      } else if (result.pipeline === "ui_mockup") {
+        completedPhases.push("Phase B (Design)", "Phase C (Code)");
+      } else if (result.pipeline === "full") {
+        completedPhases.push("Phase A (Analysis)", "Phase B (Design)", "Phase C (Code)");
       }
 
       // [Fix v4.3.2] Phase 표시: "Final" → 마지막 실행된 Phase

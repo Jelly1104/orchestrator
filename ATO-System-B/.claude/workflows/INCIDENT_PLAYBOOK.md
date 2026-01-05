@@ -1,28 +1,35 @@
 # INCIDENT_PLAYBOOK.md
 
 > **버전**: 1.2.4
+
 > **최종 수정**: 2025-12-23
+
 > **변경 이력**: 섹션 참조 이름 기반으로 전환 (SYSTEM_MANIFEST 9.2 준수)
-> **물리적 경로**: `.claude/workflows/INCIDENT_PLAYBOOK.md` > **상위 문서**: `.claude/CLAUDE.md` > **목적**: Orchestrator 장애 대응 절차
+
+> **물리적 경로**: `.claude/workflows/INCIDENT_PLAYBOOK.md`
+
+> **상위 문서**: `.claude/CLAUDE.md`
+
+> **목적**: Orchestrator 장애 대응 절차
 
 ---
 
-## 1. 장애 분류
+## 장애 분류
 
-### 1.1 심각도 레벨
+### 심각도 레벨
 
 | 레벨   | 설명             | 예시                          | 대응 시간   |
 | ------ | ---------------- | ----------------------------- | ----------- |
 | **P0** | 서비스 전면 중단 | API 키 만료, DB 연결 실패     | 즉시        |
-| **P1** | 핵심 기능 장애   | 파이프라인 실패, Agent 무응답 | 30분 이내   |
-| **P2** | 부분 기능 장애   | 특정 Agent 오류, 느린 응답    | 2시간 이내  |
+| **P1** | 핵심 기능 장애   | 파이프라인 실패, Role 무응답  | 30분 이내   |
+| **P2** | 부분 기능 장애   | 특정 Role 오류, 느린 응답     | 2시간 이내  |
 | **P3** | 경미한 이슈      | UI 버그, 로그 누락            | 24시간 이내 |
 
 ---
 
-## 2. 장애 시나리오별 대응
+## 장애 시나리오별 대응
 
-### 2.1 P0: API 키 만료/무효
+### P0: API 키 만료/무효
 
 **증상**:
 
@@ -46,7 +53,7 @@ cat .env | grep API_KEY
 pm2 restart orchestrator
 ```
 
-### 2.2 P0: DB 연결 실패
+### P0: DB 연결 실패
 
 **증상**:
 
@@ -71,7 +78,7 @@ ping DB_HOST
 telnet DB_HOST 3306
 ```
 
-### 2.3 P1: LLM Provider 장애
+### P1: LLM Provider 장애
 
 **증상**:
 
@@ -102,9 +109,9 @@ Error: Rate limit exceeded
 - OpenAI: https://status.openai.com
 - Google AI: https://status.cloud.google.com
 
-### 2.4 P1: Agent 무한 루프
+### P1: Role 무한 루프
 
-> **HITL 참조**: Agent 3회 연속 Review FAIL 시 **Human-in-the-Loop 수동 수정** 체크포인트가 트리거됩니다.
+> **HITL 참조**: Role 3회 연속 Review FAIL 시 **Human-in-the-Loop 수동 수정** 체크포인트가 트리거됩니다.
 > 상세 정의는 `ROLE_ARCHITECTURE.md`의 **HITL 체크포인트** 섹션을 참조하세요.
 
 **증상**:
@@ -130,7 +137,7 @@ kill -9 PID
 tail -f orchestrator/logs/.running.json
 ```
 
-### 2.5 P1: 토큰 한도 초과
+### P1: 토큰 한도 초과
 
 **증상**:
 
@@ -153,7 +160,7 @@ wc -c .claude/project/PRD.md
 cat orchestrator/logs/TASK_ID.json | jq '.totalTokens'
 ```
 
-### 2.6 P2: Viewer 연결 실패
+### P2: Viewer 연결 실패
 
 **증상**:
 
@@ -176,9 +183,9 @@ node orchestrator/viewer/server.js
 
 ---
 
-## 3. 복구 절차
+## 복구 절차
 
-### 3.1 서비스 재시작
+### 서비스 재시작
 
 ```bash
 # 1. 현재 상태 확인
@@ -194,7 +201,7 @@ node orchestrator/index.js
 node orchestrator/viewer/server.js
 ```
 
-### 3.2 데이터 복구
+### 데이터 복구
 
 ```bash
 # 로그 백업
@@ -207,7 +214,7 @@ rm orchestrator/logs/.hitl/*.json
 rm orchestrator/logs/.running.json
 ```
 
-### 3.3 롤백
+### 롤백
 
 ```bash
 # 이전 버전으로 롤백
@@ -220,9 +227,9 @@ npm install
 
 ---
 
-## 4. 모니터링 지표
+## 모니터링 지표
 
-### 4.1 핵심 메트릭
+### 핵심 메트릭
 
 | 메트릭      | 정상 범위 | 경고 임계값 | 위험 임계값   |
 | ----------- | --------- | ----------- | ------------- |
@@ -231,7 +238,7 @@ npm install
 | 재시도 횟수 | 0-1       | 3           | 5 (하드 리밋) |
 | 성공률      | > 95%     | < 90%       | < 80%         |
 
-### 4.2 로그 위치
+### 로그 위치
 
 ```text
 orchestrator/logs/
@@ -244,9 +251,9 @@ orchestrator/logs/
 
 ---
 
-## 5. 에스컬레이션
+## 에스컬레이션
 
-### 5.1 에스컬레이션 경로
+### 에스컬레이션 경로
 
 ```
 P3 → 담당 개발자 (Slack)
@@ -255,7 +262,7 @@ P1 → 팀 리드 + PO (Slack + Phone)
 P0 → 전체 팀 + CTO (즉시 회의)
 ```
 
-### 5.2 연락처
+### 연락처
 
 | 역할      | 담당자 | 연락처    |
 | --------- | ------ | --------- |
@@ -265,35 +272,35 @@ P0 → 전체 팀 + CTO (즉시 회의)
 
 ---
 
-## 6. 체크리스트
+## 체크리스트
 
-### 6.1 장애 발생 시
+### 장애 발생 시
 
 - [ ] 증상 확인 및 심각도 분류 → 타임라인 기록 시작
 - [ ] 영향 범위 파악 → 에스컬레이션 (필요 시)
 - [ ] 복구 작업 수행 → 복구 확인 → 사후 분석 작성
 
-### 6.2 일일 점검
+### 일일 점검
 
 - [ ] API 키/DB 연결/로그 디스크 용량/실행 중 태스크 확인
 
-### 6.3 Post-Mortem 필수 항목
+### Post-Mortem 필수 항목
 
-| 항목 | 내용 |
-|------|------|
-| 개요 | 발생/복구 시간, 영향 범위, 심각도 |
-| 타임라인 | 감지 → 대응 → 파악 → 복구 |
+| 항목        | 내용                                     |
+| ----------- | ---------------------------------------- |
+| 개요        | 발생/복구 시간, 영향 범위, 심각도        |
+| 타임라인    | 감지 → 대응 → 파악 → 복구                |
 | 원인/방지책 | 근본 원인, Action Items (단기/중기/장기) |
 
 ---
 
-## 7. 관련 문서
+## 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| CLAUDE.md | 최상위 헌법 및 안전 수칙 |
+| 문서                    | 역할                       |
+| ----------------------- | -------------------------- |
+| CLAUDE.md               | 최상위 헌법 및 안전 수칙   |
 | ERROR_HANDLING_GUIDE.md | 에러 유형별 자동 대응 절차 |
-| ROLE_ARCHITECTURE.md | HITL 체크포인트 섹션 |
-| DB_ACCESS_POLICY.md | DB 접근 권한 및 제약 사항 |
+| ROLE_ARCHITECTURE.md    | HITL 체크포인트 섹션       |
+| DB_ACCESS_POLICY.md     | DB 접근 권한 및 제약 사항  |
 
 **END OF PLAYBOOK**

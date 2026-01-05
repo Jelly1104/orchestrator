@@ -13,8 +13,7 @@
 | P01 | 서비스명 | 명확한 서비스 이름 존재 | 5% |
 | P02 | 목적 | 해결하려는 문제/목표 명시 | 10% |
 | P03 | 타겟 사용자 | 구체적인 사용자 정의 | 10% |
-| P04 | type | QUANTITATIVE/QUALITATIVE/MIXED | 5% |
-| P05 | pipeline | analysis/design/mixed | 5% |
+| P04 | pipeline | analysis/design/code/analyzed_design/ui_mockup/full 중 택1 | 10% |
 
 ### 1.2 기능 요구사항
 

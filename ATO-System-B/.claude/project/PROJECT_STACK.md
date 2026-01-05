@@ -2,24 +2,22 @@
 
 > **문서 버전**: 1.4.0
 > **최종 업데이트**: 2025-12-30
-> **물리적 경로**: `.claude/project/PROJECT_STACK.md`
-> **상위 문서**: `CLAUDE.md`
-> **용도**: AI 에이전트에게 **시스템 전체의 기술적 제약**을 주입 (Case별 PRD와 분리)
+> **물리적 경로**: `.claude/project/PROJECT_STACK.md` > **상위 문서**: `CLAUDE.md` > **용도**: AI 에이전트에게 **시스템 전체의 기술적 제약**을 주입 (Case별 PRD와 분리)
 
 ---
 
-## 1. 문서 역할
+## 문서 역할
 
-| 문서 | 범위 | 저장 위치 |
-|------|------|----------|
-| **PROJECT_STACK.md** | 시스템 전체 기술 스택 (고정) | `.claude/project/` |
-| **PRD.md** | Case별 요구사항 (가변) | `docs/cases/{caseId}/` |
+| 문서                 | 범위                         | 저장 위치              |
+| -------------------- | ---------------------------- | ---------------------- |
+| **PROJECT_STACK.md** | 시스템 전체 기술 스택 (고정) | `.claude/project/`     |
+| **PRD.md**           | Case별 요구사항 (가변)       | `docs/cases/{caseId}/` |
 
 > **원칙**: 프로젝트 개요/목적은 PRD에서 정의. 이 문서는 기술 스택만 다룸.
 
 ---
 
-## 2. 기술 스택 (Tech Stack)
+## 기술 스택 (Tech Stack)
 
 _해당하지 않는 영역은 삭제하거나 비워두세요._
 
@@ -62,7 +60,7 @@ _해당하지 않는 영역은 삭제하거나 비워두세요._
 
 ---
 
-## 3. 의존성 정책 (Dependency Policy)
+## 의존성 정책 (Dependency Policy)
 
 ### 필수 devDependencies
 
@@ -74,7 +72,7 @@ _해당하지 않는 영역은 삭제하거나 비워두세요._
 | `jsdom`            | ^24.0.0   | 테스트 DOM 환경 |
 | `vitest`           | ^1.0.0    | 테스트 러너     |
 
-### 🚨 금지 버전 (보안 취약점)
+### 금지 버전 (보안 취약점)
 
 | 패키지         | 금지 버전     | 안전 버전   |
 | -------------- | ------------- | ----------- |
@@ -98,7 +96,7 @@ _의존성 충돌 방지를 위한 강제 버전 지정_
 
 ---
 
-## 4. 프로젝트 특이사항 (Specifics)
+## 프로젝트 특이사항 (Specifics)
 
 ### ⚠️ 제약사항 (Constraints)
 
@@ -117,22 +115,22 @@ _의존성 충돌 방지를 위한 강제 버전 지정_
 
 ---
 
-## 5. 프로젝트 경로 구조 (SYSTEM_MANIFEST v4.0.0)
+## 프로젝트 경로 구조 (SYSTEM_MANIFEST v4.0.0)
 
 ATO-System-B의 실제 코드 경로입니다.
 
-| 경로 | 설명 | 에이전트 권한 |
-| ---- | ---- | ------------- |
-| `backend/src/` | Express API 서버 코드 | ✅ 수정 가능 |
-| `frontend/src/` | React 프론트엔드 코드 | ✅ 수정 가능 |
-| `mcp-server/` | MCP 서버 모듈 | ✅ 수정 가능 |
-| `orchestrator/tools/` | 에이전트 Tool 정의 | ⚠️ 제한적 |
-| `workspace/` | 분석 결과 및 산출물 | ✅ 수정 가능 |
-| `src/` | 레거시 코드 | ⚠️ 읽기 전용 |
+| 경로                  | 설명                  | 에이전트 권한 |
+| --------------------- | --------------------- | ------------- |
+| `backend/src/`        | Express API 서버 코드 | ✅ 수정 가능  |
+| `frontend/src/`       | React 프론트엔드 코드 | ✅ 수정 가능  |
+| `mcp-server/`         | MCP 서버 모듈         | ✅ 수정 가능  |
+| `orchestrator/tools/` | 에이전트 Tool 정의    | ⚠️ 제한적     |
+| `workspace/`          | 분석 결과 및 산출물   | ✅ 수정 가능  |
+| `src/`                | 레거시 코드           | ⚠️ 읽기 전용  |
 
 ---
 
-## 6. 스크립트 명령어 (Scripts)
+## 스크립트 명령어 (Scripts)
 
 AI는 아래 명령어를 사용하여 프로젝트를 실행하고 검증합니다.
 
@@ -146,16 +144,16 @@ AI는 아래 명령어를 사용하여 프로젝트를 실행하고 검증합니
 
 ---
 
-## 📚 관련 문서
+## 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `CLAUDE.md` | [Root] 팀 아키텍처 원칙 및 헌법 |
-| `.claude/rules/DOMAIN_SCHEMA.md` | [Rules] DB 스키마 및 비즈니스 데이터 구조 |
-| `.claude/rules/DB_ACCESS_POLICY.md` | [Rules] DB 접근 권한 및 보안 정책 |
-| `.claude/rules/CODE_STYLE.md` | [Rules] 언어별 코딩 스타일 가이드 |
-| `.claude/rules/TDD_WORKFLOW.md` | [Rules] TDD 개발 절차 |
-| `.claude/rules/VALIDATION_GUIDE.md` | [Rules] 품질 검증 기준 |
+| 문서                                | 역할                                      |
+| ----------------------------------- | ----------------------------------------- |
+| `CLAUDE.md`                         | [Root] 팀 아키텍처 원칙 및 헌법           |
+| `.claude/rules/DOMAIN_SCHEMA.md`    | [Rules] DB 스키마 및 비즈니스 데이터 구조 |
+| `.claude/rules/DB_ACCESS_POLICY.md` | [Rules] DB 접근 권한 및 보안 정책         |
+| `.claude/rules/CODE_STYLE.md`       | [Rules] 언어별 코딩 스타일 가이드         |
+| `.claude/rules/TDD_WORKFLOW.md`     | [Rules] TDD 개발 절차                     |
+| `.claude/rules/VALIDATION_GUIDE.md` | [Rules] 품질 검증 기준                    |
 
 ---
 

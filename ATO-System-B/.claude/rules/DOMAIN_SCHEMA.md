@@ -1,23 +1,27 @@
 # DOMAIN_SCHEMA.md
 
 > **문서 버전**: 1.2.0
+
 > **최종 업데이트**: 2025-12-23
+
 > **물리적 경로**: `.claude/rules/DOMAIN_SCHEMA.md`
+
 > **상위 문서**: `CLAUDE.md`
-> **대상**: 도메인 이해가 필요한 에이전트
+
+> **대상**: 도메인 이해가 필요한 AI ROLE
 
 ---
 
-## 🎯 이 문서의 목적
+## 이 문서의 목적
 
 메디게이트의 **비즈니스 가치**와 **실제 레거시 DB 구조(Physical Schema)**를 정의합니다.
 AI는 이 문서를 참조하여 **Hallucination(없는 컬럼 참조) 없는 유효한 SQL**을 작성해야 합니다.
 
 ---
 
-## 1. 비즈니스 구조
+## 비즈니스 구조
 
-### 1.1 수익 모델
+### 수익 모델
 
 ```
 [B2C - 의료인 대상]
@@ -35,61 +39,61 @@ AI는 이 문서를 참조하여 **Hallucination(없는 컬럼 참조) 없는 �
 
 ---
 
-### 1.2 플랫폼 서비스 구조
+### 플랫폼 서비스 구조
 
-| Group | 서비스명 | 주요 테이블 | 비즈니스 중요도 |
-|-------|---------|------------|----------------|
-| 1 | 커뮤니티 | `BOARD_*` (29개) | 트래픽/체류시간 핵심 |
-| 2 | 채용/구인 | `CBIZ_REC*` (19개) | B2C 핵심 수익원 |
-| 3 | 임대/양도 | `CBIZ_LEASE*` (17개) | 부동산/개원 연계 |
-| 4 | 제약마케팅 | `EMT_*`, `OP_*` (60개) | B2B 핵심 수익원 (절대 안정성 요구) |
-| 5 | 광고/배너 | `AD_*` | 매출 연동 |
-| 6 | 의학교육 | `CME_*`, `VIDEO_*`(34개) | Engagement |
-| 7 | 입지분석 | `LOCATION_*` (23개) | 데이터 상품 |
+| Group | 서비스명   | 주요 테이블              | 비즈니스 중요도                    |
+| ----- | ---------- | ------------------------ | ---------------------------------- |
+| 1     | 커뮤니티   | `BOARD_*` (29개)         | 트래픽/체류시간 핵심               |
+| 2     | 채용/구인  | `CBIZ_REC*` (19개)       | B2C 핵심 수익원                    |
+| 3     | 임대/양도  | `CBIZ_LEASE*` (17개)     | 부동산/개원 연계                   |
+| 4     | 제약마케팅 | `EMT_*`, `OP_*` (60개)   | B2B 핵심 수익원 (절대 안정성 요구) |
+| 5     | 광고/배너  | `AD_*`                   | 매출 연동                          |
+| 6     | 의학교육   | `CME_*`, `VIDEO_*`(34개) | Engagement                         |
+| 7     | 입지분석   | `LOCATION_*` (23개)      | 데이터 상품                        |
 
 ---
 
-## 2. 데이터 규모 및 성능 제약
+## 데이터 규모 및 성능 제약
 
 ⚠️ 다음 테이블 접근 시 인덱스/페이징 필수 (Full Scan 절대 금지)
 
-| 순위 | 테이블 | 행 수(Row) | 용량 | 위험도 | 설명 |
-|-----|--------|-----------|------|--------|------|
-| 1 | `USER_LOGIN` | 2,267만 | 2.55GB | 🚨 Extreme | 로그인 이력 (최근 3개월만 조회 권장) |
-| 2 | `COMMENT` | 1,826만 | 5.56GB | 🚨 Extreme | 게시글 반응 (반드시 BOARD_IDX로 조회) |
-| 3 | `BOARD_MUZZIMA` | 337만 | 1.7GB | 🔴 High | 메인 게시판 본문 (TEXT 타입 주의) |
-| 4 | `POINT_GRANT` | 64만 | 94MB | 🟡 Medium | 포인트 적립 내역 |
-| 5 | `USERS` | 20만 | 92MB | 🟢 Low | 회원 마스터 |
+| 순위 | 테이블          | 행 수(Row) | 용량   | 위험도     | 설명                                  |
+| ---- | --------------- | ---------- | ------ | ---------- | ------------------------------------- |
+| 1    | `USER_LOGIN`    | 2,267만    | 2.55GB | 🚨 Extreme | 로그인 이력 (최근 3개월만 조회 권장)  |
+| 2    | `COMMENT`       | 1,826만    | 5.56GB | 🚨 Extreme | 게시글 반응 (반드시 BOARD_IDX로 조회) |
+| 3    | `BOARD_MUZZIMA` | 337만      | 1.7GB  | 🔴 High    | 메인 게시판 본문 (TEXT 타입 주의)     |
+| 4    | `POINT_GRANT`   | 64만       | 94MB   | 🟡 Medium  | 포인트 적립 내역                      |
+| 5    | `USERS`         | 20만       | 92MB   | 🟢 Low     | 회원 마스터                           |
 
-### 2.1 대용량 테이블 인덱스 현황
+### 대용량 테이블 인덱스 현황
 
-| 테이블 | 인덱스 컬럼 | 용도 |
-|--------|------------|------|
-| `USER_LOGIN` | (U_ID, LOGIN_DATE) | 사용자별 로그인 조회 |
-| `COMMENT` | (BOARD_IDX, SVC_CODE) | 게시글별 댓글 조회 |
-| `BOARD_MUZZIMA` | (CTG_CODE, REG_DATE) | 카테고리별 최신순 |
+| 테이블          | 인덱스 컬럼           | 용도                 |
+| --------------- | --------------------- | -------------------- |
+| `USER_LOGIN`    | (U_ID, LOGIN_DATE)    | 사용자별 로그인 조회 |
+| `COMMENT`       | (BOARD_IDX, SVC_CODE) | 게시글별 댓글 조회   |
+| `BOARD_MUZZIMA` | (CTG_CODE, REG_DATE)  | 카테고리별 최신순    |
 
 ---
 
-## 3. 개념-물리 매핑 (Legacy Mapping)
+## 개념-물리 매핑 (Legacy Mapping)
 
 레거시 테이블 분산 구조를 논리적 엔티티로 해석하는 규칙입니다.
 
-| 개념 엔티티(Concept) | 물리 테이블(Physical) | 관계 | 설명 |
-|---------------------|---------------------|------|------|
-| 회원(Member) | `USERS` + `USER_DETAIL` + `USER_CI` | 1:1:1 | 회원 기본정보 + 상세정보 + 본인인증 |
-| 게시글(Article) | `BOARD_*` (Sharding) | Sharding | 게시판 성격별로 물리적 분리됨 (예: `BOARD_MUZZIMA`, `BOARD_ASK`) |
-| 댓글(Comment) | `COMMENT` (통합) + `BOARD_*_COMMENT` | Mixed | 과거 댓글은 개별 테이블, 최신 댓글은 통합 테이블 |
-| 채용공고(Job) | `CBIZ_RECJOB` + `CBIZ_RECJOB_MAP` | 1:N | 공고 기본 정보 + 직무/지역 매핑 정보 |
-| 임대매물(Lease) | `CBIZ_LEASE` + `CBIZ_LEASE_PARTNER` | N:1 | 매물 정보 + 중개 파트너사 정보 |
+| 개념 엔티티(Concept) | 물리 테이블(Physical)                | 관계     | 설명                                                             |
+| -------------------- | ------------------------------------ | -------- | ---------------------------------------------------------------- |
+| 회원(Member)         | `USERS` + `USER_DETAIL` + `USER_CI`  | 1:1:1    | 회원 기본정보 + 상세정보 + 본인인증                              |
+| 게시글(Article)      | `BOARD_*` (Sharding)                 | Sharding | 게시판 성격별로 물리적 분리됨 (예: `BOARD_MUZZIMA`, `BOARD_ASK`) |
+| 댓글(Comment)        | `COMMENT` (통합) + `BOARD_*_COMMENT` | Mixed    | 과거 댓글은 개별 테이블, 최신 댓글은 통합 테이블                 |
+| 채용공고(Job)        | `CBIZ_RECJOB` + `CBIZ_RECJOB_MAP`    | 1:N      | 공고 기본 정보 + 직무/지역 매핑 정보                             |
+| 임대매물(Lease)      | `CBIZ_LEASE` + `CBIZ_LEASE_PARTNER`  | N:1      | 매물 정보 + 중개 파트너사 정보                                   |
 
 ---
 
-## 4. 핵심 레거시 스키마 (Physical Legacy Schema)
+## 핵심 레거시 스키마 (Physical Legacy Schema)
 
 ⚠️ 주의: AI는 반드시 아래의 실제 컬럼명을 사용해야 합니다. (추측 금지)
 
-### 4.1 Users (회원 기본)
+### Users (회원 기본)
 
 ```sql
 CREATE TABLE USERS (
@@ -103,7 +107,7 @@ CREATE TABLE USERS (
 );
 ```
 
-### 4.2 User_Detail (회원 상세)
+### User_Detail (회원 상세)
 
 ```sql
 CREATE TABLE USER_DETAIL (
@@ -120,10 +124,11 @@ CREATE TABLE USER_DETAIL (
 ```
 
 **⚠️ 주의**:
+
 - 전문과목 분석 시 `U_MAJOR_CODE_1` 사용 (NOT `MAJOR_CODE`)
 - 근무형태 분석 시 `U_WORK_TYPE_1` 사용 (NOT `WORK_TYPE_CODE`)
 
-### 4.3 Code_Master (코드 마스터)
+### Code_Master (코드 마스터)
 
 ```sql
 CREATE TABLE CODE_MASTER (
@@ -143,7 +148,7 @@ CREATE TABLE CODE_MASTER (
 | `MAJOR` | 전문과목 | IM(내과), GS(외과), PSY(정신건강의학과) |
 | `WORK_TYPE` | 근무형태 | OWN(개원), EMP(봉직), RES(전공의) |
 
-### 4.4 Code_Loc (지역 코드)
+### Code_Loc (지역 코드)
 
 ```sql
 CREATE TABLE CODE_LOC (
@@ -155,7 +160,7 @@ CREATE TABLE CODE_LOC (
 );
 ```
 
-### 4.5 Posts (게시글 - 대표 구조: BOARD_MUZZIMA)
+### Posts (게시글 - 대표 구조: BOARD_MUZZIMA)
 
 ```sql
 CREATE TABLE BOARD_MUZZIMA (
@@ -170,7 +175,7 @@ CREATE TABLE BOARD_MUZZIMA (
 );
 ```
 
-### 4.6 Comments (댓글 - COMMENT)
+### Comments (댓글 - COMMENT)
 
 ```sql
 CREATE TABLE COMMENT (
@@ -186,9 +191,9 @@ CREATE TABLE COMMENT (
 
 ---
 
-## 5. 자주 사용하는 쿼리 패턴 (Legacy Pattern)
+## 자주 사용하는 쿼리 패턴 (Legacy Pattern)
 
-### 5.1 유효한 채용공고 조회
+### 유효한 채용공고 조회
 
 ```sql
 WHERE APPROVAL_FLAG='Y'
@@ -198,14 +203,14 @@ WHERE APPROVAL_FLAG='Y'
   AND DEL_FLAG='N'
 ```
 
-### 5.2 카테고리별 게시글 페이징
+### 카테고리별 게시글 페이징
 
 ```sql
 WHERE CTG_CODE=?
 ORDER BY GRP_IDX DESC, GRP_SEQ ASC -- 레거시 정렬 방식
 ```
 
-### 5.3 활성 의사 회원만 조회 (Corrected)
+### 활성 의사 회원만 조회 (Corrected)
 
 ```sql
 WHERE U_KIND = 'DOC001'
@@ -214,13 +219,14 @@ WHERE U_KIND = 'DOC001'
 
 ---
 
-## 6. 보안 및 접근 제어
+## 보안 및 접근 제어
 
 > **역할 분리**: 이 섹션은 민감 데이터의 **정의(What)**를 다룹니다.
+>
 > - 접근 권한, 실행 제한, 감사 로깅 → `DB_ACCESS_POLICY.md` 참조
 > - 쿼리 실행 전 검증 규칙 → `VALIDATION_GUIDE.md` 참조
 
-### 6.1 민감 데이터 분류
+### 민감 데이터 분류
 
 ```yaml
 최고 민감:
@@ -237,36 +243,36 @@ WHERE U_KIND = 'DOC001'
   - 진료 내역 저장 금지
 ```
 
-### 6.2 복합 쿼리 제한 (Composite Query Whitelist)
+### 복합 쿼리 제한 (Composite Query Whitelist)
 
 **PII(개인식별정보) 추론 방지를 위해 허용된 JOIN 패턴만 사용합니다.**
 
 #### ✅ 허용된 복합 쿼리 패턴
 
-| 패턴 | 용도 | 예시 |
-|-----|------|------|
-| `BOARD_* + USERS` | 게시글 작성자 표시 | 게시글 목록에 작성자명 표시 |
-| `COMMENT + USERS` | 댓글 작성자 표시 | 댓글에 작성자명 표시 |
-| `CBIZ_REC* + USERS` | 채용공고 담당자 표시 | 공고에 담당자 정보 표시 |
+| 패턴                | 용도                 | 예시                        |
+| ------------------- | -------------------- | --------------------------- |
+| `BOARD_* + USERS`   | 게시글 작성자 표시   | 게시글 목록에 작성자명 표시 |
+| `COMMENT + USERS`   | 댓글 작성자 표시     | 댓글에 작성자명 표시        |
+| `CBIZ_REC* + USERS` | 채용공고 담당자 표시 | 공고에 담당자 정보 표시     |
 
 #### ❌ 금지된 복합 쿼리 패턴
 
-| 패턴 | 위험 | 이유 |
-|-----|------|------|
-| `USERS + USER_LOGIN + COMMENT` | 🚨 High | 행태 추적 (누가 언제 어디서 활동했는지 추론) |
-| `USERS + USER_DETAIL + USER_CI` | 🚨 Extreme | 완전한 개인정보 조합 |
-| `USERS + POINT_GRANT + CBIZ_*` | 🔴 High | 거래/수익 패턴 추론 |
+| 패턴                            | 위험       | 이유                                         |
+| ------------------------------- | ---------- | -------------------------------------------- |
+| `USERS + USER_LOGIN + COMMENT`  | 🚨 High    | 행태 추적 (누가 언제 어디서 활동했는지 추론) |
+| `USERS + USER_DETAIL + USER_CI` | 🚨 Extreme | 완전한 개인정보 조합                         |
+| `USERS + POINT_GRANT + CBIZ_*`  | 🔴 High    | 거래/수익 패턴 추론                          |
 
 #### 복합 쿼리 요청 시 절차
 
 ```yaml
 1. 위 허용 패턴에 해당하는가?
-   - YES → 진행
-   - NO → 2번으로
+- YES → 진행
+- NO → 2번으로
 
 2. Leader Agent에게 승인 요청
-   - 사유 명시 필수
-   - 최소 필요 컬럼만 SELECT
+- 사유 명시 필수
+- 최소 필요 컬럼만 SELECT
 
 3. 승인 없이 3개 이상 테이블 JOIN 금지
 ```
@@ -275,25 +281,25 @@ WHERE U_KIND = 'DOC001'
 
 ---
 
-## 7. AI 학습용 데이터셋 (AI Assets)
+## AI 학습용 데이터셋 (AI Assets)
 
 향후 모델 학습 및 RAG 구축 시 활용 가능한 데이터 자산입니다.
 
-| 카테고리 | 데이터 소스 | 활용 방안 (Use Case) |
-|---------|------------|---------------------|
-| NLP/LLM | `BOARD_*.CONTENT`, `COMMENT.CONTENT` | - 의료 도메인 특화 LLM 파인튜닝<br>- 게시글 3줄 요약/감성 분석<br>- 악성 댓글 자동 필터링 |
-| 추천/예측 | `USER_DETAIL` (전공/지역), `CBIZ_REC_*` (공고 조회) | - 의사 개인화 채용 공고 추천<br>- 관심사 기반 게시글 추천 |
-| 상권 분석 | `LOCATION_SALES_MONTHLY`, `CBIZ_LEASE` | - 개원 입지 매출 예측 모델<br>- 임대료 적정성 평가 |
-| 네트워크 | `COMMENT` (대댓글 관계), `S_COLLEAGUE` | - 의사 인맥/영향력 그래프 분석<br>- Key Opinion Leader (KOL) 발굴 |
+| 카테고리  | 데이터 소스                                         | 활용 방안 (Use Case)                                                                      |
+| --------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| NLP/LLM   | `BOARD_*.CONTENT`, `COMMENT.CONTENT`                | - 의료 도메인 특화 LLM 파인튜닝<br>- 게시글 3줄 요약/감성 분석<br>- 악성 댓글 자동 필터링 |
+| 추천/예측 | `USER_DETAIL` (전공/지역), `CBIZ_REC_*` (공고 조회) | - 의사 개인화 채용 공고 추천<br>- 관심사 기반 게시글 추천                                 |
+| 상권 분석 | `LOCATION_SALES_MONTHLY`, `CBIZ_LEASE`              | - 개원 입지 매출 예측 모델<br>- 임대료 적정성 평가                                        |
+| 네트워크  | `COMMENT` (대댓글 관계), `S_COLLEAGUE`              | - 의사 인맥/영향력 그래프 분석<br>- Key Opinion Leader (KOL) 발굴                         |
 
 ---
 
-## 📚 관련 문서
+## 관련 문서
 
-| 문서 | 역할 |
-|------|------|
-| `CLAUDE.md` | 프로젝트 컨텍스트 |
+| 문서                  | 역할                            |
+| --------------------- | ------------------------------- |
+| `CLAUDE.md`           | 프로젝트 컨텍스트               |
 | `DB_ACCESS_POLICY.md` | 접근 권한, 실행 제한, 감사 로깅 |
-| `VALIDATION_GUIDE.md` | 쿼리 실행 전 검증 규칙 |
+| `VALIDATION_GUIDE.md` | 쿼리 실행 전 검증 규칙          |
 
 **END OF DOMAIN_SCHEMA.MD**

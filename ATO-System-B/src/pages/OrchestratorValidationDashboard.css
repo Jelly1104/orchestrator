@@ -1,0 +1,199 @@
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --line: #e5e7eb;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --muted-2: #94a3b8;
+  --accent: #2563eb;
+  --good: #16a34a;
+  --warn: #f59e0b;
+  --fail: #ef4444;
+}
+
+.ovd-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.ovd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  padding: 14px 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  margin-bottom: 10px;
+}
+
+.ovd-title { font-weight: 700; font-size: 18px; }
+.ovd-actions { display: flex; gap: 8px; }
+.ovd-icon-btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.ovd-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.ovd-tab {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: #e2e8f0;
+}
+.ovd-done { background: #dcfce7; color: #166534; }
+.ovd-in-progress { background: #fef9c3; color: #854d0e; }
+.ovd-paused { background: #e2e8f0; color: #475569; }
+.ovd-idle { background: #e2e8f0; color: #475569; }
+
+.ovd-section { margin-bottom: 18px; }
+.ovd-section-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+.ovd-section-subtitle {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.ovd-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+.ovd-progress-card { display: flex; flex-direction: column; gap: 8px; }
+
+.ovd-progress-bar {
+  position: relative;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.ovd-progress-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: var(--accent);
+}
+.ovd-progress-fill.warn { background: var(--warn); }
+.ovd-progress-text {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.ovd-phase-line { font-size: 13px; color: var(--text); }
+
+.ovd-grid-4, .ovd-grid-2 {
+  display: grid;
+  gap: 12px;
+}
+.ovd-grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.ovd-grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+.ovd-metric { display: flex; flex-direction: column; gap: 4px; }
+.ovd-metric.compact { gap: 2px; }
+.ovd-metric-label { color: var(--muted); font-size: 13px; }
+.ovd-metric-value { font-size: 22px; font-weight: 700; }
+.ovd-status { font-size: 12px; color: var(--muted); }
+.ovd-good { color: var(--good); }
+.ovd-warn { color: var(--warn); }
+.ovd-pending { color: var(--muted); }
+.ovd-fail { color: var(--fail); }
+
+.ovd-success { display: flex; flex-direction: column; gap: 8px; }
+.ovd-kpi-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.ovd-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ovd-chip.warn { background: #fef9c3; color: #854d0e; }
+
+.ovd-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.ovd-list.number { list-style: decimal; padding-left: 16px; }
+.ovd-time { color: var(--muted); margin-right: 6px; }
+
+.ovd-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ovd-toolbar-actions { display: flex; gap: 8px; }
+.ovd-toolbar-title { font-weight: 700; }
+
+.ovd-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  cursor: pointer;
+}
+.ovd-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ovd-btn.ghost { background: #f8fafc; }
+
+.ovd-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.ovd-pill {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ovd-block { display: flex; flex-direction: column; gap: 8px; }
+.ovd-bar { font-size: 13px; color: var(--text); }
+.ovd-bar-fill {
+  display: inline-block;
+  height: 10px;
+  background: #c7d2fe;
+  margin: 0 8px;
+  border-radius: 4px;
+  min-width: 40px;
+}
+
+.ovd-compare { display: flex; align-items: center; gap: 10px; }
+.ovd-note { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.ovd-callout { font-weight: 700; }
+
+.ovd-file { display: flex; align-items: center; gap: 8px; }
+.ovd-dot {
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: var(--muted-2);
+}
+.ovd-done .ovd-dot,
+.ovd-dot.ovd-done { background: var(--good); }
+.ovd-progress .ovd-dot { background: var(--warn); }
+.ovd-pending .ovd-dot { background: var(--muted-2); }
+.ovd-fail .ovd-dot { background: var(--fail); }
+.ovd-paused .ovd-dot { background: var(--muted-2); }
+
+.ovd-progress-block { margin-bottom: 12px; }
+.mt-3 { margin-top: 12px; }
+
+@media (max-width: 768px) {
+  .ovd-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ovd-toolbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

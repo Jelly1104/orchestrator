@@ -143,7 +143,7 @@ async function runSimulation() {
   const prdAnalysis = await prdAnalyzer.analyze(prdContent);
 
   console.log('📄 PRD: Case #4 - 활성 회원 패턴 분석 PoC');
-  console.log(`   유형: ${prdAnalysis.prdType}`);
+  console.log(`   파이프라인: ${prdAnalysis.pipeline}`);
   console.log(`   체크리스트: ${prdAnalysis.deliverables.length}개\n`);
 
   // ─────────────────────────────────────────────────────────────

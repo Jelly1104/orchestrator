@@ -34,6 +34,28 @@ const PASS_CRITERIA = {
   maxFeaturesPerIteration: 50  // 단일 iteration 최대 기능 수
 };
 
+/**
+ * HITL 트리거 조건 (TO-BE 아키텍처)
+ * ROLE_ARCHITECTURE.md 기반
+ */
+const HITL_TRIGGERS = {
+  // Phase별 트리거 조건
+  PHASE_A: {
+    emptyResult: true,        // 결과 0행
+    timeout: 30,              // 30초 타임아웃
+    schemaViolation: true     // 스키마 불일치
+  },
+  PHASE_B: {
+    sddSchemaViolation: true, // SDD-Schema 불일치
+    iaWfMismatch: true        // IA-WF 정합성 실패
+  },
+  PHASE_C: {
+    testFail: true,           // 테스트 FAIL
+    securityViolation: true,  // 보안 위반
+    maxRetries: 3             // 재시도 ≥3회
+  }
+};
+
 export class ReviewerTool extends BaseTool {
   constructor(config = {}) {
     // BaseTool 초기화
@@ -170,6 +192,9 @@ export class ReviewerTool extends BaseTool {
       this.debug(`Validation failed with score ${Math.round(score)}`);
     }
 
+    // HITL 필요 여부 판단 (TO-BE 아키텍처)
+    const hitlContext = this._determineHITLRequired(passed, score, issues, details, input.phase);
+
     return {
       passed,
       score: Math.round(score),
@@ -177,10 +202,122 @@ export class ReviewerTool extends BaseTool {
       details,
       issues,
       recommendations: this._generateRecommendations(issues),
+      // TO-BE: HITL 관련 필드 추가
+      hitlRequired: hitlContext.required,
+      hitlTrigger: hitlContext.trigger,
+      hitl3WayOptions: hitlContext.options,
       metadata: {
         validationScope,
         validatedAt: new Date().toISOString(),
         criteria: PASS_CRITERIA
+      }
+    };
+  }
+
+  /**
+   * HITL 필요 여부 판단 (TO-BE 아키텍처)
+   *
+   * ImpLeader 자동 검증 결과 기반:
+   * - PASS → HITL 없이 다음 Phase 진행
+   * - FAIL → HITL 트리거 + 3-way 옵션 제공
+   *
+   * @param {boolean} passed - 검증 통과 여부
+   * @param {number} score - 검증 점수
+   * @param {Array} issues - 이슈 목록
+   * @param {Object} details - 상세 검증 결과
+   * @param {string} phase - 현재 Phase (A, B, C)
+   * @returns {Object} { required, trigger, options }
+   */
+  _determineHITLRequired(passed, score, issues, details, phase = 'B') {
+    // 자동 검증 PASS → HITL 불필요
+    if (passed) {
+      return {
+        required: false,
+        trigger: null,
+        options: null
+      };
+    }
+
+    // 자동 검증 FAIL → HITL 트리거 결정
+    const highIssues = issues.filter(i => i.severity === 'HIGH');
+    const trigger = this._identifyHITLTrigger(phase, score, issues, details);
+
+    // 3-way 옵션 생성
+    const options = this._generate3WayOptions(phase, trigger, issues);
+
+    return {
+      required: true,
+      trigger,
+      options
+    };
+  }
+
+  /**
+   * HITL 트리거 식별
+   */
+  _identifyHITLTrigger(phase, score, issues, details) {
+    const triggers = [];
+
+    // Phase별 트리거 체크
+    switch (phase) {
+      case 'A':
+        if (details.syntax?.score === 0) triggers.push('EMPTY_RESULT');
+        if (issues.some(i => i.category === 'schema')) triggers.push('SCHEMA_VIOLATION');
+        break;
+
+      case 'B':
+        if (details.cross_ref?.score < 70) triggers.push('IA_WF_MISMATCH');
+        if (issues.some(i => i.category === 'semantic' && i.severity === 'HIGH')) {
+          triggers.push('SDD_SCHEMA_VIOLATION');
+        }
+        break;
+
+      case 'C':
+        if (issues.some(i => i.category === 'test')) triggers.push('TEST_FAIL');
+        if (issues.some(i => i.category === 'security')) triggers.push('SECURITY_VIOLATION');
+        break;
+    }
+
+    // 공통: 점수 미달
+    if (score < PASS_CRITERIA.minScore) {
+      triggers.push('SCORE_BELOW_THRESHOLD');
+    }
+
+    // 공통: HIGH 이슈 존재
+    if (issues.filter(i => i.severity === 'HIGH').length > 0) {
+      triggers.push('HIGH_SEVERITY_ISSUE');
+    }
+
+    return triggers.length > 0 ? triggers : ['GENERAL_FAIL'];
+  }
+
+  /**
+   * 3-way 옵션 생성
+   */
+  _generate3WayOptions(phase, triggers, issues) {
+    const phaseLabels = {
+      'A': { action: '쿼리', rework: '재분석' },
+      'B': { action: '설계', rework: '재설계' },
+      'C': { action: '코드', rework: '수동 수정' }
+    };
+
+    const labels = phaseLabels[phase] || phaseLabels['B'];
+
+    return {
+      EXCEPTION_APPROVAL: {
+        label: '예외 승인',
+        description: `이번 건만 예외 허용, 다음 Phase 진행`,
+        useCase: '긴급 배포, 알려진 제약'
+      },
+      RULE_OVERRIDE: {
+        label: '규칙 수정 요청',
+        description: `규칙 자체 수정 요청 → 관리자 검토 필요`,
+        useCase: '규칙이 현실과 맞지 않을 때'
+      },
+      REJECT: {
+        label: `${labels.rework}`,
+        description: `해당 Phase 재작업 지시 (${labels.action} 수정)`,
+        useCase: '품질 미달, 재수정 필요'
       }
     };
   }
@@ -464,7 +601,7 @@ export class ReviewerTool extends BaseTool {
     let totalWeight = 0;
 
     for (const [key, weight] of Object.entries(WEIGHTS)) {
-      if (details[key]) {
+      if (details[key] && typeof details[key].score === 'number') {
         weightedSum += details[key].score * weight;
         totalWeight += weight;
       }
