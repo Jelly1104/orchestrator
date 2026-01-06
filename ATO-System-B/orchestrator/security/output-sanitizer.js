@@ -33,7 +33,10 @@ const ALLOWED_OUTPUT_PATHS = [
   /^\.claude\//,                 // .claude/ 하위
   /^orchestrator\/logs\//,       // 로그 디렉토리
   /^orchestrator\/output\//,     // 출력 디렉토리
-  /^src\//,                      // 소스 코드
+  /^src\//,                      // 레거시 src
+  /^frontend\//,                 // 프론트엔드 코드
+  /^backend\//,                  // 백엔드 코드
+  /^docs\/cases\//,              // 케이스 산출물
   /^tests\//,                    // 테스트 코드
 ];
 

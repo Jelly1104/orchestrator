@@ -51,6 +51,7 @@ import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { LeaderAgent } from './agents/leader.js';
+import { DesignAgent } from './agents/design-agent.js';
 import { CodeAgent } from './agents/code-agent.js';
 import { AnalysisAgent } from './agents/analysis-agent.js';
 import { MetricsTracker } from './metrics/tracker.js';
@@ -136,6 +137,10 @@ export class Orchestrator {
 
     // 에이전트 초기화 (Provider 설정 전달)
     this.leader = new LeaderAgent({
+      projectRoot: this.projectRoot,
+      ...this.providerConfig
+    });
+    this.designAgent = new DesignAgent({
       projectRoot: this.projectRoot,
       ...this.providerConfig
     });
@@ -756,19 +761,21 @@ export class Orchestrator {
       console.log('\n📋 Phase B: Design...');
       metrics.startPhase('planning');
 
-      const planResult = await this.leader.plan(sanitizedDescription, prdContent);
-      metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
+      const planResult = await this.designAgent.generateDesignDocs(parsedPRD, taskId);
+      const designUsage = planResult?.usage || { inputTokens: 0, outputTokens: 0 };
+      metrics.addTokens('designagent', designUsage.inputTokens, designUsage.outputTokens);
       // P1-3: Phase B 토큰 추적 (Design Pipeline)
-      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      metrics.addPhaseTokens('phase_b', designUsage.inputTokens, designUsage.outputTokens);
 
-      sdd = planResult.sdd;
+      sdd = planResult?.sdd;
 
       // 설계 문서 저장
       if (this.saveFiles) {
         await this.savePlanningDocs(taskId, planResult);
       }
 
-      console.log(`   ✅ Design 완료 (${planResult.usage.inputTokens + planResult.usage.outputTokens} tokens)`);
+      console.log(`   ✅ Design 완료 (${designUsage.inputTokens + designUsage.outputTokens} tokens)`);
 
       // HANDOFF 누락 시 자동 생성 (fallback)
       if (!planResult.handoff && planResult.sdd) {
@@ -1331,10 +1338,12 @@ export class Orchestrator {
       // 분석 결과를 PRD에 추가하여 설계에 활용
       const enrichedPrdContent = this.enrichPRDWithAnalysis(prdContent, analysisResult);
 
-      const planResult = await this.leader.plan(taskDescription, enrichedPrdContent);
-      metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      const parsedDesignPRD = this.prdAnalyzer.parsePRD(enrichedPrdContent);
+      const planResult = await this.designAgent.generateDesignDocs(parsedDesignPRD, taskId);
+      const designUsage = planResult?.usage || { inputTokens: 0, outputTokens: 0 };
+      metrics.addTokens('designagent', designUsage.inputTokens, designUsage.outputTokens);
       // P1-3: Phase B 토큰 추적
-      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      metrics.addPhaseTokens('phase_b', designUsage.inputTokens, designUsage.outputTokens);
       metrics.endPhase('design', 'success');
 
       // 설계 문서 저장
@@ -1701,9 +1710,11 @@ export class Orchestrator {
       console.log('\n📋 Phase B: Design...');
       metrics.startPhase('design');
 
-      const planResult = await this.leader.plan(taskDescription, prdContent);
-      metrics.addTokens('leader', planResult.usage.inputTokens, planResult.usage.outputTokens);
-      metrics.addPhaseTokens('phase_b', planResult.usage.inputTokens, planResult.usage.outputTokens);
+      const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
+      const planResult = await this.designAgent.generateDesignDocs(parsedPRD, taskId);
+      const designUsage = planResult?.usage || { inputTokens: 0, outputTokens: 0 };
+      metrics.addTokens('designagent', designUsage.inputTokens, designUsage.outputTokens);
+      metrics.addPhaseTokens('phase_b', designUsage.inputTokens, designUsage.outputTokens);
       metrics.endPhase('design', 'success');
 
       if (this.saveFiles) {
