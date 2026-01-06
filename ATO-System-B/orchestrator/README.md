@@ -287,5 +287,175 @@ workspace/logs/audit/audit-*.jsonl     # 보안 감사 로그
 
 ---
 
+## 🔌 11. Extension 경량화 Skills (Claude Code / VSCode)
+
+System B의 Skills는 Orchestrator 외에도 **Claude Code Extension**에서 경량화된 형태로 실행할 수 있습니다.
+
+### 11.1 Orchestrator vs Extension
+
+| 구분 | Orchestrator | Extension |
+|------|--------------|-----------|
+| **경로** | `orchestrator/tools/{skill}/` | `.claude/skills/{skill}/` |
+| **구성** | SKILL.md + index.js + resources/ | SKILL.md (단독) |
+| **실행** | Node.js 코드 실행 | LLM 프롬프트 기반 |
+| **용도** | 자동화 파이프라인, HITL | 대화형 작업, 빠른 반복 |
+
+### 11.2 Extension Skills 목록
+
+```text
+.claude/skills/
+├── leader/       # PRD → HANDOFF 생성
+├── imleader/     # 산출물 품질 검증
+├── designer/     # IA/Wireframe/SDD 설계
+├── coder/        # 코드 구현
+├── query/        # SQL 생성/분석
+├── profiler/     # 세그먼트 분석
+└── reviewer/     # PRD 정합성 검증
+```
+
+### 11.3 실행 예시: 전체 파이프라인
+
+아래는 PRD부터 코드까지 Extension에서 순차적으로 실행하는 예시입니다.
+
+---
+
+**Step 0: PRD 파일 작성 및 저장**
+
+`.claude/project/PRD.md` 또는 `docs/cases/{case-id}/PRD.md`에 PRD를 작성합니다.
+
+---
+
+**Step 1: PRD 분석 및 HANDOFF 생성**
+
+1. VSCode에서 PRD.md 파일 선택 (열기 또는 하이라이트)
+2. Claude Code 채팅창에서 `/leader` 입력
+
+```
+/leader
+```
+
+AI가 선택된 PRD를 자동으로 읽고 HANDOFF를 생성합니다.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 [Leader Skill Report]
+🔧 사용된 Skill: leader v1.0
+📚 참조 문서: HANDOFF_PROTOCOL.md ✅ | PRD_GUIDE.md ✅
+📥 입력: PRD.md
+📤 출력: HANDOFF.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ 파이프라인: analysis
+✅ 포함 Skill: query, profiler
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+생성된 HANDOFF.md가 `docs/cases/{case-id}/HANDOFF.md`에 저장됩니다.
+
+---
+
+**Step 2: SQL 쿼리 생성**
+
+1. HANDOFF.md 파일 선택
+2. `/query` 입력
+
+```
+/query
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 [Query Skill Report]
+🔧 사용된 Skill: query v2.0
+📚 참조 문서: DB_ACCESS_POLICY.md ✅ | SQL_PATTERNS.md ✅
+📥 입력: HANDOFF.md
+📤 출력: 3개 쿼리 생성
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ SQL 쿼리: 3개
+✅ 스키마 검증: PASS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+생성된 SQL이 `docs/cases/{case-id}/analysis/results/` 폴더에 저장됩니다.
+
+---
+
+**Step 3: 프로필 분석**
+
+1. 쿼리 결과 파일 선택 (또는 쿼리 실행 결과를 채팅에 붙여넣기)
+2. `/profiler` 입력
+
+```
+/profiler
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 [Profiler Skill Report]
+🔧 사용된 Skill: profiler v2.0
+📚 참조 문서: SEGMENT_RULES.md ✅
+📥 입력: 쿼리 결과
+📤 출력: 세그먼트 프로필
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ 세그먼트: 3개 분석
+✅ 페르소나: 3개 생성
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+**Step 4: 품질 검증**
+
+1. 생성된 산출물 폴더 또는 파일 선택
+2. `/reviewer` 입력
+
+```
+/reviewer
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 [Reviewer Skill Report]
+🔧 사용된 Skill: reviewer v2.0
+📚 참조 문서: VALIDATION_GUIDE.md ✅ | PRD_CHECKLIST.md ✅
+📥 입력: analysis/ 폴더 산출물
+📤 출력: 검증 결과
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Score: 92/100  PASS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+### 11.4 슬래시 커맨드 요약
+
+| 커맨드 | 역할 | 입력 (파일 선택) | 출력 |
+|--------|------|-----------------|------|
+| `/leader` | PRD 분석 | PRD.md | HANDOFF.md |
+| `/designer` | 설계 문서 | HANDOFF.md | IA.md, Wireframe.md, SDD.md |
+| `/query` | SQL 생성 | HANDOFF.md | *.sql 파일들 |
+| `/profiler` | 세그먼트 분석 | 쿼리 결과 | 프로필 리포트 |
+| `/coder` | 코드 구현 | SDD.md, Wireframe.md | React 컴포넌트 |
+| `/reviewer` | 품질 검증 | 산출물 폴더 | 검증 결과 |
+| `/imleader` | 산출물 검증 | 개별 산출물 | PASS/FAIL |
+
+### 11.5 파일 구조 예시
+
+```text
+docs/cases/active-user-dashboard/
+├── PRD.md              # Step 0: 사용자 작성
+├── HANDOFF.md          # Step 1: /leader 생성
+├── analysis/
+│   ├── analysis_report.md
+│   └── results/
+│       ├── active_doctors.sql
+│       ├── login_distribution.sql
+│       └── major_distribution.sql
+├── IA.md               # /designer 생성 (design 파이프라인)
+├── Wireframe.md
+└── SDD.md
+```
+
+---
+
 **System B Team**
 _Quality is not an act, it is a habit._

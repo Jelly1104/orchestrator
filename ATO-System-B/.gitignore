@@ -16,9 +16,7 @@ orchestrator/logs/
 test-output/
 
 # Workspace - 런타임 산출물 (Git 제외)
-workspace/analysis/
-workspace/sessions/
-workspace/logs/
+workspace/
 
 # Build
 dist/

@@ -1,13 +1,14 @@
 # PRD: 메디게이트 무찌마 일간 베스트 팟캐스트 (Daily Briefing)
 
+> **대상**: Leader, Analyzer
+
 | 항목          | 내용                                                |
 | ------------- | --------------------------------------------------- |
 | **Case ID**   | case7-muzzima-podcast-20251226                      |
-| **PRD 버전**  | 3.0.0                                               |
-| **작성일**    | 2025-12-30                                          |
+| **PRD 버전**  | 3.2.0                                               |
+| **작성일**    | 2026-01-06                                          |
 | **작성자**    | ATO Team                                            |
-| **Type**      | MIXED                                               |
-| **Pipeline**  | mixed                                               |
+| **Pipeline**  | full                                                |
 | **참조 문서** | PRD_GUIDE.md, DOMAIN_SCHEMA.md, DB_ACCESS_POLICY.md |
 
 ---
@@ -70,26 +71,22 @@
 ## 5. PRD 유형 및 파이프라인
 
 ```yaml
-type: MIXED
-pipeline: mixed
+pipeline: full
 rationale: "SQL을 통한 정량적 데이터 확보(Phase A)가 선행되어야 대본 작성(Phase B)이 가능하고, 최종적으로 Web UI와 TTS 재생(Phase C)으로 사용자에게 전달함"
 
 phases:
   - id: A
     name: Analysis
-    agent: AnalysisAgent
     input: PRD + DOMAIN_SCHEMA.md
     output: SQL, raw_data_summary.json
 
   - id: B
     name: Design
-    agent: LeaderAgent
     input: Phase A 결과물
     output: Podcast_Script.md, Audio_Metadata.json
 
   - id: C
     name: Implementation
-    agent: CoderAgent
     input: Phase B 결과물 + HANDOFF.md
     output:
       - Express.js 백엔드 API
@@ -277,11 +274,9 @@ deliverables:
 
 ## 변경 이력
 
-| 버전  | 날짜       | 변경 내용                                                                                                 |
-| ----- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| 3.0.0 | 2025-12-30 | Phase C 추가: Web UI(F5), TTS 음성 재생(F6), 화자 구분 음성(F7), CoderAgent 산출물 정의                   |
-| 2.0.0 | 2025-12-29 | PRD_GUIDE.md v2.1 기준 전면 개정, YAML 형식 정규화, 성공 지표 정량화, 레퍼런스 추가, HITL 체크포인트 명시 |
-| 1.1.0 | 2025-12-26 | 초기 버전                                                                                                 |
+| 버전  | 날짜       | 변경 내용                                 |
+| ----- | ---------- | ----------------------------------------- |
+| 3.2.0 | 2026-01-06 | 대상 헤더 추가 (Leader, Analyzer)         |
 
 ---
 

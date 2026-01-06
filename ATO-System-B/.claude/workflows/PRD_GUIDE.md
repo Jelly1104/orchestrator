@@ -1,7 +1,7 @@
 # PRD 통합 가이드 v2.4
 
-> **문서 버전**: 2.4.0
-> **최종 업데이트**: 2026-01-05
+> **문서 버전**: 2.5.0
+> **최종 업데이트**: 2026-01-06
 > **물리적 경로**: `.claude/workflows/PRD_GUIDE.md`
 > **다이어그램**: README.md 참조
 
@@ -30,20 +30,35 @@
 
 ## 파이프라인 정의
 
-| Pipeline          | Phase 조합 | 설명                   | 예시                      |
-| ----------------- | ---------- | ---------------------- | ------------------------- |
-| `analysis`        | A만        | SQL 실행, 수치 분석만  | 세그먼트 분석, KPI 리포트 |
-| `design`          | B만        | UX 설계, 제안서만      | 신규 화면 기획, UX 개선   |
-| `code`            | C만        | 기존 SDD 기반 구현만   | 버그 수정, SDD 기반 코딩  |
-| `analyzed_design` | A → B      | 분석 후 설계           | 데이터 기반 UX 설계       |
-| `ui_mockup`       | B → C      | 설계 후 화면 구현      | IA/WF → React 컴포넌트    |
-| `full`            | A → B → C  | 분석→설계→구현 전체    | 신규 기능 전체 개발       |
+> **파이프라인 타입**: 6가지 파이프라인(analysis, design, code, analyzed_design, ui_mockup, full) 정의는 `ROLE_ARCHITECTURE.md`의 **파이프라인 타입** 섹션 참조
 
 > **🔑 HANDOFF 필수**: 모든 파이프라인은 Leader가 생성한 `HANDOFF.md`를 기반으로 실행됩니다.
 >
-> - Leader → `{ router: "...", handoff: {...} }` 출력
+> - Leader → `{ pipeline: "...", handoff: {...} }` 출력
 > - Orchestrator → `docs/cases/{caseId}/{taskId}/HANDOFF.md`로 저장
 > - 해당 Phase의 Role이 HANDOFF를 입력으로 받아 작업 수행
+
+---
+
+## Extension 경량 실행 모드
+
+> **용도**: VSCode Extension에서 Orchestrator 없이 개별 Skill 직접 호출
+
+| 항목 | Orchestrator (Full) | Extension (Lite) |
+|------|---------------------|------------------|
+| PRD 템플릿 | PRD_FULL.md | PRD_LITE.md |
+| Skill 정의 | `orchestrator/tools/*/SKILL.md` | `.claude/skills/*/SKILL.md` |
+| 실행 방식 | 파이프라인 자동 라우팅 | `skills` 배열 순차 실행 |
+| HITL | 자동 체크포인트 | 수동 확인 |
+
+### Extension 호출 예시
+
+```yaml
+# PRD_LITE.md
+skills: [query, profiler]  # /query → /profiler 순차 실행
+```
+
+> **Skill 정의**: `.claude/skills/` 폴더의 SKILL.md 참조
 
 ---
 
@@ -90,70 +105,9 @@ full_keywords:
 
 ## 파이프라인별 흐름
 
-> **공통**: 모든 파이프라인은 `HANDOFF.md`를 필수 입력으로 받습니다.
+> **상세 흐름**: 각 파이프라인의 입력/산출물 및 상세 흐름은 `DOCUMENT_PIPELINE.md`의 **타입별 상세** 섹션 참조
 
-### analysis (A만)
-
-```
-PRD → Leader(HANDOFF 생성) → HANDOFF → Analyzer(SQL) → 결과 해석
-입력: HANDOFF.md (Leader 생성)
-산출물: *.sql, analysis_result.json, report.md
-```
-
-> 데이터 분석만 수행, 설계/구현 없음
-
-### design (B만)
-
-```
-PRD → Leader(HANDOFF 생성) → HANDOFF → Designer(IA/WF/SDD) → HITL 승인
-입력: HANDOFF.md (Leader 생성)
-산출물: IA.md, Wireframe.md, SDD.md
-```
-
-> UX 설계만 수행, 분석/구현 없음
-
-### analyzed_design (A→B)
-
-```
-PRD → Leader(HANDOFF 생성) → HANDOFF → Analyzer → Designer
-입력: HANDOFF.md (Leader 생성)
-산출물: *.sql + insight_report.md + IA.md + Wireframe.md + SDD.md
-```
-
-> 데이터 분석 후 설계 문서 생성
-
-### code (C만)
-
-```
-HANDOFF + SDD → Coder(구현) → Self-Check → ImpLeader 검증
-입력: HANDOFF.md + SDD.md (기존 설계 문서 필수)
-산출물: backend/src/*, frontend/src/*, tests/*.test.ts
-```
-
-> 이미 설계(IA/WF/SDD)가 완료된 상태에서 코딩만 수행
-> ⚠️ **SDD 별첨 필수**: Coder는 PRD를 직접 참조하지 않음
-
-### ui_mockup (B→C)
-
-```
-PRD → Leader(HANDOFF 생성) → HANDOFF → Designer → Coder
-입력: HANDOFF.md (Leader 생성)
-산출물: IA.md, Wireframe.md, SDD.md + frontend/src/*, tests/*.test.ts
-```
-
-> 분석 없이 설계부터 시작하여 화면 구현까지 수행
-
-### full (A→B→C)
-
-```
-PRD → Leader(HANDOFF 생성) → HANDOFF → Analyzer → Designer → Coder
-입력: HANDOFF.md (Leader 생성)
-산출물: *.sql + IA.md + Wireframe.md + SDD.md + 소스코드
-```
-
-> 데이터 분석부터 설계, 구현까지 전체 파이프라인 수행
-
-> **HITL 참조**: ROLE_ARCHITECTURE.md의 HITL 체크포인트 섹션 참조
+> **HITL 참조**: ROLE_ARCHITECTURE.md의 **HITL 체크포인트** 섹션 참조
 
 ---
 
@@ -239,6 +193,7 @@ deliverables:
 
 | 버전  | 날짜       | 변경 내용                                                                 |
 | ----- | ---------- | ------------------------------------------------------------------------- |
+| 2.5.0 | 2026-01-06 | Extension 경량 실행 모드 섹션 추가                                        |
 | 2.4.0 | 2026-01-05 | type 필드 제거, pipeline만 사용, 섹션 번호 제거, 섹션 이름 기반 참조 전환 |
 | 2.3.0 | 2026-01-05 | HANDOFF 필수 입력 명시                                                    |
 | 2.2.0 | 2025-12-30 | 파이프라인 타입 3개→6개 확장                                              |

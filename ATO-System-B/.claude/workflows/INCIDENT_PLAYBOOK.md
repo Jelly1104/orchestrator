@@ -12,6 +12,8 @@
 
 > **목적**: Orchestrator 장애 대응 절차
 
+> **대상**: 운영자 (Human)
+
 ---
 
 ## 장애 분류
@@ -296,11 +298,12 @@ P0 → 전체 팀 + CTO (즉시 회의)
 
 ## 관련 문서
 
-| 문서                    | 역할                       |
-| ----------------------- | -------------------------- |
-| CLAUDE.md               | 최상위 헌법 및 안전 수칙   |
-| ERROR_HANDLING_GUIDE.md | 에러 유형별 자동 대응 절차 |
-| ROLE_ARCHITECTURE.md    | HITL 체크포인트 섹션       |
-| DB_ACCESS_POLICY.md     | DB 접근 권한 및 제약 사항  |
+| 문서                    | 역할                             |
+| ----------------------- | -------------------------------- |
+| CLAUDE.md               | 최상위 헌법 및 안전 수칙         |
+| ERROR_HANDLING_GUIDE.md | **AI Role 오동작 대응 절차**     |
+| ROLE_ARCHITECTURE.md    | HITL 체크포인트 섹션             |
+| DB_ACCESS_POLICY.md     | DB 접근 권한 및 제약 사항        |
+| HANDOFF_PROTOCOL.md     | Circuit Breaker 정책 (재시도 5회) |
 
 **END OF PLAYBOOK**

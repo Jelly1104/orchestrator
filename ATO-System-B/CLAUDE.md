@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-> **문서 버전**: 4.3.0
-> **최종 업데이트**: 2025-12-23
+> **문서 버전**: 4.4.0
+> **최종 업데이트**: 2026-01-06
 > **관리자**: 미래전략실 (ATO Team)
 > **변경 이력**: 목차 재배치 - WHY(목적) → WHAT(원칙) → HOW(구조) → WHERE(참조) 순서로 정리
 
@@ -116,6 +116,13 @@ System B (HITL Orchestrator)는 아래의 구조를 따릅니다. 에이전트�
 │   ├── rules/                   # [Group A] 제약 사항 (Code Style, DB Schema)
 │   ├── workflows/               # [Group B] 실행 절차 (Pipeline, Architecture)
 │   ├── context/                 # [Group C] 배경 지식 (Playbook, Context)
+│   ├── templates/               # [Group D] 템플릿 (SSOT) - Tools가 참조
+│   │   ├── designer/            # IA, Wireframe 템플릿
+│   │   ├── query/               # SQL 패턴
+│   │   ├── profiler/            # 세그먼트 규칙
+│   │   ├── reviewer/            # 품질 검증 규칙
+│   │   └── prd/                 # PRD 템플릿 (LITE, FULL)
+│   ├── skills/                  # [Group E] Extension용 경량 Skills
 │   └── project/                 # 🟢 프로젝트별 설정 (PROJECT_STACK.md, PRD.md)
 ├── src/
 ├── tests/
@@ -129,6 +136,8 @@ System B (HITL Orchestrator)는 아래의 구조를 따릅니다. 에이전트�
 - **Group A (Rules)**: 코딩 컨벤션, DB 스키마, 품질 검증 등 제약 사항
 - **Group B (Workflows)**: 문서화 파이프라인, 에이전트 협업, 장애 대응 등 절차
 - **Group C (Context)**: 팀 철학, 행동 강령 등 배경 지식
+- **Group D (Templates)**: PRD, IA, Wireframe 등 템플릿 (SSOT)
+- **Group E (Skills)**: Extension용 경량 Skill 정의 (슬래시 커맨드)
 
 ---
 

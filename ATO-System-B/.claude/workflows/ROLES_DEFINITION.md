@@ -26,12 +26,12 @@
 | **참조 주체** | Orchestrator, 개발자         | 각 LLM Role (Leader, Coder 등)  |
 | **로딩 방식** | 전체 로딩 (섹션 0~2)         | **JIT Injection** (해당 섹션만) |
 
-**JIT Injection 원칙**: Leader → 섹션 2만, Coder → 섹션 6 + HANDOFF, Impl Leader → 섹션 5만 (전체 로딩 금지)
+**JIT Injection 원칙**: Leader → **Leader** 섹션만, Coder → **Coder** 섹션 + HANDOFF, Impl Leader → **Implementation Leader** 섹션만 (전체 로딩 금지)
 
 > **다이어그램**: README.md 섹션 9 참조
 
 > **⚠️ SSOT 원칙**: 본 문서는 Role 행동의 **유일한 정의 문서(SSOT)**입니다.
-> `ROLE_ARCHITECTURE.md`의 섹션 3은 구조적 개요만 제공하며, 행동 상세는 본 문서가 SSOT입니다.
+> `ROLE_ARCHITECTURE.md`의 **Role 정의 요약 (R&R)** 섹션은 구조적 개요만 제공하며, 행동 상세는 본 문서가 SSOT입니다.
 
 ---
 
@@ -59,7 +59,7 @@
 | **Phase** | All (전체 파이프라인 관장)                  |
 | **Tools** | ❌ 없음 (tools 배열 비어 있음)              |
 | **권한**  | `.claude/project/*` 수정 가능 (PRD 보완 등) |
-| **출력**  | `{ router: "...", handoff: { ... } }`       |
+| **출력**  | `{ pipeline: "...", handoff: { ... } }`     |
 
 ### 시스템 프롬프트 요약
 
@@ -74,15 +74,15 @@
 
 ### 입출력 정의
 
-| 방향   | 항목              | 설명                                                                |
-| ------ | ----------------- | ------------------------------------------------------------------- |
-| Input  | PRD.md            | 사용자 요구사항 정의서                                              |
-| Input  | Phase A 분석 결과 | Analyzer → Impl Leader → Leader                                     |
-| Output | 파이프라인 타입   | `{ router: "analysis/design/code/analyzed_design/ui_mockup/full" }` |
-|        |                   | **단, "code" 선택 시 SDD 존재 필수**                                |
-| Output | HANDOFF 내용      | `{ handoff: { ... } }` - Orchestrator가 파일로 저장                 |
-| Output | 하위 Role 명령    | Analyzer/Designer/Coder에게 목표 하달                               |
-| Output | HITL 승인/반려    | 최종 결정                                                           |
+| 방향   | 항목              | 설명                                                                  |
+| ------ | ----------------- | --------------------------------------------------------------------- |
+| Input  | PRD.md            | 사용자 요구사항 정의서                                                |
+| Input  | Phase A 분석 결과 | Analyzer → Impl Leader → Leader                                       |
+| Output | 파이프라인 타입   | `{ pipeline: "analysis/design/code/analyzed_design/ui_mockup/full" }` |
+|        |                   | **단, "code" 선택 시 SDD 존재 필수**                                  |
+| Output | HANDOFF 내용      | `{ handoff: { ... } }` - Orchestrator가 파일로 저장                   |
+| Output | 하위 Role 명령    | Analyzer/Designer/Coder에게 목표 하달                                 |
+| Output | HITL 승인/반려    | 최종 결정                                                             |
 
 ---
 
@@ -278,18 +278,18 @@
 | **담당**   | PRD 파싱, Role 호출, HITL 관리, 재시도, 로그 저장, **Leader 출력 → HANDOFF.md 저장** |
 | **Tools**  | `DocSyncTool`, `ViewerTool` (자동화 훅으로 실행)                                     |
 | **제약**   | ❌ "PRD 내용에 따라 분기" 같은 **판단 로직 금지**                                    |
-| **스위칭** | Leader 출력 `{ router: "..." }` 에 따라 기계적 전환                                  |
+| **스위칭** | Leader 출력 `{ pipeline: "..." }` 에 따라 기계적 전환                                |
 
 ### 스위칭 예시
 
-| Leader 출력                     | 실행 Phase | 설명              |
-| ------------------------------- | ---------- | ----------------- |
-| `{ router: "analysis" }`        | A만        | 데이터 분석만     |
-| `{ router: "design" }`          | B만        | 설계만            |
-| `{ router: "code" }`            | C만        | 구현만            |
-| `{ router: "analyzed_design" }` | A → B      | 분석 후 설계      |
-| `{ router: "ui_mockup" }`       | B → C      | 설계 후 화면 구현 |
-| `{ router: "full" }`            | A → B → C  | 전체 파이프라인   |
+| Leader 출력                       | 실행 Phase | 설명              |
+| --------------------------------- | ---------- | ----------------- |
+| `{ pipeline: "analysis" }`        | A만        | 데이터 분석만     |
+| `{ pipeline: "design" }`          | B만        | 설계만            |
+| `{ pipeline: "code" }`            | C만        | 구현만            |
+| `{ pipeline: "analyzed_design" }` | A → B      | 분석 후 설계      |
+| `{ pipeline: "ui_mockup" }`       | B → C      | 설계 후 화면 구현 |
+| `{ pipeline: "full" }`            | A → B → C  | 전체 파이프라인   |
 
 ### HANDOFF 저장 책임
 
@@ -308,7 +308,7 @@
 ❌ if (prd.includes("분석")) → Analyzer      (판단 금지)
 ❌ leader.call("Notion에 올려줘")            (Leader의 doc-sync 지시)
 
-✅ if (leader.output.router === "analysis")  (기계적 스위칭)
+✅ if (leader.output.pipeline === "analysis")  (기계적 스위칭)
 ✅ onPhaseComplete → DocSyncTool.execute()   (Hook 자동화)
 ```
 

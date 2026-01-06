@@ -7,7 +7,7 @@
 
 > **상위 문서**: CLAUDE.md
 
-> **대상**: Leader, Orchestrator
+> **대상**: Orchestrator
 
 ---
 
@@ -157,77 +157,36 @@ Git 명령어를 사용하여 롤백합니다:
 
 ---
 
-## 포스트모템 템플릿
+## 포스트모템
 
-장애 해결 후 반드시 포스트모템을 작성합니다.
-
-**포스트모템 필수 항목:**
-
-| 섹션           | 내용                                 |
-| -------------- | ------------------------------------ |
-| 요약           | 발생일시, 해결일시, 심각도, 영향범위 |
-| 타임라인       | 시간순 이벤트 기록                   |
-| 근본 원인      | Root Cause 분석                      |
-| 대응 내역      | 수행한 조치                          |
-| 재발 방지 대책 | 체크리스트 형태                      |
-| 교훈           | Lessons Learned                      |
+> **포스트모템 템플릿**: 장애 해결 후 포스트모템 작성은 `INCIDENT_PLAYBOOK.md`의 **Post-Mortem 필수 항목** 섹션 참조
 
 ---
 
 ## Orchestrator 장애 대응
 
-### 실패 유형별 대응
+> **상세 절차**: Orchestrator 장애(API 키, DB 연결, Provider 장애 등) 대응은 `INCIDENT_PLAYBOOK.md` 참조
 
-| 유형            | 상태             | 원인                     | 대응               |
-| --------------- | ---------------- | ------------------------ | ------------------ |
-| API 키 오류     | 시작 불가        | ANTHROPIC_API_KEY 미설정 | .env 파일 확인     |
-| Planning 실패   | Phase 1 중단     | PRD 불명확, 토큰 초과    | PRD 수정 후 재시도 |
-| Coding 실패     | Phase 2 중단     | HANDOFF 불완전           | Leader에게 재요청  |
-| Review 3회 FAIL | 사용자 개입 필요 | 품질 기준 미달           | 수동 수정 필요     |
+### 재시도 정책 요약
 
-### USER_INTERVENTION_REQUIRED 대응
+| 조건              | 동작                       |
+| ----------------- | -------------------------- |
+| Review 1~2회 FAIL | 피드백 반영 후 자동 재시도 |
+| Review 3회 FAIL   | USER_INTERVENTION_REQUIRED |
 
-**Step 1. 로그 확인**
-
-- 위치: `orchestrator/logs/<task-id>.json`
-- 각 Review의 FAIL 사유 분석
-
-**Step 2. 원인 분류**
-
-- Schema 위반 → DOMAIN_SCHEMA.md (.claude/rules/) 확인
-- 구조 문제 → SDD 수정 필요 (docs/task-id/SDD.md)
-- 테스트 누락 → TDD_WORKFLOW.md (.claude/rules/) 참조
-
-**Step 3. 수동 수정**
-
-- 생성된 파일 수동 편집
-- 또는 PRD/SDD 수정 후 Orchestrator 재실행
-
-### 토큰 소진 대응
-
-**작업 분할**
-
-- 큰 작업을 여러 개의 작은 작업으로 분리
-- 각 작업별 별도 task-id 부여
-
-**컨텍스트 최적화**
-
-- PRD에서 불필요한 내용 제거
-- 핵심 요구사항만 명시
-
-**모델 변경**
-
-- ANTHROPIC_MODEL 환경 변수로 경량 모델 사용
+> **Circuit Breaker**: HANDOFF_PROTOCOL.md의 **Circuit Breaker 정책** 섹션 참조
 
 ---
 
 ## 관련 문서
 
-| 문서                 | 물리적 경로                            | 역할                  |
-| -------------------- | -------------------------------------- | --------------------- |
-| CLAUDE.md            | .claude/CLAUDE.md                      | 팀 헌법, Safety Rules |
-| VALIDATION_GUIDE.md  | .claude/rules/VALIDATION_GUIDE.md      | 품질 검증 기준        |
-| ROLE_ARCHITECTURE.md | .claude/workflows/ROLE_ARCHITECTURE.md | Role 권한 및 구조     |
+| 문서                 | 역할                                   |
+| -------------------- | -------------------------------------- |
+| CLAUDE.md            | 팀 헌법, Safety Rules                  |
+| INCIDENT_PLAYBOOK.md | **인프라/시스템 장애 대응, 포스트모템** |
+| VALIDATION_GUIDE.md  | 품질 검증 기준                         |
+| ROLE_ARCHITECTURE.md | Role 권한 및 구조                      |
+| HANDOFF_PROTOCOL.md  | Circuit Breaker 정책                   |
 
 ---
 

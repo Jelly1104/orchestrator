@@ -1,7 +1,7 @@
 # ROLE_ARCHITECTURE.md
 
-> **문서 버전**: 3.5.0
-> **최종 업데이트**: 2026-01-05
+> **문서 버전**: 3.7.0
+> **최종 업데이트**: 2026-01-06
 > **물리적 경로**: `.claude/workflows/ROLE_ARCHITECTURE.md` > **상위 문서**: `CLAUDE.md` > **대상**: Orchestrator, 개발자
 > **다이어그램**: README.md 참조
 
@@ -77,16 +77,28 @@
 
 ### 파이프라인 타입
 
-| 타입              | Phase 조합 | 설명                                                    | 사용 케이스             |
-| ----------------- | ---------- | ------------------------------------------------------- | ----------------------- |
-| `analysis`        | A만        | 데이터 분석만                                           | SQL 분석, 리포트        |
-| `design`          | B만        | 설계만                                                  | IA/Wireframe/SDD 작성   |
-| `analyzed_design` | A → B      | 분석 후 설계                                            | 데이터 기반 UX 설계     |
-| `code`            | C만        | **SDD/HANDOFF가 이미 존재하는 경우에 한해 구현만 수행** | 이미 설계 있고 코딩만   |
-| `ui_mockup`       | B → C      | 설계 후 화면 구현                                       | IA/WF 기반 UI 코드 생성 |
-| `full`            | A → B → C  | 전체 파이프라인                                         | 처음부터 끝까지         |
+| 타입              | Phase 조합 | 흐름 요약                                                 | 사용 케이스             |
+| ----------------- | ---------- | --------------------------------------------------------- | ----------------------- |
+| `analysis`        | A만        | PRD → HANDOFF → Analyzer(SQL) → 분석 리포트               | SQL 분석, 리포트        |
+| `design`          | B만        | PRD → HANDOFF → Designer(IA/WF/SDD) → 설계 문서           | IA/Wireframe/SDD 작성   |
+| `analyzed_design` | A → B      | PRD → HANDOFF → Analyzer → Designer → 설계 문서           | 데이터 기반 UX 설계     |
+| `code`            | C만        | HANDOFF → Coder(구현) → 소스코드 **(SDD 존재 필수)**      | 이미 설계 있고 코딩만   |
+| `ui_mockup`       | B → C      | PRD → HANDOFF → Designer → Coder → UI 코드                | IA/WF 기반 UI 코드 생성 |
+| `full`            | A → B → C  | PRD → HANDOFF → Analyzer → Designer → Coder → 전체 산출물 | 처음부터 끝까지         |
 
 > **상세 플로우 다이어그램**: README.md 섹션 2 참조
+
+### Extension 경량 모드
+
+> **용도**: VSCode Extension에서 Orchestrator 없이 Skill 직접 호출
+
+| 항목 | Orchestrator 모드 | Extension 모드 |
+|------|-------------------|----------------|
+| PRD | PRD_FULL.md | PRD_LITE.md |
+| Skill 정의 | `orchestrator/tools/*/SKILL.md` | `.claude/skills/*/SKILL.md` |
+| 실행 | 파이프라인 자동 라우팅 | `skills` 배열 순차 실행 |
+
+> **상세**: PRD_GUIDE.md의 **Extension 경량 실행 모드** 섹션 참조
 
 ---
 
@@ -180,14 +192,14 @@ Phase C:
 
 ### 스위칭 예시
 
-| Leader 출력                     | 실행 Phase              |
-| ------------------------------- | ----------------------- |
-| `{ router: "analysis" }`        | A만                     |
-| `{ router: "design" }`          | B만                     |
-| `{ router: "code" }`            | **C만 (SDD 존재 필수)** |
-| `{ router: "analyzed_design" }` | A → B                   |
-| `{ router: "ui_mockup" }`       | B → C                   |
-| `{ router: "full" }`            | A → B → C               |
+| Leader 출력                       | 실행 Phase              |
+| --------------------------------- | ----------------------- |
+| `{ pipeline: "analysis" }`        | A만                     |
+| `{ pipeline: "design" }`          | B만                     |
+| `{ pipeline: "code" }`            | **C만 (SDD 존재 필수)** |
+| `{ pipeline: "analyzed_design" }` | A → B                   |
+| `{ pipeline: "ui_mockup" }`       | B → C                   |
+| `{ pipeline: "full" }`            | A → B → C               |
 
 > **💡 code 타입 가드**: 실제 구현에서는 `if (!exists(SDD.md)) → HITL: Design Skip Approval` 체크 필요
 
@@ -197,22 +209,11 @@ Phase C:
 ❌ if (prd.includes("분석")) → AnalysisAgent  (판단 금지)
 ❌ leader.call("Notion에 올려줘")              (Leader의 doc-sync 지시)
 
-✅ if (leader.output.router === "analysis")   (기계적 스위칭)
+✅ if (leader.output.pipeline === "analysis")   (기계적 스위칭)
 ✅ onPhaseComplete → docSyncTool.execute()    (Hook 자동화)
 ```
 
-### 산출물 경로
-
-```
-docs/cases/{caseId}/                       # Case 루트
-docs/cases/{caseId}/{taskId}/              # Task별 산출물 (HANDOFF, IA, SDD, Wireframe)
-docs/cases/{caseId}/{taskId}/analysis/     # 분석 결과 (SQL, JSON, 리포트)
-backend/src/{feature}/                     # 백엔드 코드
-frontend/src/{feature}/                    # 프론트엔드 코드
-workspace/logs/{caseId}/{taskId}.json      # 실행 로그 (Case/Task별 그룹화)
-```
-
-> **구조**: 하나의 Case(프로젝트)에 여러 Task(작업)가 존재할 수 있음
+> **산출물 경로**: SYSTEM_MANIFEST.md `Paths` 섹션 참조
 
 ---
 
@@ -245,6 +246,8 @@ workspace/logs/{caseId}/{taskId}.json      # 실행 로그 (Case/Task별 그룹�
 
 | 버전  | 날짜       | 변경 내용                                                                                 |
 | ----- | ---------- | ----------------------------------------------------------------------------------------- |
+| 3.7.0 | 2026-01-06 | Extension 경량 모드 섹션 추가 (파이프라인 타입 하위)                                      |
+| 3.6.0 | 2026-01-06 | 산출물 경로 섹션 → SYSTEM_MANIFEST.md 참조로 변경 (중복 제거)                             |
 | 3.5.0 | 2026-01-05 | 파이프라인 구현 상태 업데이트: 6개 타입 전체 구현 완료, mixed 제거 (analyzed_design 사용) |
 | 3.4.0 | 2026-01-05 | HITL 체크포인트 섹션 TO-BE 방식으로 재정의 (검증 실패 시에만 + 3-way 옵션)                |
 | 3.3.0 | 2026-01-05 | HANDOFF 흐름 명확화: Leader 생성 책임 추가, Orchestrator 저장, 경로 {caseId}/{taskId}     |

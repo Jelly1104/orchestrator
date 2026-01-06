@@ -3,10 +3,10 @@
  *
  * Anthropic Skills 아키텍처 기반:
  * - TOOL.md: Agent 역할 정의
- * - resources/: 참조 문서
+ * - templates/: 참조 문서 (SSOT: .claude/templates/)
  *
- * @version 2.0.0
- * @updated 2025-12-29 - Skill → Tool 리네이밍
+ * @version 2.1.0
+ * @updated 2026-01-06 - 템플릿 경로를 .claude/templates/로 통합 (SSOT)
  * @see https://github.com/anthropics/skills
  */
 
@@ -23,9 +23,13 @@ const __dirname = path.dirname(__filename);
 export class ToolLoader {
   /**
    * @param {string} toolsRoot - tools 폴더 루트 경로
+   * @param {string} templatesRoot - 템플릿 폴더 루트 경로 (SSOT: .claude/templates/)
    */
-  constructor(toolsRoot = null) {
+  constructor(toolsRoot = null, templatesRoot = null) {
     this.toolsRoot = toolsRoot || path.join(__dirname);
+    // 템플릿 SSOT 경로: .claude/templates/
+    const projectRoot = path.resolve(__dirname, '../..');
+    this.templatesRoot = templatesRoot || path.join(projectRoot, '.claude', 'templates');
     this.cache = new Map();
   }
 
@@ -78,28 +82,48 @@ export class ToolLoader {
       }
     }
 
-    // resources 로드
-    const resourcesPath = path.join(toolPath, 'resources');
+    // templates 로드 (SSOT: .claude/templates/{agentName}/)
+    const templatesPath = path.join(this.templatesRoot, agentName);
+    // 폴백: 기존 resources 경로 (하위 호환)
+    const legacyResourcesPath = path.join(toolPath, 'resources');
     const resources = {};
 
     try {
-      const resourcesExist = await fs.stat(resourcesPath).then(() => true).catch(() => false);
+      // 1. SSOT 경로에서 먼저 로드 시도
+      const templatesExist = await fs.stat(templatesPath).then(() => true).catch(() => false);
 
-      if (resourcesExist) {
-        const files = await fs.readdir(resourcesPath);
+      if (templatesExist) {
+        const files = await fs.readdir(templatesPath);
 
         for (const file of files) {
           if (file.endsWith('.md') || file.endsWith('.json') || file.endsWith('.txt')) {
             const content = await fs.readFile(
-              path.join(resourcesPath, file),
+              path.join(templatesPath, file),
               'utf-8'
             );
             resources[file] = content;
           }
         }
+      } else {
+        // 2. 폴백: 기존 resources 경로 (하위 호환)
+        const legacyExist = await fs.stat(legacyResourcesPath).then(() => true).catch(() => false);
+
+        if (legacyExist) {
+          const files = await fs.readdir(legacyResourcesPath);
+
+          for (const file of files) {
+            if (file.endsWith('.md') || file.endsWith('.json') || file.endsWith('.txt')) {
+              const content = await fs.readFile(
+                path.join(legacyResourcesPath, file),
+                'utf-8'
+              );
+              resources[file] = content;
+            }
+          }
+        }
       }
     } catch (error) {
-      // resources가 없는 것은 정상 동작
+      // templates/resources가 없는 것은 정상 동작
     }
 
     const tool = { toolMd, resources };

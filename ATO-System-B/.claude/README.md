@@ -117,89 +117,92 @@ Note right of ImpLeader: FAIL → Internal retry / pipeline rule applies
 ```mermaid
 graph LR
     classDef root fill:#f9f,stroke:#333,stroke-width:4px
+    classDef common fill:#e0f7fa,stroke:#00838f,stroke-width:3px
     classDef protocol fill:#ff9,stroke:#d4a017,stroke-width:2px
     classDef rule fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
     classDef def fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     classDef input fill:#fff3e0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 5 5
     classDef tool fill:#f5f5f5,stroke:#616161,stroke-width:1px
+    classDef backstage fill:#eceff1,stroke:#607d8b,stroke-width:2px,stroke-dasharray: 5 5
 
-    ROOT["CLAUDE.md"]:::root
+    subgraph COMMON ["공통 (모든 AI Role)"]
+        ROOT["CLAUDE.md"]:::root
+        COM_SCHEMA["DOMAIN_SCHEMA.md"]:::common
+        COM_STACK["PROJECT_STACK.md"]:::common
+    end
 
     subgraph ORC ["Orchestrator (JS Module)"]
         ORC_MAN["SYSTEM_MANIFEST.md"]:::protocol
-        ORC_ARCH["ROLE_ARCHITECTURE.md<br/>(§1-3)"]:::protocol
+        ORC_ARCH["ROLE_ARCHITECTURE.md"]:::protocol
         ORC_TOOLS["Tools/JS Classes"]:::tool
     end
 
     subgraph LEADER ["Leader Role"]
-        L_ROLES["ROLES_DEFINITION.md<br/>(§2: Leader)"]:::def
+        L_ROLES["ROLES_DEFINITION.md<br/>(Leader 섹션)"]:::def
         L_HANDOFF["HANDOFF_PROTOCOL.md"]:::protocol
         L_DOCPIPE["DOCUMENT_PIPELINE.md"]:::protocol
-        L_STACK["PROJECT_STACK.md"]:::input
+        L_PRDGUIDE["PRD_GUIDE.md"]:::protocol
+        L_PRD["PRD.md"]:::input
         L_PLAYBOOK["AI_Playbook.md"]:::def
     end
 
     subgraph DESIGNER ["Designer Role"]
-        D_ROLES["ROLES_DEFINITION.md<br/>(§4: Designer)"]:::def
-        D_DOCPIPE["DOCUMENT_PIPELINE.md"]:::protocol
-        D_SCHEMA["DOMAIN_SCHEMA.md"]:::rule
+        D_ROLES["ROLES_DEFINITION.md<br/>(Designer 섹션)"]:::def
     end
 
     subgraph CODER ["Coder Role"]
-        C_ROLES["ROLES_DEFINITION.md<br/>(§6: Coder)"]:::def
-        C_HANDOFF["HANDOFF_PROTOCOL.md"]:::protocol
-        C_SCHEMA["DOMAIN_SCHEMA.md"]:::rule
+        C_ROLES["ROLES_DEFINITION.md<br/>(Coder 섹션)"]:::def
         C_STYLE["CODE_STYLE.md"]:::rule
         C_TDD["TDD_WORKFLOW.md"]:::rule
-        C_ERROR["ERROR_HANDLING_GUIDE.md"]:::rule
     end
 
     subgraph ANALYZER ["Analyzer Role"]
-        A_ROLES["ROLES_DEFINITION.md<br/>(§3: Analyzer)"]:::def
-        A_SCHEMA["DOMAIN_SCHEMA.md"]:::rule
+        A_ROLES["ROLES_DEFINITION.md<br/>(Analyzer 섹션)"]:::def
         A_DB["DB_ACCESS_POLICY.md"]:::rule
         A_ANALYSIS["ANALYSIS_GUIDE.md"]:::rule
     end
 
     subgraph IMPLEADER ["Imp. Leader Role"]
-        I_ROLES["ROLES_DEFINITION.md<br/>(§5: Impl Leader)"]:::def
+        I_ROLES["ROLES_DEFINITION.md<br/>(Implementation Leader 섹션)"]:::def
+        I_HANDOFF["HANDOFF_PROTOCOL.md"]:::protocol
         I_VALID["VALIDATION_GUIDE.md"]:::rule
-        I_INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Conditional)"]:::rule
+    end
+
+    subgraph BACKSTAGE ["Backstage (System/Human)"]
+        B_ERROR["ERROR_HANDLING_GUIDE.md<br/>(Orchestrator)"]:::backstage
+        B_INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Human)"]:::backstage
     end
 
     ROOT --> ORC_MAN
-    ROOT -->|Bootstrap Context| L_ROLES
-    ROOT -->|Bootstrap Context| D_ROLES
-    ROOT -->|Bootstrap Context| C_ROLES
-    ROOT -->|Bootstrap Context| A_ROLES
-    ROOT -->|Bootstrap Context| I_ROLES
+    ROOT --> L_ROLES
+    ROOT --> D_ROLES
+    ROOT --> C_ROLES
+    ROOT --> A_ROLES
+    ROOT --> I_ROLES
 
     ORC_MAN --> ORC_ARCH
     ORC_MAN --> ORC_TOOLS
 
     L_ROLES --> L_HANDOFF
     L_ROLES --> L_DOCPIPE
-    L_ROLES --> L_STACK
+    L_ROLES --> L_PRDGUIDE
+    L_ROLES --> L_PRD
     L_ROLES --> L_PLAYBOOK
 
-    D_ROLES --> D_DOCPIPE
-    D_ROLES --> D_SCHEMA
-
-    C_ROLES --> C_HANDOFF
-    C_ROLES --> C_SCHEMA
     C_ROLES --> C_STYLE
     C_ROLES --> C_TDD
-    C_ROLES --> C_ERROR
 
-    A_ROLES --> A_SCHEMA
     A_ROLES --> A_DB
     A_ROLES --> A_ANALYSIS
 
+    I_ROLES --> I_HANDOFF
     I_ROLES --> I_VALID
-    I_ROLES --> I_INCIDENT
+
+    ORC_MAN -.->|On Error| B_ERROR
+    B_ERROR -.->|Escalate| B_INCIDENT
 ```
 
-> **범례**: 🟣 루트(CLAUDE.md) | 🟡 프로토콜(워크플로우) | 🔵 규칙(Rules) | 🟢 정의(Definitions) | 🟠 점선=런타임 입력(PRD, SDD 등) | ⬜ Tool/JS 클래스
+> **범례**: 🟣 루트(CLAUDE.md) | 🩵 공통(DOMAIN_SCHEMA, PROJECT_STACK) | 🟡 프로토콜(워크플로우) | 🔵 규칙(Rules) | 🟢 정의(Definitions) | 🟠 점선=입력(PRD.md) | ⬜ Tool/JS 클래스 | ⬜ 점선=Backstage (System/Human)
 
 ### 1-4 문서 의존성 토폴로지 - 거시적 관점
 
@@ -207,60 +210,74 @@ graph LR
 graph TD
     %% 스타일 정의
     classDef constitution fill:#000,stroke:#fff,stroke-width:4px,color:#fff;
-    classDef active fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef common fill:#e0f7fa,stroke:#00838f,stroke-width:3px;
+    classDef workflow fill:#fff9c4,stroke:#f9a825,stroke-width:2px;
+    classDef rule fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef leader fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
     classDef backstage fill:#eceff1,stroke:#607d8b,stroke-width:2px,stroke-dasharray: 5 5;
 
     %% 1. 헌법 (Constitution)
     CLAUDE["CLAUDE.md<br/>(Absolute Law)"]:::constitution
 
-    %% 2. Active Context (Frontstage) - Role이 실제 읽음
-    subgraph "Frontstage: Active Context (Loaded by Roles)"
-        MANIFEST["SYSTEM_MANIFEST.md"]:::active
-        ARCH["ROLE_ARCHITECTURE.md"]:::active
-        ROLES["ROLES_DEFINITION.md"]:::active
-        STACK["PROJECT_STACK.md"]:::active
-
-        %% Rules & Protocols
-        SCHEMA["DOMAIN_SCHEMA.md"]:::active
-        POLICY["DB_ACCESS_POLICY.md"]:::active
-        STYLE["CODE_STYLE.md"]:::active
-        VALID["VALIDATION_GUIDE.md"]:::active
-
-        %% Workflows
-        HANDOFF["HANDOFF_PROTOCOL.md"]:::active
-        PIPELINE["DOCUMENT_PIPELINE.md"]:::active
-        TDD["TDD_WORKFLOW.md"]:::active
-
-        %% Conditional Load
-        ANALYSIS["ANALYSIS_GUIDE.md<br/>(Conditional Load)"]:::active
+    %% 2. 공통 문서 (모든 Role)
+    subgraph COMMON ["공통 (모든 AI Role)"]
+        SCHEMA["DOMAIN_SCHEMA.md"]:::common
+        STACK["PROJECT_STACK.md"]:::common
     end
 
-    %% 3. Frontstage (Leader Only)
-    subgraph "Frontstage: Leader Context"
-        PLAYBOOK["AI_Playbook.md<br/>(Leader Only)"]:::active
+    %% 3. 시스템 구조 문서 (Orchestrator)
+    subgraph SYSTEM ["시스템 구조 (Orchestrator)"]
+        MANIFEST["SYSTEM_MANIFEST.md"]:::workflow
+        ARCH["ROLE_ARCHITECTURE.md"]:::workflow
     end
 
-    %% 4. Backstage Context (Hidden) - 시스템/인간 용
-    subgraph "Backstage: System & Human Only"
-        INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Used by ImpLeader via Orchestrator)"]:::backstage
-        ERROR["ERROR_HANDLING_GUIDE.md<br/>(Retry Logic)"]:::backstage
-        PRD_G["PRD_GUIDE.md<br/>(Planning Guide)"]:::backstage
+    %% 4. 워크플로우 문서 (Role별 선택 로딩)
+    subgraph WORKFLOWS ["워크플로우 (Role별 선택)"]
+        ROLES["ROLES_DEFINITION.md<br/>(모든 Role - 각 섹션)"]:::workflow
+        HANDOFF["HANDOFF_PROTOCOL.md<br/>(Leader, ImLeader)"]:::workflow
+        PIPELINE["DOCUMENT_PIPELINE.md<br/>(Leader)"]:::workflow
     end
 
-    %% 관계 정의
-    CLAUDE --> MANIFEST
+    %% 5. 규칙 문서 (Role별 선택 로딩)
+    subgraph RULES ["규칙 (Role별 선택)"]
+        POLICY["DB_ACCESS_POLICY.md<br/>(Analyzer)"]:::rule
+        ANALYSIS["ANALYSIS_GUIDE.md<br/>(Analyzer)"]:::rule
+        STYLE["CODE_STYLE.md<br/>(Coder)"]:::rule
+        TDD["TDD_WORKFLOW.md<br/>(Coder)"]:::rule
+        VALID["VALIDATION_GUIDE.md<br/>(ImLeader)"]:::rule
+    end
+
+    %% 6. Leader 전용 문서
+    subgraph LEADER ["Leader 전용"]
+        PLAYBOOK["AI_Playbook.md"]:::leader
+        PRD_G["PRD_GUIDE.md"]:::leader
+        PRD_INPUT["PRD.md<br/>(런타임 입력)"]:::leader
+    end
+
+    %% 7. Backstage (시스템/인간 전용)
+    subgraph BACKSTAGE ["Backstage (시스템/인간)"]
+        ERROR["ERROR_HANDLING_GUIDE.md<br/>(Orchestrator)"]:::backstage
+        INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Human)"]:::backstage
+    end
+
+    %% 의존성 관계
+    CLAUDE --> COMMON
+    CLAUDE --> SYSTEM
+    SYSTEM --> WORKFLOWS
+    WORKFLOWS --> RULES
+    WORKFLOWS --> LEADER
+    SYSTEM -.-> BACKSTAGE
+
+    %% 문서 간 참조 관계
     MANIFEST --> ARCH
     ARCH --> ROLES
-
-    %% 시스템 참조 관계
-    ERROR -.->|"Implements"| ROLES
-    INCIDENT -.->|"Managed by"| MANIFEST
-
-    %% 조건부 로딩
-    ANALYSIS -.->|"Loaded only for"| SCHEMA
+    ROLES --> HANDOFF
+    POLICY --> SCHEMA
+    ANALYSIS --> SCHEMA
+    ERROR -.->|"On Error"| INCIDENT
 ```
 
-> **범례**: ⬛ 헌법(Constitution) | 🟢 Frontstage (Role이 로딩) | ⬜ Backstage (시스템/인간용, 점선)
+> **범례**: ⬛ 헌법 | 🩵 공통 | 🟡 워크플로우 | 🔵 규칙 | 🟣 Leader 전용 | ⬜ 점선=Backstage
 
 ## 2. 파이프라인 플로우 (How)
 
@@ -268,7 +285,7 @@ graph TD
 
 ```mermaid
 graph TD
-    A[PRD 입력] --> B[👮 ImpLeader: PRD Gap Check]
+    A[PRD 입력] --> B[🧠 Leader: PRD Gap Check]
     B --> B1{Objective Rules Pass?}
 
     B1 -- YES --> D[자동: Pipeline Type 판별]
@@ -519,7 +536,7 @@ graph TD
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🎛️ ORCHESTRATOR - 워크플로우 제어 모듈 (판단하지 않음)                         │
-│  • Leader 출력 { router: "mixed" } 기반 기계적 파이프라인 스위칭              │
+│  • Leader 출력 { pipeline: "full" } 기반 기계적 파이프라인 스위칭              │
 │  • HITL 체크포인트 관리                                                       │
 │  • onPhaseComplete 훅에서 doc-sync 자동 실행                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -535,13 +552,13 @@ graph TD
          ├─────────────────────────────────────────────────────────────────┐
          │                                                                 │
          ▼ [Phase A: Analysis]                                             │
-┌─────────────────────────────────────┐                                     │
-│  🕵️ ANALYZER (Data Analyst)        │                                     │
-│  • SQL 쿼리 작성/실행                 │                                     │
-│  • 데이터 추출 및 분석                │                                     │
-│  Tool: query, profiler              │                                     │
-│  Output: analysis/*.sql, *.json     │                                     │
-└──────────────────┬──────────────────┘                                     │
+┌────────────────────────────────────────────────────────────┐             │
+│  🕵️ ANALYZER (Data Analyst)                               │             │
+│  • SQL 쿼리 작성/실행                                        │             │
+│  • 데이터 추출 및 분석                                       │             │
+│  Tool: query, profiler                                     │             │
+│  Output: docs/cases/{caseId}/{taskId}/analysis/*.sql,*.json│             │
+└──────────────────┬─────────────────────────────────────────┘                                     │
                    │ 산출물                                                   │
                    ▼                                                         │
 ┌──────────────────────────────────────────────────────────────────────────┐ │
@@ -555,21 +572,21 @@ graph TD
 │  📐 DESIGNER (Architect & Planner)  │                                     │
 │  [UX Planner Mode] IA/Wireframe     │                                     │
 │  [System Architect Mode] SDD        │                                     │
-│  Tool: designer                     │                                     │
-│  Output: docs/cases/{caseId}/*.md   │                                     │
-└──────────────────┬──────────────────┘                                     │
+│  Tool: designer                                │                          │
+│  Output: docs/cases/{caseId}/{taskId}/*.md     │                          │
+└──────────────────┬─────────────────────────────┘                          │
                    │ 산출물                                                   │
                    ▼                                                         │
          [Implementation Leader 검증]                                       │
                    │                                                         │
          ▼ [Phase C: Implementation]                                        │
-┌─────────────────────────────────────┐                                     │
-│  💻 CODER (Developer)               │                                     │
-│  • HANDOFF.md 기반 코드 구현          │                                     │
-│  • Self-Check (qualityGate.md)      │                                     │
-│  Tool: coder                        │                                     │
-│  Output: backend/src/*, frontend/*  │                                     │
-└──────────────────┬──────────────────┘                                     │
+┌────────────────────────────────────────────────┐                          │
+│  💻 CODER (Developer)                          │                          │
+│  • HANDOFF.md 기반 코드 구현                     │                          │
+│  • Self-Check (qualityGate.md)                 │                          │
+│  Tool: coder                                   │                          │
+│  Output: backend/src/*, frontend/*             │                          │
+└──────────────────┬─────────────────────────────┘                          │
                    │ 산출물                                                   │
                    ▼                                                         │
          [Implementation Leader 검증]                                       │
@@ -577,10 +594,10 @@ graph TD
                    ▼                                                         │
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  📤 OUTPUT                                                                  │
-│  [Phase A] docs/cases/{id}/analysis/ (query.sql, result.json, report.md)   │
-│  [Phase B] docs/cases/{id}/ (PRD.md, IA.md, Wireframe.md, SDD.md, HANDOFF) │
+│  [Phase A] docs/cases/{caseId}/{taskId}/analysis/ (*.sql, *.json, *.md)    │
+│  [Phase B] docs/cases/{caseId}/{taskId}/ (IA.md, Wireframe.md, SDD.md 등)  │
 │  [Phase C] backend/src/{feature}/, frontend/src/{feature}/                 │
-│  [로그] workspace/logs/{id}.json                                            │
+│  [로그] workspace/logs/{caseId}/{taskId}.json                               │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -674,6 +691,28 @@ PRD 입력
 │
 ├── context/               # [Group C] 배경 지식
 │   └── AI_Playbook.md     # 인간 온보딩용
+│
+├── templates/             # [Group D] 템플릿 (SSOT)
+│   ├── designer/          # IA, Wireframe 템플릿
+│   │   ├── IA_TEMPLATE.md
+│   │   └── WF_TEMPLATE.md
+│   ├── query/             # SQL 패턴
+│   │   └── SQL_PATTERNS.md
+│   ├── profiler/          # 세그먼트 규칙
+│   │   └── SEGMENT_RULES.md
+│   ├── reviewer/          # 품질 검증 규칙
+│   │   ├── QUALITY_RULES.md
+│   │   └── PRD_CHECKLIST.md
+│   └── prd/               # PRD 템플릿
+│       ├── PRD_LITE.md    # 수동 실행용 (인간 + Claude Code)
+│       └── PRD_FULL.md    # 자동화용 (Orchestrator)
+│
+├── skills/                # [Group E] Extension용 경량 Skills
+│   ├── query/SKILL.md     # SQL 쿼리 생성 (/query)
+│   ├── profiler/SKILL.md  # 프로필 분석 (/profiler)
+│   ├── designer/SKILL.md  # 설계 문서 생성 (/designer)
+│   ├── coder/SKILL.md     # 코드 구현 (/coder)
+│   └── reviewer/SKILL.md  # 품질 검증 (/reviewer)
 │
 └── project/               # 프로젝트별 설정 (수정 가능)
     ├── PROJECT_STACK.md   # 기술 스택
@@ -829,8 +868,8 @@ flowchart LR
 
     subgraph Output ["📤 산출물 저장소"]
         direction TB
-        DOCS[docs/cases/case-id/]
-        CODE[src/features/]
+        DOCS["docs/cases/{caseId}/{taskId}/"]
+        CODE["src/features/"]
     end
 
     %% ═══════════════════════════════════════

@@ -30,6 +30,7 @@
     ├── rules/             # [Group A] 제약 사항 (Code Style, DB Schema)
     ├── workflows/         # [Group B] 실행 절차
     ├── context/           # [Group C] 배경 지식
+    ├── templates/         # [Group D] 템플릿 (SSOT)
     └── project/           # 프로젝트별 설정
         └── PROJECT_STACK.md
 ```
