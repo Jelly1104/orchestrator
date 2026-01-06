@@ -1,282 +1,240 @@
-# PRD: 메디게이트 무찌마 일간 베스트 팟캐스트 (Daily Briefing)
+# PRD: Skill Dashboard - 파이프라인 테스트용
 
-> **대상**: Leader, Analyzer
+> **대상**: Leader, Designer, Coder
 
 | 항목          | 내용                                                |
 | ------------- | --------------------------------------------------- |
-| **Case ID**   | case7-muzzima-podcast-20251226                      |
-| **PRD 버전**  | 3.2.0                                               |
+| **Case ID**   | case-pipeline-test-260106                           |
+| **PRD 버전**  | 1.0.0                                               |
 | **작성일**    | 2026-01-06                                          |
 | **작성자**    | ATO Team                                            |
-| **Pipeline**  | full                                                |
-| **참조 문서** | PRD_GUIDE.md, DOMAIN_SCHEMA.md, DB_ACCESS_POLICY.md |
+| **Pipeline**  | ui_mockup                                           |
+| **참조 문서** | PRD_GUIDE.md, SDD_TEMPLATE.md                       |
 
 ---
 
 ## 1. 목적 (Objective)
 
-의사 커뮤니티 '무찌마'의 지난 24시간 내 인기 게시물을 분석 및 요약하여, **2인 대화(Host-Guest) 형식의 팟캐스트 대본**으로 변환함으로써 바쁜 의사 회원들이 이동 중 오디오로 트렌드를 소비할 수 있게 한다.
+ATO 시스템의 Skill 현황을 한눈에 파악할 수 있는 대시보드 UI를 구현한다.
+현재 등록된 Skill 목록, 버전, 상태를 카드 형식으로 표시하고,
+각 Skill의 상세 정보를 확인할 수 있는 인터페이스를 제공한다.
 
-> **요약**: "무찌마 인기 게시물을 분석하여 3분 팟캐스트 대본을 생성한다"
+> **요약**: "Skill 목록을 카드 형식으로 표시하는 React 대시보드 구현"
 
 ---
 
 ## 2. 타겟 유저 (Target User)
 
-| 항목              | 설명                                                                    |
-| ----------------- | ----------------------------------------------------------------------- |
-| **Persona**       | 진료와 학회 일정으로 커뮤니티를 정독할 시간이 부족한 3040 봉직의/개원의 |
-| **Pain Point**    | 하루 10분도 커뮤니티 확인 시간이 없음, 텍스트 피로감                    |
-| **Needs**         | "오늘 동료 의사들 사이에서 가장 핫한 이슈"를 3분 내외의 오디오로 파악   |
-| **사용 시나리오** | 출퇴근 운전 중, 점심시간 이동 중, 운동 중 이어폰으로 청취               |
+| 항목              | 설명                                      |
+| ----------------- | ----------------------------------------- |
+| **Persona**       | ATO 시스템 관리자, 개발자                 |
+| **Pain Point**    | Skill 현황을 파악하기 위해 파일을 직접 확인해야 함 |
+| **Needs**         | 등록된 Skill 목록과 상태를 빠르게 파악    |
+| **사용 시나리오** | 개발/운영 중 Skill 현황 모니터링          |
 
 ---
 
 ## 3. 핵심 기능 (Core Features)
 
-| ID  | Phase | 기능명           | 설명                                                                       | 검증 방법                          |
-| --- | ----- | ---------------- | -------------------------------------------------------------------------- | ---------------------------------- |
-| F1  | A     | 일간 베스트 추출 | 최근 24시간 BOARD_MUZZIMA 중 `(READ_CNT + AGREE_CNT*3)` 기준 상위 5건 선정 | SQL 실행 결과 5건 반환 확인        |
-| F2  | A     | PII 전처리       | 게시물 본문 내 환자명, 의사 실명, 병원명 마스킹                            | 마스킹 패턴 적용 확인 (`***` 치환) |
-| F3  | B     | 대본 생성        | 요약된 내용을 2인 대화(Host/Guest) 형식의 구어체 스크립트로 변환           | 대본 내 호칭(Host:/Guest:) 존재    |
-| F4  | B     | 메타데이터 생성  | TTS용 감정 태그 및 발화 속도 가이드 포함                                   | JSON 스키마 유효성                 |
-| F5  | C     | Web UI           | 브라우저에서 대본 생성 및 결과 확인 가능한 웹 인터페이스                   | localhost 접속 시 UI 렌더링        |
-| F6  | C     | TTS 음성 재생    | 생성된 대본을 음성으로 변환하여 브라우저에서 재생                          | 재생 버튼 클릭 시 음성 출력        |
-| F7  | C     | 화자 구분 음성   | Host/Guest 각각 다른 음색으로 TTS 재생                                     | 두 가지 음색 구분 가능             |
+| ID  | Phase | 기능명           | 설명                                        | 검증 방법                    |
+| --- | ----- | ---------------- | ------------------------------------------- | ---------------------------- |
+| F1  | B     | Skill 카드 레이아웃 | Skill 정보를 카드 형식으로 배치              | Wireframe 검증               |
+| F2  | B     | 상태 표시        | active/inactive 상태를 색상으로 구분         | SDD 명세 확인                |
+| F3  | C     | React 컴포넌트   | TailwindCSS 기반 카드 컴포넌트 구현          | `npm run build` 성공         |
+| F4  | C     | 타입 정의        | Skill 데이터 타입 정의                       | `tsc --noEmit` 성공          |
+| F5  | C     | 엔트리포인트 연결 | main.tsx에서 SkillsDashboard 렌더링         | 브라우저 렌더링 확인         |
 
 ---
 
 ## 4. 성공 지표 (Success Criteria)
 
-### 4.1 정량적 지표 (Phase A - 자동 검증)
+### 4.1 설계 검증 (Phase B)
 
-| 지표             | 목표값 | 측정 방법         | 실패 시 조치     |
-| ---------------- | ------ | ----------------- | ---------------- |
-| SQL 실행 시간    | < 3초  | `EXPLAIN ANALYZE` | 인덱스 힌트 추가 |
-| SELECT \* 발생률 | 0%     | SQL 정적 분석     | 쿼리 수정 필수   |
-| 결과 행 수       | 5건    | COUNT 체크        | LIMIT 조정       |
-| PII 마스킹률     | 100%   | 패턴 매칭 검증    | 2차 마스킹 수행  |
+| 지표             | 목표값    | 측정 방법            |
+| ---------------- | --------- | -------------------- |
+| IA 화면 정의     | 1개 화면  | IA.md 검토           |
+| Wireframe 완성도 | 100%      | ASCII 레이아웃 검토  |
+| SDD 완성도       | 100%      | 엔트리포인트 섹션 포함 |
 
-### 4.2 정성적 지표 (Phase B - HITL 검증)
+### 4.2 구현 검증 (Phase C) - 동적 검증 필수
 
-| 지표              | 판단 기준                               | 검증자                     |
-| ----------------- | --------------------------------------- | -------------------------- |
-| 구어체 자연스러움 | "읽는 글"이 아닌 "듣는 말"로 느껴지는가 | Human Reviewer             |
-| 정보 전달력       | 원문 핵심 내용이 누락 없이 전달되는가   | Human Reviewer             |
-| PII 완전 제거     | 최종 대본에 식별 가능 정보가 없는가     | Human Reviewer             |
-| 대본 길이         | TTS 변환 시 2분 30초 ~ 3분 30초         | 단어 수 측정 (400~550단어) |
+| 지표                 | 목표값    | 측정 방법                    |
+| -------------------- | --------- | ---------------------------- |
+| TypeScript 컴파일    | PASS      | `tsc --noEmit`               |
+| **빌드 테스트**      | PASS      | `npm run build`              |
+| **엔트리포인트 연결** | 확인됨    | main.tsx import 검증         |
+| **구동 테스트**      | PASS      | `npm run dev` 후 렌더링 확인 |
 
 ---
 
 ## 5. PRD 유형 및 파이프라인
 
 ```yaml
-pipeline: full
-rationale: "SQL을 통한 정량적 데이터 확보(Phase A)가 선행되어야 대본 작성(Phase B)이 가능하고, 최종적으로 Web UI와 TTS 재생(Phase C)으로 사용자에게 전달함"
+pipeline: ui_mockup
+rationale: "분석(Phase A) 없이 설계(Phase B) → 구현(Phase C) 진행. 정적 데이터 기반 UI 구현."
 
 phases:
-  - id: A
-    name: Analysis
-    input: PRD + DOMAIN_SCHEMA.md
-    output: SQL, raw_data_summary.json
-
   - id: B
     name: Design
-    input: Phase A 결과물
-    output: Podcast_Script.md, Audio_Metadata.json
+    input: PRD
+    output: IA.md, Wireframe.md, SDD.md (엔트리포인트 섹션 필수)
 
   - id: C
     name: Implementation
-    input: Phase B 결과물 + HANDOFF.md
+    input: HANDOFF.md + SDD.md
     output:
-      - Express.js 백엔드 API
-      - Web UI (HTML/CSS/JS)
-      - TTS 음성 재생 기능
+      - React 컴포넌트
+      - TypeScript 타입 정의
+      - 엔트리포인트 연결 (main.tsx)
 ```
 
 ---
 
 ## 6. 데이터 요구사항 (Data Requirements)
 
-### 6.1 대상 테이블
+### 6.1 Mock 데이터 (정적)
 
-```yaml
-data_requirements:
-  tables:
-    - name: BOARD_MUZZIMA
-      columns:
-        [
-          BOARD_IDX,
-          CTG_CODE,
-          U_ID,
-          TITLE,
-          CONTENT,
-          READ_CNT,
-          AGREE_CNT,
-          REG_DATE,
-        ]
-      row_count: 3,370,000
-      risk_level: HIGH
-      index_columns: [CTG_CODE, REG_DATE]
-
-    - name: COMMENT
-      columns: [COMMENT_IDX, BOARD_IDX, SVC_CODE, CONTENT, REG_DATE]
-      row_count: 18,260,000
-      risk_level: EXTREME
-      usage: optional (댓글 수 집계용)
-
-db_connection:
-  host: "222.122.26.242"
-  database: "medigate"
-  account: "ai_readonly"
-  permission: SELECT_ONLY
+```typescript
+const SKILLS_DATA = [
+  { name: 'leader', version: '1.3.0', status: 'active', description: 'PRD 분석, HANDOFF 생성' },
+  { name: 'designer', version: '2.4.0', status: 'active', description: 'IA/Wireframe/SDD 생성' },
+  { name: 'coder', version: '1.5.0', status: 'active', description: 'SDD 기반 코드 구현' },
+  { name: 'reviewer', version: '1.4.0', status: 'active', description: '품질 검증' },
+  { name: 'imleader', version: '1.1.0', status: 'active', description: '구현 검증' },
+  { name: 'query', version: '1.2.0', status: 'active', description: 'SQL 쿼리 생성' },
+  { name: 'profiler', version: '1.0.0', status: 'inactive', description: '프로필 분석' },
+];
 ```
 
-### 6.2 SQL 제약 사항
-
-| #   | 제약 사항                                         | 검증 방법             |
-| --- | ------------------------------------------------- | --------------------- |
-| 1   | `WHERE REG_DATE >= NOW() - INTERVAL 24 HOUR` 필수 | SQL 파싱              |
-| 2   | `LIMIT 10` 이하                                   | SQL 파싱              |
-| 3   | `SELECT *` 금지                                   | 정규식 매칭           |
-| 4   | `CONTENT` 전체 조회 시 `LEFT(CONTENT, 500)` 권장  | WARNING               |
-| 5   | 민감 컬럼(U_NAME, U_EMAIL 등) 조회 금지           | DB_ACCESS_POLICY 참조 |
+> **DB 연동 없음**: 이 PRD는 정적 데이터 기반 UI 테스트용입니다.
 
 ---
 
-## 7. 레퍼런스 서비스 (Reference)
+## 7. UI 요구사항
 
-| 서비스              | 참고 패턴              | 적용 포인트                           |
-| ------------------- | ---------------------- | ------------------------------------- |
-| **The Daily (NYT)** | 2인 대화 팟캐스트      | Host-Guest 대화 구조, 자연스러운 호흡 |
-| **뉴닉 (NEWNEEK)**  | 콘텐츠 큐레이션 + 요약 | 핵심만 추출, MZ 친화적 톤앤매너       |
-| **요약봇 서비스**   | 긴 글 3줄 요약         | 정보 압축 기법                        |
+### 7.1 레이아웃
+
+```
++--------------------------------------------------+
+|  🔧 Skill Dashboard                    [Refresh] |
++--------------------------------------------------+
+|                                                  |
+|  +----------+  +----------+  +----------+        |
+|  | leader   |  | designer |  | coder    |        |
+|  | v1.3.0   |  | v2.4.0   |  | v1.5.0   |        |
+|  | ● active |  | ● active |  | ● active |        |
+|  +----------+  +----------+  +----------+        |
+|                                                  |
+|  +----------+  +----------+  +----------+        |
+|  | reviewer |  | imleader |  | query    |        |
+|  | v1.4.0   |  | v1.1.0   |  | v1.2.0   |        |
+|  | ● active |  | ● active |  | ● active |        |
+|  +----------+  +----------+  +----------+        |
+|                                                  |
+|  +----------+                                    |
+|  | profiler |                                    |
+|  | v1.0.0   |                                    |
+|  | ○ inactive|                                   |
+|  +----------+                                    |
+|                                                  |
++--------------------------------------------------+
+|  Total: 7 Skills | Active: 6 | Inactive: 1       |
++--------------------------------------------------+
+```
+
+### 7.2 스타일 요구사항
+
+| 요소           | 스펙                           |
+| -------------- | ------------------------------ |
+| 카드 배경      | 흰색, 그림자 효과              |
+| Active 상태    | 초록색 dot (●)                 |
+| Inactive 상태  | 회색 dot (○)                   |
+| 폰트           | 시스템 기본 sans-serif         |
+| 레이아웃       | CSS Grid (3열)                 |
+| 스타일링       | **TailwindCSS 클래스 필수**    |
 
 ---
 
 ## 8. 산출물 체크리스트 (Deliverables)
 
-### Phase A (Analysis) - AnalysisAgent
+### Phase B (Design) - Designer
 
 ```yaml
 deliverables:
-  - name: "best_posts_query.sql"
-    type: SQL_QUERY
+  - name: "IA.md"
     criteria:
-      - SELECT문만 사용
-      - DOMAIN_SCHEMA.md 컬럼명 정확 사용
-      - 인덱스 활용 WHERE 조건 포함
-      - LIMIT 10 이하
-    validation: VALIDATION_GUIDE.md 섹션 2.1
+      - 1개 화면 정의 (SkillsDashboard)
+      - 화면 계층 구조 포함
 
-  - name: "raw_data_summary.json"
-    type: ANALYSIS_TABLE
+  - name: "Wireframe.md"
     criteria:
-      - 상위 5개 게시물 정보 포함
-      - PII 1차 마스킹 완료
-      - 필수 필드: title, summary, view_count, agree_count, comment_count
-    validation: JSON 스키마 검증
+      - ASCII 레이아웃 포함
+      - 컴포넌트 목록 정의
+      - 인터랙션 명세
+
+  - name: "SDD.md"
+    criteria:
+      - 컴포넌트 구조 정의
+      - 타입 정의
+      - **엔트리포인트 연결 섹션 필수** (섹션 5)
 ```
 
-### Phase B (Design) - LeaderAgent
+### Phase C (Implementation) - Coder
 
 ```yaml
 deliverables:
-  - name: "Podcast_Script.md"
-    type: REPORT
-    criteria:
-      - Host/Guest 대화 형식
-      - 구어체 사용 (문어체 금지)
-      - 총 단어 수 400~550
-      - PII 완전 제거
-    validation: Human Review (HITL)
-
-  - name: "Audio_Metadata.json"
-    type: METADATA
-    criteria:
-      - emotion_tags 배열 존재
-      - speaking_rate 값 존재 (0.8~1.2)
-      - total_duration_estimate 존재
-    validation: JSON 스키마 검증
-
-  - name: "Content_Safety_Check.md"
-    type: REPORT
-    criteria:
-      - PII 검증 결과 포함
-      - 민감 표현 검토 결과 포함
-      - Reviewer 서명
-    validation: Human Review (HITL)
-```
-
-### Phase C (Implementation) - CoderAgent
-
-```yaml
-deliverables:
-  - name: "Express.js Backend"
-    type: SOURCE_CODE
-    location: "backend/src/"
+  - name: "SkillsDashboard.tsx"
+    location: "frontend/src/features/skills-dashboard/"
     criteria:
       - TypeScript strict mode
-      - POST /api/v1/podcast/daily-best API
-      - TDD 테스트 커버리지 ≥ 90%
-      - DOMAIN_SCHEMA.md 컬럼명 준수
-    validation: npm run test && npm run type-check
+      - TailwindCSS 클래스 사용
+      - Props 타입 정의
 
-  - name: "Web UI"
-    type: SOURCE_CODE
-    location: "backend/public/index.html"
+  - name: "types.ts"
+    location: "frontend/src/features/skills-dashboard/"
     criteria:
-      - 대본 생성 버튼
-      - 생성된 대본 표시 (Host/Guest 구분)
-      - 원본 게시글 목록 표시 (PII 마스킹)
-      - 메타데이터 표시
-    validation: 브라우저 렌더링 확인
+      - Skill 인터페이스 정의
+      - Status 타입 정의
 
-  - name: "TTS Player"
-    type: SOURCE_CODE
-    location: "backend/public/index.html (내장)"
+  - name: "main.tsx 수정"
+    location: "frontend/src/main.tsx"
     criteria:
-      - 재생/일시정지/정지 컨트롤
-      - Host/Guest 음색 구분 (pitch 차이)
-      - 세그먼트별 순차 재생
-      - 현재 재생 위치 하이라이트
-    validation: TTS 재생 테스트
-    tech_option:
-      - Web Speech API (브라우저 내장, 무료, 권장)
-      - Google Cloud TTS (고품질, 유료)
-      - Naver Clova Voice (한국어 특화, 유료)
+      - SkillsDashboard import 추가
+      - 렌더링 코드 추가
+
+completion_criteria:
+  - npm run build 성공
+  - npm run dev 후 브라우저 렌더링 확인
+  - 엔트리포인트 연결 확인
 ```
 
 ---
 
 ## 9. 제약사항 (Constraints)
 
-| 카테고리     | 항목       | 설명                                          |
-| ------------ | ---------- | --------------------------------------------- |
-| **보안**     | PII 마스킹 | 환자명, 의사 실명, 병원명, 연락처 마스킹 필수 |
-| **보안**     | DB 접근    | `DB_ACCESS_POLICY.md` 준수, SELECT만 허용     |
-| **성능**     | 쿼리 제한  | 대용량 테이블 Full Scan 금지                  |
-| **규격**     | 대본 길이  | TTS 변환 시 3분 (400~550 단어)                |
-| **톤앤매너** | 구어체     | 존댓말, 자연스러운 대화체                     |
+| 카테고리     | 항목              | 설명                              |
+| ------------ | ----------------- | --------------------------------- |
+| **기술**     | React + TypeScript | strict mode 필수                  |
+| **스타일**   | TailwindCSS       | inline style 금지                 |
+| **구조**     | FSD 패턴          | features/ 디렉토리 구조           |
+| **검증**     | 동적 검증 필수    | 빌드/구동 테스트 필수             |
 
 ---
 
 ## 10. HITL 체크포인트
 
-| Phase  | 체크포인트     | 승인 조건                        | 실패 시        |
-| ------ | -------------- | -------------------------------- | -------------- |
-| A→B    | SQL 결과 검증  | 5건 추출, PII 마스킹 확인        | Phase A 재실행 |
-| B→C    | 대본 품질 검증 | 구어체 자연스러움, PII 완전 제거 | 대본 수정 요청 |
-| C 완료 | 구현 검증      | 서버 실행, UI 렌더링, TTS 재생   | 코드 수정 요청 |
-| 최종   | 안전성 검증    | Content_Safety_Check 통과        | 배포 보류      |
+| Phase  | 체크포인트        | 승인 조건                              | 실패 시         |
+| ------ | ----------------- | -------------------------------------- | --------------- |
+| B 완료 | 설계 검증         | IA/Wireframe/SDD 완성, 엔트리포인트 포함 | 설계 수정       |
+| C 완료 | **동적 검증**     | 빌드 성공, 엔트리포인트 연결, 구동 확인 | 코드 수정       |
 
 ---
 
 ## 변경 이력
 
-| 버전  | 날짜       | 변경 내용                                 |
-| ----- | ---------- | ----------------------------------------- |
-| 3.2.0 | 2026-01-06 | 대상 헤더 추가 (Leader, Analyzer)         |
+| 버전  | 날짜       | 변경 내용                          |
+| ----- | ---------- | ---------------------------------- |
+| 1.0.0 | 2026-01-06 | ui_mockup 파이프라인 테스트용 초안 |
 
 ---
 

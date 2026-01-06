@@ -1,7 +1,7 @@
 ---
 name: designer
-description: IA/Wireframe/SDD 설계 문서 생성 및 시각화. HANDOFF/PRD 기반으로 정보구조, 화면설계, 기술명세를 작성한다.
-version: 2.3.0
+description: IA/Wireframe/SDD 설계 문서 생성 및 시각화. HANDOFF/PRD 기반으로 정보구조, 화면설계, 기술명세를 작성한다. v2.4.0에서 SDD 엔트리포인트 연결 섹션 필수화.
+version: 2.4.0
 status: active
 updated: 2026-01-06
 implementation: orchestrator/skills/designer/index.js
@@ -32,9 +32,32 @@ implementation: orchestrator/skills/designer/index.js
 | 제약 | 설명 |
 |------|------|
 | 스키마 준수 | 기존 테이블 활용 우선, 신규 생성 지양 |
-| 템플릿 준수 | IA_TEMPLATE.md, WF_TEMPLATE.md 형식 |
+| 템플릿 준수 | IA_TEMPLATE.md, WF_TEMPLATE.md, SDD_TEMPLATE.md 형식 |
 | 레거시 매핑 | SDD에 실제 컬럼명 매핑 필수 |
 | 원본 보존 | Markdown 원본 수정 금지 (별도 HTML 생성) |
+| **엔트리포인트** | SDD에 엔트리포인트 연결 섹션 필수 포함 (v2.4.0) |
+
+### SDD 엔트리포인트 필수 섹션 (v2.4.0 추가)
+
+SDD.md 작성 시 반드시 다음 섹션을 포함해야 합니다:
+
+```markdown
+## 5. 엔트리포인트 연결 ⚠️ 필수
+
+### 5.1 연결 위치
+frontend/src/main.tsx
+
+### 5.2 연결 방법
+(코드 예시)
+
+### 5.3 검증 체크리스트
+- [ ] main.tsx에서 컴포넌트 import
+- [ ] main.tsx에서 컴포넌트 렌더링
+- [ ] npm run build 성공
+- [ ] npm run dev 후 브라우저에서 확인
+```
+
+> ⚠️ 이 섹션이 없는 SDD는 Reviewer에서 FAIL 처리됩니다.
 
 ## Input Format
 

@@ -1,69 +1,48 @@
 import React from "react";
 import { SkillCard } from "./components/SkillCard";
-import type { Skill } from "./types";
-
-/**
- * Static Skills Data
- * @description SDD.md 섹션 3.1 Static Data 기반
- */
-const SKILLS_DATA: Skill[] = [
-  {
-    id: "query",
-    name: "Query",
-    version: "1.3.0",
-    status: "active",
-    description: "SQL 쿼리 생성 및 데이터 분석",
-  },
-  {
-    id: "profiler",
-    name: "Profiler",
-    version: "1.3.0",
-    status: "active",
-    description: "회원 프로필 분석",
-  },
-  {
-    id: "designer",
-    name: "Designer",
-    version: "2.3.0",
-    status: "active",
-    description: "IA/Wireframe/SDD 설계 문서 생성",
-  },
-  {
-    id: "coder",
-    name: "Coder",
-    version: "1.4.0",
-    status: "active",
-    description: "SDD 기반 코드 구현",
-  },
-  {
-    id: "reviewer",
-    name: "Reviewer",
-    version: "1.3.0",
-    status: "active",
-    description: "산출물 품질 검증",
-  },
-];
+import { SKILLS_DATA } from "./types";
 
 /**
  * SkillsDashboard 컴포넌트
  *
- * @description 5개 Skills의 현황을 카드 그리드로 표시
+ * @description 7개 Skills의 현황을 카드 그리드로 표시
  * @returns {JSX.Element} 대시보드 UI
  */
 export const SkillsDashboard: React.FC = () => {
+  const activeCount = SKILLS_DATA.filter((s) => s.status === "active").length;
+  const inactiveCount = SKILLS_DATA.filter((s) => s.status === "inactive").length;
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-gray-50 p-8">
       {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Skills Dashboard</h1>
+      <header className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🔧</span>
+          <h1 className="text-2xl font-bold text-gray-900">Skill Dashboard</h1>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Refresh
+        </button>
       </header>
 
       {/* Skills Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {SKILLS_DATA.map((skill) => (
-          <SkillCard key={skill.id} skill={skill} />
+          <SkillCard key={skill.name} skill={skill} />
         ))}
       </section>
+
+      {/* Footer */}
+      <footer className="mt-8 p-4 bg-gray-100 rounded-lg text-center text-gray-700">
+        Total: {SKILLS_DATA.length} Skills | Active: {activeCount} | Inactive: {inactiveCount}
+      </footer>
     </main>
   );
 };

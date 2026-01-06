@@ -1,7 +1,7 @@
 ---
 name: coder
-description: SDD 기반 코드 구현. HANDOFF/SDD를 기반으로 Backend API와 Frontend 컴포넌트를 구현한다.
-version: 1.4.0
+description: SDD 기반 코드 구현. HANDOFF/SDD를 기반으로 Backend API와 Frontend 컴포넌트를 구현한다. v1.5.0에서 엔트리포인트 연결 및 구동 테스트 필수화.
+version: 1.5.0
 status: active
 updated: 2026-01-06
 implementation: orchestrator/skills/coder/index.js
@@ -266,6 +266,52 @@ export class FeatureRepository {
 - [ ] 공통 타입(DTO) 정의
 - [ ] DB 마이그레이션 SQL 포함 (필요 시)
 - [ ] Integration Instructions 포함
+
+---
+
+## 완료 조건 (v1.5.0 추가) ⚠️ 필수
+
+> 코드 작성만으로는 완료가 아닙니다. **실제 구동 가능한 상태**까지 확인해야 합니다.
+
+### 필수 체크리스트
+
+- [ ] 컴포넌트/모듈 코드 작성 완료
+- [ ] 타입 정의 파일 작성 완료
+- [ ] **엔트리포인트 연결** (main.tsx에서 import/렌더링)
+- [ ] **빌드 테스트 통과** (`npm run build` 또는 `tsc --noEmit`)
+- [ ] **구동 테스트** (`npm run dev` 실행 후 렌더링 확인)
+
+### 엔트리포인트 연결 가이드
+
+```typescript
+// frontend/src/main.tsx 예시
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { SkillsDashboard } from './features/skills-dashboard'  // ← 새 컴포넌트 import
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <SkillsDashboard />  {/* ← 렌더링 */}
+  </React.StrictMode>,
+)
+```
+
+### 구동 테스트 절차
+
+1. `cd frontend && npm install` (의존성 설치)
+2. `npm run build` 또는 `tsc --noEmit` (빌드/타입 체크)
+3. `npm run dev` (개발 서버 실행)
+4. 브라우저에서 렌더링 확인
+
+### 미완료 시 조치
+
+| 상황 | 조치 |
+|------|------|
+| 엔트리포인트 미연결 | main.tsx 수정하여 import 추가 |
+| 빌드 실패 | 에러 메시지 기반 타입/문법 오류 수정 |
+| 런타임 에러 | 콘솔 에러 확인 후 수정 |
+
+> **주의**: 위 체크리스트를 모두 통과해야 Coder Skill 작업이 완료된 것으로 간주합니다.
 
 ---
 

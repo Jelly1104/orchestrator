@@ -1,5 +1,6 @@
 ---
 name: coder
+version: 2.1.0
 description: |
   SDD 기반 코드 구현.
   트리거: "코드 구현", "API 개발", "컴포넌트 작성", "코드 생성".
@@ -7,6 +8,7 @@ description: |
   HANDOFF/SDD를 기반으로 Backend API와 Frontend 컴포넌트를 구현한다.
   ⚠️ 기술 스택은 반드시 PROJECT_STACK.md를 따를 것.
   ⚠️ 작업 완료 후 반드시 하단의 [Skill Report] 형식으로 결과를 출력할 것.
+  ⚠️ v2.1.0: 엔트리포인트 연결 및 구동 테스트 필수.
 ---
 
 # Coder Skill (Extension용)
@@ -37,12 +39,40 @@ description: |
 - `.claude/rules/CODE_STYLE.md`
 - `.claude/rules/TDD_WORKFLOW.md`
 
+## 완료 조건 (v2.1.0 추가) ⚠️ 필수
+
+> 코드 작성만으로 완료 아님. 아래 조건을 모두 충족해야 완료.
+
+### 필수 체크리스트
+
+- [ ] 컴포넌트/모듈 코드 작성 완료
+- [ ] 타입 정의 파일 작성 완료
+- [ ] **엔트리포인트 연결** (main.tsx에서 import/렌더링)
+- [ ] **빌드 테스트 통과** (`npm run build` 또는 `tsc --noEmit`)
+- [ ] **구동 테스트** (`npm run dev` 실행 후 렌더링 확인)
+
+### 엔트리포인트 연결 가이드
+
+```typescript
+// main.tsx 수정 예시
+import { NewComponent } from './features/new-feature'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <NewComponent />  // ← 신규 컴포넌트 연결
+  </React.StrictMode>,
+)
+```
+
+> ⚠️ **중요**: SDD에 엔트리포인트 연결 가이드가 있으면 반드시 따를 것.
+> 없으면 main.tsx를 확인하여 적절히 연결할 것.
+
 ## Skill Report (필수 출력)
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 [Coder Skill Report]
-🔧 사용된 Skill: coder v2.0
+🔧 사용된 Skill: coder v2.1
 📚 참조 문서: ROLES_DEFINITION.md ✅ | CODE_STYLE.md ✅ | TDD_WORKFLOW.md ✅
 📥 입력: {sdd_summary 또는 wireframe_filename}
 📤 출력: {n}개 파일 생성
@@ -51,5 +81,7 @@ description: |
 ✅ Frontend: {n}개 컴포넌트
 ✅ Tests: {n}개 테스트
 ✅ 타입체크: PASS
+✅ 엔트리포인트: 연결됨 (main.tsx)
+✅ 구동 테스트: PASS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

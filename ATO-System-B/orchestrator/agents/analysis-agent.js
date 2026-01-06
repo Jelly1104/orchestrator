@@ -14,11 +14,13 @@
 
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
 import { ProviderFactory } from "../providers/index.js";
 import { ReviewerSkill } from "../tools/reviewer/index.js";
 import { SQLValidator } from "../security/sql-validator.js";
 import { QueryLibrary } from "../tools/query/library/query-library.js";
+import { BaseAgent } from "./base-agent.js";
+import { getPathValidator } from "../security/path-validator.js";
+import { getOutputSanitizer } from "../security/output-sanitizer.js";
 
 // ========== 보안 상수 ==========
 const SECURITY_LIMITS = {
@@ -135,8 +137,15 @@ const LARGE_TABLES = {
   BOARD_MUZZIMA: { rows: "337만", warning: "LIMIT 필수" },
 };
 
-export class AnalysisAgent {
+export class AnalysisAgent extends BaseAgent {
   constructor(config = {}) {
+    super({
+      name: 'AnalysisAgent',
+      role: 'Analyzer',
+      projectRoot: config.projectRoot,
+      debug: config.debug,
+    });
+
     this.projectRoot = config.projectRoot || process.cwd();
     this.maxTokens = config.maxTokens || 8192;
     this.maxRetries = config.maxRetries || SECURITY_LIMITS.MAX_RETRIES;
@@ -152,6 +161,8 @@ export class AnalysisAgent {
 
     this.outputDir =
       config.outputDir || path.join(this.projectRoot, "workspace", "analysis");
+    this.pathValidator = getPathValidator({ projectRoot: this.projectRoot });
+    this.outputSanitizer = getOutputSanitizer({ projectRoot: this.projectRoot });
 
     this.providerName = config.provider || "anthropic";
     this.providerConfig = config.providerConfig || {};
@@ -253,6 +264,49 @@ export class AnalysisAgent {
     return { ...this._sessionUsage };
   }
 
+  /**
+   * 보안된 파일 쓰기 (경로/내용 검증 포함)
+   */
+  _safeWriteFile(relativePath, content) {
+    const normalized = path
+      .normalize(relativePath)
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "");
+
+    if (normalized.includes("..")) {
+      throw new Error(`[SECURITY] Path traversal detected: ${relativePath}`);
+    }
+
+    const validation = this.pathValidator.validateInternalPath(normalized);
+    if (!validation.valid) {
+      throw new Error(
+        `[SECURITY] Output path blocked: ${validation.message || validation.error}`
+      );
+    }
+
+    const sanitized = this.outputSanitizer.validateFileWrite(
+      validation.normalized,
+      content
+    );
+
+    if (!sanitized.allowed) {
+      const reason =
+        sanitized.violations?.map((v) => v.message || v.reason).join("; ") ||
+        "validation failed";
+      throw new Error(`[SECURITY] Output path blocked: ${reason}`);
+    }
+
+    const fullPath = path.join(this.projectRoot, validation.normalized);
+    const dir = path.dirname(fullPath);
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(fullPath, sanitized.sanitizedContent || content, "utf-8");
+    return fullPath;
+  }
+
   // ========== 메인 분석 함수 ==========
 
   async analyze(prd, taskId = null, options = {}) {
@@ -263,7 +317,9 @@ export class AnalysisAgent {
 
     // [Fix v4.3.0] Case-Centric 경로 지원: options.outputDir 우선 사용
     if (options.outputDir) {
-      this.outputDir = options.outputDir;
+      this.outputDir = path.isAbsolute(options.outputDir)
+        ? options.outputDir
+        : path.join(this.projectRoot, options.outputDir);
     } else if (taskId) {
       // Fallback: docs/cases/{taskId}/analysis (Case-Centric 기본값)
       this.outputDir = path.join(
@@ -1080,9 +1136,10 @@ ${JSON.stringify(codeStats, null, 2)}
 
   async generateOutputs(queries, results, insights, prd) {
     const outputs = [];
-    const resultsDir = path.join(this.outputDir, "results");
-    if (!fs.existsSync(resultsDir))
-      fs.mkdirSync(resultsDir, { recursive: true });
+    const outputBase = path
+      .relative(this.projectRoot, this.outputDir)
+      .replace(/\\/g, "/");
+    const resultsDir = path.join(outputBase, "results").replace(/\\/g, "/");
 
     // ✅ [Fix] 쿼리 파일 생성 로직 보강
     for (const query of queries) {
@@ -1090,15 +1147,16 @@ ${JSON.stringify(codeStats, null, 2)}
 
       const safeName = (query.name || "query").replace(/[^a-z0-9_-]/gi, "_");
       const filename = `${safeName}.sql`;
-      const filepath = path.join(resultsDir, filename);
-
-      fs.writeFileSync(filepath, query.sql, "utf-8");
-      outputs.push({ type: "SQL_QUERY", path: filepath, name: query.name });
+      const relativePath = path.join(resultsDir, filename).replace(/\\/g, "/");
+      const savedPath = this._safeWriteFile(relativePath, query.sql);
+      outputs.push({ type: "SQL_QUERY", path: savedPath, name: query.name });
       console.log(`    - results/${filename}`);
     }
 
     // [Fix v4.3.3] 풍부한 리포트 생성
-    const reportPath = path.join(this.outputDir, "analysis_report.md");
+    const reportRelative = path
+      .join(outputBase, "analysis_report.md")
+      .replace(/\\/g, "/");
     let reportContent = `# Analysis Report\n\n`;
     reportContent += `**생성 시각**: ${new Date().toISOString()}\n`;
     reportContent += `**Task**: ${prd.objective || "(Objective)"}\n\n`;
@@ -1176,8 +1234,11 @@ ${JSON.stringify(codeStats, null, 2)}
     }
     // State 3: ✅ Success with Data - 별도 메시지 불필요
 
-    fs.writeFileSync(reportPath, reportContent, "utf-8");
-    outputs.push({ type: "REPORT", path: reportPath });
+    const savedReportPath = this._safeWriteFile(
+      reportRelative,
+      reportContent
+    );
+    outputs.push({ type: "REPORT", path: savedReportPath });
     console.log(`    - analysis_report.md (${reportContent.length} bytes)`);
 
     return outputs;

@@ -1,10 +1,12 @@
 ---
 name: designer
+version: 2.1.0
 description: |
   IA/Wireframe/SDD 설계 문서 생성.
   트리거: "IA 작성", "Wireframe 설계", "SDD 생성", "화면 설계".
-  실행 전 필수 로딩: ROLES_DEFINITION.md(Designer 섹션), IA_TEMPLATE.md, WF_TEMPLATE.md.
+  실행 전 필수 로딩: ROLES_DEFINITION.md(Designer 섹션), IA_TEMPLATE.md, WF_TEMPLATE.md, SDD_TEMPLATE.md.
   PRD/HANDOFF 기반으로 정보구조, 화면설계, 기술명세를 작성한다.
+  v2.1.0: SDD에 엔트리포인트 연결 섹션 필수 포함.
   ⚠️ 작업 완료 후 반드시 하단의 [Skill Report] 형식으로 결과를 출력할 것.
 ---
 
@@ -33,6 +35,9 @@ description: |
 - `.claude/workflows/ROLES_DEFINITION.md` (Designer 섹션)
 - `.claude/templates/designer/IA_TEMPLATE.md`
 - `.claude/templates/designer/WF_TEMPLATE.md`
+- `.claude/templates/designer/SDD_TEMPLATE.md` (v2.1.0 추가)
+
+> ⚠️ **SDD 작성 시 필수**: SDD_TEMPLATE.md의 **섹션 5 (엔트리포인트 연결)** 반드시 포함
 
 ## Skill Report (필수 출력)
 

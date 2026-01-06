@@ -1,0 +1,6 @@
+Test run log (2026-01-06)
+Commands:
+- npm test -- --runInBand (orchestrator) → Vitest CLI rejected unknown option --runInBand.
+- npm test (orchestrator) → Vitest failed to load config: EPERM writing vitest.config.js.timestamp-*.mjs (sandbox prevented temp file write).
+
+Result: Tests not executed due to runner startup failure. No source changes from tests.

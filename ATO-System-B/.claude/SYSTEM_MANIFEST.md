@@ -1,6 +1,6 @@
 # SYSTEM_MANIFEST.md (System B Control Tower)
 
-> **Version**: 5.10.0
+> **Version**: 5.11.0
 > **Last Updated**: 2026-01-06
 > **Role**: Orchestrator's Configuration Map
 > **다이어그램**: README.md 참조
@@ -52,16 +52,17 @@
 
 ### Group D: Templates (SSOT)
 
-| Priority | Path                                          | Description           |
-| -------- | --------------------------------------------- | --------------------- |
-| P1       | `.claude/templates/designer/IA_TEMPLATE.md`   | IA 템플릿             |
-| P1       | `.claude/templates/designer/WF_TEMPLATE.md`   | Wireframe 템플릿      |
-| P1       | `.claude/templates/query/SQL_PATTERNS.md`     | SQL 패턴              |
-| P1       | `.claude/templates/profiler/SEGMENT_RULES.md` | 세그먼트 규칙         |
-| P1       | `.claude/templates/reviewer/QUALITY_RULES.md` | 품질 검증 규칙        |
-| P1       | `.claude/templates/reviewer/PRD_CHECKLIST.md` | PRD 체크리스트        |
-| P2       | `.claude/templates/prd/PRD_LITE.md`           | PRD 템플릿 (수동용)   |
-| P2       | `.claude/templates/prd/PRD_FULL.md`           | PRD 템플릿 (자동화용) |
+| Priority | Path                                          | Description                      |
+| -------- | --------------------------------------------- | -------------------------------- |
+| P1       | `.claude/templates/designer/IA_TEMPLATE.md`   | IA 템플릿                        |
+| P1       | `.claude/templates/designer/WF_TEMPLATE.md`   | Wireframe 템플릿 (v1.0.0 신규)   |
+| P1       | `.claude/templates/designer/SDD_TEMPLATE.md`  | SDD 템플릿 (v1.0.0 신규, 엔트리포인트 필수) |
+| P1       | `.claude/templates/query/SQL_PATTERNS.md`     | SQL 패턴                         |
+| P1       | `.claude/templates/profiler/SEGMENT_RULES.md` | 세그먼트 규칙                    |
+| P1       | `.claude/templates/reviewer/QUALITY_RULES.md` | 품질 검증 규칙 (v1.0.0 신규, E2E 체크리스트) |
+| P1       | `.claude/templates/reviewer/PRD_CHECKLIST.md` | PRD 체크리스트 (v1.0.0 신규, 엔트리포인트 필수) |
+| P2       | `.claude/templates/prd/PRD_LITE.md`           | PRD 템플릿 (수동용)              |
+| P2       | `.claude/templates/prd/PRD_FULL.md`           | PRD 템플릿 (자동화용)            |
 
 > **SSOT**: 모든 템플릿의 단일 원천. `orchestrator/tools/*/resources/`는 deprecated.
 
@@ -215,6 +216,7 @@
 
 | 버전   | 날짜       | 변경 내용                                                                |
 | ------ | ---------- | ------------------------------------------------------------------------ |
+| 5.11.0 | 2026-01-06 | 신규 템플릿 추가 (SDD_TEMPLATE, WF_TEMPLATE, QUALITY_RULES, PRD_CHECKLIST) |
 | 5.10.0 | 2026-01-06 | Skills에 leader, imleader 추가, 실행 순서 명시                           |
 | 5.9.0  | 2026-01-06 | Role별 필수 로딩 문서 매트릭스 재정의 (공통/Role별 분리), 대상 헤더 추가 |
 

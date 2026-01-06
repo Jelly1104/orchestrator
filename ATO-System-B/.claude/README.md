@@ -6,7 +6,7 @@
 
 **읽는 법**: 독자 유형별 권장 경로 제공
 
-**최종 업데이트**: 2025-12-29
+**최종 업데이트**: 2026-01-06
 
 **참고**: LLM은 이 문서를 로딩하지 않습니다. 핵심 규칙은 각 `.md` 파일 참조.
 
@@ -648,12 +648,15 @@ PRD 입력
 ┌─────────────────────────────────────────────────────────────────┐
 │ Phase C: Implementation (Coder Role)                             │
 │   - HANDOFF 기반 코드 구현                                        │
+│   - 엔트리포인트 연결 (main.tsx import/render)                    │
 │   → Impl Leader 검증 (3회 FAIL 시 HITL)                           │
 └─────────────────────────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ Quality Gates (배포 전 최종 검증)                                 │
-│   - 코드 품질, 테스트, 보안, 성능                                  │
+│ Quality Gates (배포 전 최종 검증) - 동적 검증 필수 (v2026-01)      │
+│   - 정적 검증: 코드 품질, 테스트, 보안, 타입 체크                   │
+│   - 동적 검증: 빌드 테스트 (npm run build), 구동 테스트            │
+│   - 엔트리포인트 검증: main.tsx에서 컴포넌트 import 확인           │
 │   - 실패 시 재작업 요청                                           │
 └─────────────────────────────────────────────────────────────────┘
     ↓
@@ -693,16 +696,17 @@ PRD 입력
 │   └── AI_Playbook.md     # 인간 온보딩용
 │
 ├── templates/             # [Group D] 템플릿 (SSOT)
-│   ├── designer/          # IA, Wireframe 템플릿
+│   ├── designer/          # IA, Wireframe, SDD 템플릿
 │   │   ├── IA_TEMPLATE.md
-│   │   └── WF_TEMPLATE.md
+│   │   ├── WF_TEMPLATE.md
+│   │   └── SDD_TEMPLATE.md  # ⚠️ 엔트리포인트 연결 섹션 필수
 │   ├── query/             # SQL 패턴
 │   │   └── SQL_PATTERNS.md
 │   ├── profiler/          # 세그먼트 규칙
 │   │   └── SEGMENT_RULES.md
 │   ├── reviewer/          # 품질 검증 규칙
-│   │   ├── QUALITY_RULES.md
-│   │   └── PRD_CHECKLIST.md
+│   │   ├── QUALITY_RULES.md   # E2E 검증 체크리스트 포함
+│   │   └── PRD_CHECKLIST.md   # 엔트리포인트 검증 포함
 │   └── prd/               # PRD 템플릿
 │       ├── PRD_LITE.md    # 수동 실행용 (인간 + Claude Code)
 │       └── PRD_FULL.md    # 자동화용 (Orchestrator)

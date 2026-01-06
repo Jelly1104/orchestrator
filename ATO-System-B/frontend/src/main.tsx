@@ -1,9 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import Dashboard from './components/Dashboard'
+import { SkillsDashboard } from './features/skills-dashboard'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Dashboard />
+    <SkillsDashboard />
   </React.StrictMode>,
 )

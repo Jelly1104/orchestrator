@@ -51,7 +51,7 @@ import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { LeaderAgent } from './agents/leader.js';
-import { DesignAgent } from './agents/design-agent.js';
+import { DesignerAgent as Designer } from './agents/designer.js';
 import { CodeAgent } from './agents/code-agent.js';
 import { AnalysisAgent } from './agents/analysis-agent.js';
 import { MetricsTracker } from './metrics/tracker.js';
@@ -60,6 +60,7 @@ import { PRDAnalyzer } from './agents/prd-analyzer.js';
 
 // Phase 3: SkillRegistry 연동 (DI 패턴)
 import { SkillRegistry, SkillType, getSkillRegistry } from './tools/tool-registry.js';
+import { getPathValidator } from './security/path-validator.js';
 
 // Phase D: Security Layer 연동
 import { isEnabled } from './config/feature-flags.js';
@@ -140,7 +141,7 @@ export class Orchestrator {
       projectRoot: this.projectRoot,
       ...this.providerConfig
     });
-    this.designAgent = new DesignAgent({
+    this.designer = new Designer({
       projectRoot: this.projectRoot,
       ...this.providerConfig
     });
@@ -159,6 +160,9 @@ export class Orchestrator {
 
     // PRD Analyzer 초기화 (v2 유형 판별용)
     this.prdAnalyzer = new PRDAnalyzer();
+
+    // 공용 경로 검증기
+    this.pathValidator = getPathValidator({ projectRoot: this.projectRoot });
 
     // AnalysisAgent 초기화 (정량적 PRD용)
     this.analysisAgent = new AnalysisAgent({
@@ -762,7 +766,7 @@ export class Orchestrator {
       metrics.startPhase('planning');
 
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
-      const planResult = await this.designAgent.generateDesignDocs(parsedPRD, taskId);
+      const planResult = await this.designer.generateDesignDocs(parsedPRD, taskId);
       const designUsage = planResult?.usage || { inputTokens: 0, outputTokens: 0 };
       metrics.addTokens('designagent', designUsage.inputTokens, designUsage.outputTokens);
       // P1-3: Phase B 토큰 추적 (Design Pipeline)
@@ -1339,7 +1343,7 @@ export class Orchestrator {
       const enrichedPrdContent = this.enrichPRDWithAnalysis(prdContent, analysisResult);
 
       const parsedDesignPRD = this.prdAnalyzer.parsePRD(enrichedPrdContent);
-      const planResult = await this.designAgent.generateDesignDocs(parsedDesignPRD, taskId);
+      const planResult = await this.designer.generateDesignDocs(parsedDesignPRD, taskId);
       const designUsage = planResult?.usage || { inputTokens: 0, outputTokens: 0 };
       metrics.addTokens('designagent', designUsage.inputTokens, designUsage.outputTokens);
       // P1-3: Phase B 토큰 추적
@@ -1711,7 +1715,7 @@ export class Orchestrator {
       metrics.startPhase('design');
 
       const parsedPRD = this.prdAnalyzer.parsePRD(prdContent);
-      const planResult = await this.designAgent.generateDesignDocs(parsedPRD, taskId);
+      const planResult = await this.designer.generateDesignDocs(parsedPRD, taskId);
       const designUsage = planResult?.usage || { inputTokens: 0, outputTokens: 0 };
       metrics.addTokens('designagent', designUsage.inputTokens, designUsage.outputTokens);
       metrics.addPhaseTokens('phase_b', designUsage.inputTokens, designUsage.outputTokens);
@@ -3446,22 +3450,46 @@ export class Orchestrator {
    */
   async _saveFiles(files, taskId) {
     const savedFiles = [];
-    const caseId = this.extractCaseId(taskId);
-    const baseDir = path.join(this.projectRoot, 'docs', 'cases', caseId);
+    const caseId = this.extractCaseId(taskId || '');
+    const pathValidator = this.pathValidator || getPathValidator({ projectRoot: this.projectRoot });
+    const isCodePath = (normalized) =>
+      normalized.startsWith('frontend/') ||
+      normalized.startsWith('backend/') ||
+      normalized.startsWith('src/') ||
+      normalized.startsWith('workspace/') ||
+      normalized.startsWith('orchestrator/');
 
-    for (const [filePath, content] of Object.entries(files)) {
-      const fullPath = path.join(baseDir, filePath);
-      const dir = path.dirname(fullPath);
+    for (const [filePath, content] of Object.entries(files || {})) {
+      // 기본 정규화 및 traversal 차단
+      const normalized = path
+        .normalize(filePath)
+        .replace(/\\/g, '/')
+        .replace(/^\/+/, '');
 
-      // 디렉토리 생성
+      if (normalized.includes('..')) {
+        throw new Error(`[SECURITY] Path traversal detected in output: ${filePath}`);
+      }
+
+      // 코드/시스템 경로는 그대로, 그 외는 case별 docs/cases/{caseId}/ 하위에 저장
+      const targetRelative = (isCodePath(normalized) || normalized.startsWith('docs/'))
+        ? normalized
+        : path.join('docs', 'cases', caseId, normalized).replace(/\\/g, '/');
+
+      const validation = pathValidator.validateInternalPath(targetRelative);
+      if (!validation.valid) {
+        throw new Error(`[SECURITY] Output path blocked: ${validation.message || validation.error}`);
+      }
+
+      const finalPath = path.join(this.projectRoot, validation.normalized);
+      const dir = path.dirname(finalPath);
+
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      // 파일 저장
-      fs.writeFileSync(fullPath, content, 'utf-8');
-      savedFiles.push(fullPath);
-      console.log(`   📄 Saved: ${filePath}`);
+      fs.writeFileSync(finalPath, content, 'utf-8');
+      savedFiles.push(validation.normalized);
+      console.log(`   📄 Saved: ${validation.normalized}`);
     }
 
     console.log(`   ✅ ${savedFiles.length}개 파일 저장 완료`);

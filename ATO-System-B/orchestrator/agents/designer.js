@@ -1,5 +1,5 @@
 /**
- * DesignAgent - 설계 문서 자동 생성 에이전트
+ * DesignerAgent - 설계 문서 자동 생성 에이전트
  *
  * Phase 6-2: IA/Wireframe/SDD 자동 생성
  *
@@ -42,7 +42,7 @@ const SECURITY_LIMITS = {
   MAX_OUTPUT_LENGTH: 100000,
 };
 
-export class DesignAgent {
+export class DesignerAgent {
   constructor(config = {}) {
     this.projectRoot = config.projectRoot || process.cwd();
     this.maxTokens = config.maxTokens || 16384;
@@ -83,17 +83,17 @@ export class DesignAgent {
       }
 
       if (this.provider) {
-        console.log(`[DesignAgent] Using provider: ${this.provider.getName()}`);
+        console.log(`[DesignerAgent] Using provider: ${this.provider.getName()}`);
       }
     } catch (error) {
-      console.error(`[DesignAgent] Provider initialization failed: ${error.message}`);
+      console.error(`[DesignerAgent] Provider initialization failed: ${error.message}`);
       this.provider = null;
     }
   }
 
   async _sendMessage(systemPrompt, userMessage) {
     if (!this.provider) {
-      throw new Error('[DesignAgent] No available provider');
+      throw new Error('[DesignerAgent] No available provider');
     }
 
     if (this.useFallback) {
@@ -118,8 +118,8 @@ export class DesignAgent {
    * @returns {Object} - { ia, wireframe, sdd, handoff, paths }
    */
   async generateDesignDocs(prd, taskId) {
-    console.log('\n[DesignAgent] ========== 설계 문서 생성 ==========');
-    console.log(`[DesignAgent] Task ID: ${taskId}`);
+    console.log('\n[DesignerAgent] ========== 설계 문서 생성 ==========');
+    console.log(`[DesignerAgent] Task ID: ${taskId}`);
 
     const results = {
       ia: null,
@@ -181,11 +181,11 @@ export class DesignAgent {
       }
 
     } catch (error) {
-      console.error(`[DesignAgent] 오류: ${error.message}`);
+      console.error(`[DesignerAgent] 오류: ${error.message}`);
       results.errors.push(error.message);
     }
 
-    console.log('\n[DesignAgent] ========== 설계 문서 생성 완료 ==========\n');
+    console.log('\n[DesignerAgent] ========== 설계 문서 생성 완료 ==========\n');
     return results;
   }
 
@@ -239,7 +239,7 @@ ${JSON.stringify(prd.deliverables || prd.산출물 || [], null, 2)}
       const response = await this._sendMessage(systemPrompt, userMessage);
       return this._formatDocument('IA', response.content);
     } catch (error) {
-      console.error('[DesignAgent] IA 생성 실패:', error.message);
+      console.error('[DesignerAgent] IA 생성 실패:', error.message);
       return null;
     }
   }
@@ -288,7 +288,7 @@ ${ia || 'N/A'}
       const response = await this._sendMessage(systemPrompt, userMessage);
       return this._formatDocument('Wireframe', response.content);
     } catch (error) {
-      console.error('[DesignAgent] Wireframe 생성 실패:', error.message);
+      console.error('[DesignerAgent] Wireframe 생성 실패:', error.message);
       return null;
     }
   }
@@ -347,7 +347,7 @@ ${wireframe ? wireframe.substring(0, 2000) : 'N/A'}
       const response = await this._sendMessage(systemPrompt, userMessage);
       return this._formatDocument('SDD', response.content);
     } catch (error) {
-      console.error('[DesignAgent] SDD 생성 실패:', error.message);
+      console.error('[DesignerAgent] SDD 생성 실패:', error.message);
       return null;
     }
   }
@@ -426,7 +426,7 @@ ${(prd.successCriteria || prd.성공지표 || ['모든 산출물 생성 완료']
    * @returns {string} - HTML 파일 경로
    */
   async generateHTMLPreview(design, taskId) {
-    console.log('[DesignAgent] HTML 프리뷰 생성...');
+    console.log('[DesignerAgent] HTML 프리뷰 생성...');
 
     const caseId = this.extractCaseId(taskId);
     const taskDir = path.join(this.outputDir, caseId);
@@ -568,4 +568,4 @@ ${(prd.successCriteria || prd.성공지표 || ['모든 산출물 생성 완료']
   }
 }
 
-export default DesignAgent;
+export default DesignerAgent;

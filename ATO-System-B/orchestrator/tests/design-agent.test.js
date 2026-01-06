@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DesignAgent } from '../tools/design-agent/index.js';
+import { DesignerAgent } from '../agents/designer.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -18,11 +18,11 @@ vi.mock('fs/promises', () => ({
   }
 }));
 
-describe('DesignAgent', () => {
+describe('DesignerAgent', () => {
   let agent;
 
   beforeEach(() => {
-    agent = new DesignAgent({
+    agent = new DesignerAgent({
       projectRoot: '/test/project',
       outputDir: '/test/project/docs/cases'
     });
@@ -31,7 +31,7 @@ describe('DesignAgent', () => {
 
   describe('constructor', () => {
     it('should initialize with default config', () => {
-      const defaultAgent = new DesignAgent();
+      const defaultAgent = new DesignerAgent();
       expect(defaultAgent.projectRoot).toBeDefined();
       expect(defaultAgent.outputDir).toBeDefined();
     });
