@@ -1,6 +1,8 @@
-# SQL Patterns Guide
+# SQL_PATTERNS.md
 
-> QueryAgent가 참조하는 SQL 패턴 가이드
+> **버전**: 1.0.0 | **수정일**: 2026-01-07
+> **정의**: SQL 쿼리 패턴 가이드
+> **대상**: Analyzer | **로딩**: 작업 시
 
 ---
 

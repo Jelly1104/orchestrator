@@ -1,16 +1,8 @@
-# PROJECT_STACK.md - 시스템 기술 스택 정의
+# PROJECT_STACK.md
 
-> **문서 버전**: 1.5.0
-
-> **최종 업데이트**: 2026-01-06
-
-> **물리적 경로**: `.claude/project/PROJECT_STACK.md`
-
-> **상위 문서**: `CLAUDE.md`
-
-> **용도**: AI Role에게 **시스템 전체의 기술적 제약**을 주입 (Case별 PRD와 분리)
-
-> **대상**: 모든 AI Role
+> **버전**: 1.5.0 | **수정일**: 2026-01-06
+> **정의**: 프로젝트별 기술 스택 오버라이드
+> **대상**: All | **로딩**: 전체
 
 ---
 
@@ -150,21 +142,4 @@ AI는 아래 명령어를 사용하여 프로젝트를 실행하고 검증합니
 | 린트/타입   | `[command]` | 예: `yarn lint && yarn type-check` |
 | 빌드        | `[command]` | 예: `yarn build`                   |
 
----
-
-## 관련 문서
-
-| 문서                                | 역할                                      |
-| ----------------------------------- | ----------------------------------------- |
-| `CLAUDE.md`                         | [Root] 팀 아키텍처 원칙 및 헌법           |
-| `.claude/rules/DOMAIN_SCHEMA.md`    | [Rules] DB 스키마 및 비즈니스 데이터 구조 |
-| `.claude/rules/DB_ACCESS_POLICY.md` | [Rules] DB 접근 권한 및 보안 정책         |
-| `.claude/rules/CODE_STYLE.md`       | [Rules] 언어별 코딩 스타일 가이드         |
-| `.claude/rules/TDD_WORKFLOW.md`     | [Rules] TDD 개발 절차                     |
-| `.claude/rules/VALIDATION_GUIDE.md` | [Rules] 품질 검증 기준                    |
-
----
-
 **END OF PROJECT_STACK.md**
-
-이 파일은 프로젝트의 "기술적 신분증"입니다. 변경 시 반드시 업데이트하세요.

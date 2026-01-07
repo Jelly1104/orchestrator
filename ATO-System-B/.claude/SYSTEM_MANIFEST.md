@@ -1,87 +1,107 @@
-# SYSTEM_MANIFEST.md (System B Control Tower)
+# SYSTEM_MANIFEST.md (LLM Control Tower)
 
-> **Version**: 5.11.0
-> **Last Updated**: 2026-01-06
-> **Role**: Orchestrator's Configuration Map
-> **다이어그램**: README.md 참조
-> **대상**: Orchestrator
+> **Version**: 6.0.0 | **대상**: Orchestrator 내 모든 AI Role
 
 ---
 
-## System Identity
+## 이 문서를 읽는 법
 
-| Component           | Version           | Description                   |
-| ------------------- | ----------------- | ----------------------------- |
-| System Identity     | ATO-System-B v2.1 | Role-Based Architecture 적용  |
-| Orchestrator Engine | v5.3.0            | JIT Loader + Role-Tool Matrix |
-| Document Standard   | MANIFEST v5.3.0   | 본 문서                       |
+**당신이 AI Role이라면**, 이 문서는 당신의 **지도(Map)**입니다.
+
+### 읽기 순서
+
+1. **Quick Context** → 시스템이 무엇인지 30초 안에 파악
+2. **Role별 필수 로딩** → 내가 어떤 Role인지 확인하고, 필수 문서 로딩
+3. **Document Map** → 작업 중 필요한 문서를 찾아서 JIT 로딩
+4. **Safety Rules** → 절대 하면 안 되는 것 확인
+
+### 컬럼 설명
+
+| 컬럼          | 의미                                   | 예시                          |
+| ------------- | -------------------------------------- | ----------------------------- |
+| **Pri**       | 우선순위 (P0=필수, P1=작업시, P2=참조) | P0, P1, P2                    |
+| **Path**      | 파일 경로                              | `.claude/rules/CODE_STYLE.md` |
+| **비유**      | 문서의 역할을 비유로 표현              | ⚖️ 법전, 📖 매뉴얼, 📚 사전   |
+| **정의 범위** | 이 문서가 정의하는 내용                | "네이밍/구조 규칙"            |
+| **Who**       | 어떤 Role이 읽는가                     | Leader, Analyzer, Coder 등    |
+| **로딩**      | 문서 로딩 방식                         | 전체, JIT, 필요 시            |
+
+---
+
+## Quick Context
+
+**시스템**: ATO-System-B - PRD → 분석 → 설계 → 구현을 AI Role 협업으로 처리
+
+**핵심 원칙**:
+
+1. **실행/검증 분리** - 만드는 자(Executor) ≠ 검사하는 자(ImLeader)
+2. **HITL 체크포인트** - 구조적 결정은 인간 승인 필수
+3. **JIT Injection** - 필요한 문서만 로딩 (토큰 다이어트)
+
+**Phase 흐름**: `A(Analysis)` → `B(Design)` → `C(Implementation)`
 
 ---
 
 ## Document Map
 
-### Group A: Rules (Constraints)
+### Group A: Rules (제약 사항)
 
-| Priority | Path                                | Description      |
-| -------- | ----------------------------------- | ---------------- |
-| P0       | `.claude/rules/CODE_STYLE.md`       | 코딩 컨벤션      |
-| P0       | `.claude/rules/DOMAIN_SCHEMA.md`    | DB 스키마 (SSOT) |
-| P0       | `.claude/rules/VALIDATION_GUIDE.md` | 품질 검증 기준   |
-| P1       | `.claude/rules/TDD_WORKFLOW.md`     | TDD 절차         |
-| P1       | `.claude/rules/DB_ACCESS_POLICY.md` | DB 보안 정책     |
-| P1       | `.claude/rules/ANALYSIS_GUIDE.md`   | 분석 가이드      |
+| Pri | Path                                | 비유          | 정의 범위                     | Who      | 로딩    |
+| --- | ----------------------------------- | ------------- | ----------------------------- | -------- | ------- |
+| P0  | `.claude/rules/DOMAIN_SCHEMA.md`    | 📚 사전       | DB 테이블/컬럼, 레거시 매핑   | All      | 전체    |
+| P0  | `.claude/rules/CODE_STYLE.md`       | ⚖️ 법전       | 네이밍/구조 규칙, 필수 조건   | Coder    | 전체    |
+| P0  | `.claude/rules/VALIDATION_GUIDE.md` | ✅ 체크리스트 | Quality Gates, 검증 기준      | ImLeader | 전체    |
+| P1  | `.claude/rules/TDD_WORKFLOW.md`     | 🔄 절차서     | Red-Green-Refactor 사이클     | Coder    | 작업 시 |
+| P1  | `.claude/rules/DB_ACCESS_POLICY.md` | 🔒 보안정책   | 권한/금지 패턴, 민감 컬럼     | Analyzer | 작업 시 |
+| P1  | `.claude/rules/ANALYSIS_GUIDE.md`   | 📊 가이드     | 쿼리 전략, 샘플링, 파이프라인 | Analyzer | 작업 시 |
 
-### Group B: Workflows (Processes)
+### Group B: Workflows (실행 절차)
 
-| Priority | Path                                        | Description          |
-| -------- | ------------------------------------------- | -------------------- |
-| P0       | `.claude/workflows/ROLE_ARCHITECTURE.md`    | Role-Based Model     |
-| P0       | `.claude/workflows/ROLES_DEFINITION.md`     | Role별 R&R           |
-| P0       | `.claude/workflows/HANDOFF_PROTOCOL.md`     | 업무 지시 양식       |
-| P0       | `.claude/workflows/DOCUMENT_PIPELINE.md`    | 문서 생성 파이프라인 |
-| P1       | `.claude/workflows/INCIDENT_PLAYBOOK.md`    | 장애 대응            |
-| P1       | `.claude/workflows/PRD_GUIDE.md`            | PRD 가이드           |
-| P1       | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | 에러 처리 가이드     |
+| Pri | Path                                        | 비유           | 정의 범위                            | Who              | 로딩            |
+| --- | ------------------------------------------- | -------------- | ------------------------------------ | ---------------- | --------------- |
+| P0  | `.claude/workflows/ROLE_ARCHITECTURE.md`    | 🏗️ 설계도      | Topology, Phase, HITL, **Role 흐름** | Orchestrator     | 전체            |
+| P0  | `.claude/workflows/ROLES_DEFINITION.md`     | 📖 매뉴얼      | Role별 R&R, **파이프라인 요약**      | 각 Role          | JIT (해당 섹션) |
+| P0  | `.claude/workflows/HANDOFF_PROTOCOL.md`     | 📋 양식        | 업무 지시/보고 형식                  | Leader, ImLeader | 전체            |
+| P0  | `.claude/workflows/DOCUMENT_PIPELINE.md`    | 📦 산출물 명세 | **입력/산출물 정의**, 의존성         | All              | 전체            |
+| P1  | `.claude/workflows/PRD_GUIDE.md`            | 📝 가이드      | PRD 유형, 파이프라인 판별            | Leader           | 작업 시         |
+| P1  | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | 🚨 대응책      | 재시도/폴백 로직                     | Orchestrator     | 에러 시         |
+| P1  | `.claude/workflows/INCIDENT_PLAYBOOK.md`    | 🆘 비상매뉴얼  | 에스컬레이션 절차                    | Human            | 장애 시         |
 
-### Group C: Context (Philosophy)
+### Group C: Context (배경 지식)
 
-| Priority | Path                             | Description |
-| -------- | -------------------------------- | ----------- |
-| Root     | `CLAUDE.md`                      | 시스템 헌법 |
-| Key      | `.claude/context/AI_Playbook.md` | 팀 철학     |
+| Pri  | Path                               | 비유      | 정의 범위                       | Who    | 로딩    |
+| ---- | ---------------------------------- | --------- | ------------------------------- | ------ | ------- |
+| Root | `CLAUDE.md`                        | ⚖️ 헌법   | 절대 원칙, 금지 사항, 아키텍처  | All    | 전체    |
+| Key  | `.claude/context/AI_Playbook.md`   | 🧭 나침반 | 팀 철학, 행동 강령              | Leader | 판단 시 |
+| Key  | `.claude/project/PROJECT_STACK.md` | 🔧 설정   | 프로젝트별 기술 스택 오버라이드 | All    | 전체    |
 
-### Group D: Templates (SSOT)
+### Group D: Templates (SSOT) - 산출물 작성 시 참조
 
-| Priority | Path                                          | Description                      |
-| -------- | --------------------------------------------- | -------------------------------- |
-| P1       | `.claude/templates/designer/IA_TEMPLATE.md`   | IA 템플릿                        |
-| P1       | `.claude/templates/designer/WF_TEMPLATE.md`   | Wireframe 템플릿 (v1.0.0 신규)   |
-| P1       | `.claude/templates/designer/SDD_TEMPLATE.md`  | SDD 템플릿 (v1.0.0 신규, 엔트리포인트 필수) |
-| P1       | `.claude/templates/query/SQL_PATTERNS.md`     | SQL 패턴                         |
-| P1       | `.claude/templates/profiler/SEGMENT_RULES.md` | 세그먼트 규칙                    |
-| P1       | `.claude/templates/reviewer/QUALITY_RULES.md` | 품질 검증 규칙 (v1.0.0 신규, E2E 체크리스트) |
-| P1       | `.claude/templates/reviewer/PRD_CHECKLIST.md` | PRD 체크리스트 (v1.0.0 신규, 엔트리포인트 필수) |
-| P2       | `.claude/templates/prd/PRD_LITE.md`           | PRD 템플릿 (수동용)              |
-| P2       | `.claude/templates/prd/PRD_FULL.md`           | PRD 템플릿 (자동화용)            |
+| Pri | Path                                          | Who      |
+| --- | --------------------------------------------- | -------- |
+| P1  | `.claude/templates/designer/IA_TEMPLATE.md`   | Designer |
+| P1  | `.claude/templates/designer/WF_TEMPLATE.md`   | Designer |
+| P1  | `.claude/templates/designer/SDD_TEMPLATE.md`  | Designer |
+| P1  | `.claude/templates/query/SQL_PATTERNS.md`     | Analyzer |
+| P1  | `.claude/templates/profiler/SEGMENT_RULES.md` | Analyzer |
+| P1  | `.claude/templates/reviewer/QUALITY_RULES.md` | ImLeader |
+| P1  | `.claude/templates/reviewer/PRD_CHECKLIST.md` | ImLeader |
+| P2  | `.claude/templates/prd/PRD_LITE.md`           | Human    |
+| P2  | `.claude/templates/prd/PRD_FULL.md`           | Human    |
 
-> **SSOT**: 모든 템플릿의 단일 원천. `orchestrator/tools/*/resources/`는 deprecated.
+### Group E: Skills (Extension용) - 슬래시 커맨드 실행 시
 
-### Group E: Skills (Extension용)
+| Pri | Path                               | Who      |
+| --- | ---------------------------------- | -------- |
+| P0  | `.claude/skills/leader/SKILL.md`   | Leader   |
+| P1  | `.claude/skills/query/SKILL.md`    | Analyzer |
+| P1  | `.claude/skills/profiler/SKILL.md` | Analyzer |
+| P1  | `.claude/skills/designer/SKILL.md` | Designer |
+| P1  | `.claude/skills/coder/SKILL.md`    | Coder    |
+| P1  | `.claude/skills/reviewer/SKILL.md` | ImLeader |
+| P0  | `.claude/skills/imleader/SKILL.md` | ImLeader |
 
-| Priority | Path                               | Description            |
-| -------- | ---------------------------------- | ---------------------- |
-| P0       | `.claude/skills/leader/SKILL.md`   | PRD 분석, HANDOFF 생성 |
-| P1       | `.claude/skills/query/SKILL.md`    | SQL 쿼리 생성 (경량)   |
-| P1       | `.claude/skills/profiler/SKILL.md` | 프로필 분석 (경량)     |
-| P1       | `.claude/skills/designer/SKILL.md` | 설계 문서 생성 (경량)  |
-| P1       | `.claude/skills/coder/SKILL.md`    | 코드 구현 (경량)       |
-| P1       | `.claude/skills/reviewer/SKILL.md` | 품질 검증 (경량)       |
-| P0       | `.claude/skills/imleader/SKILL.md` | 산출물 검증, PASS/FAIL |
-
-> **용도**: VSCode Extension에서 Orchestrator 없이 직접 호출하는 경량 Skill
-> **실행 순서**: leader → (query/profiler/designer/coder) → imleader
-
-> **다이어그램**: README.md 섹션 1.2 참조
+> **실행 순서**: leader → (query/profiler/designer/coder) → imleader → reviewer
 
 ---
 
@@ -89,136 +109,46 @@
 
 ### 공통 (모든 AI Role)
 
-| 폴더       | 문서             | 설명                 |
-| ---------- | ---------------- | -------------------- |
-| `/`        | CLAUDE.md        | 시스템 헌법          |
-| `rules/`   | DOMAIN_SCHEMA.md | DB 스키마 (SSOT)     |
-| `project/` | PROJECT_STACK.md | 프로젝트별 기술 스택 |
+| 문서                                     | Why                             |
+| ---------------------------------------- | ------------------------------- |
+| `SYSTEM_MANIFEST.md`                     | 시스템 지도, 문서 맵, 로딩 전략 |
+| `CLAUDE.md`                              | 시스템 헌법, 절대 금지 사항     |
+| `.claude/rules/DOMAIN_SCHEMA.md`         | DB 스키마, Hallucination 방지   |
+| `.claude/project/PROJECT_STACK.md`       | 프로젝트별 기술 스택            |
+| `.claude/workflows/DOCUMENT_PIPELINE.md` | 입력/산출물 정의, 의존성        |
 
 ### Role별 추가 로딩
 
-| Role         | 폴더         | 추가 로딩 문서                                                 | Tools            |
-| ------------ | ------------ | -------------------------------------------------------------- | ---------------- |
-| Orchestrator | `workflows/` | SYSTEM_MANIFEST, ROLE_ARCHITECTURE                             | doc-sync, viewer |
-|              |              | ⚠️*ERROR_HANDLING_GUIDE* (Backstage)                           |                  |
-| Leader       | `workflows/` | ROLES_DEFINITION(Leader 섹션), DOCUMENT_PIPELINE               | ❌ 없음          |
-|              |              | HANDOFF_PROTOCOL, PRD_GUIDE                                    |                  |
-|              | `context/`   | AI_Playbook                                                    |                  |
-|              | `project/`   | _PRD.md_ (런타임 입력)                                         |                  |
-| Analyzer     | `workflows/` | ROLES_DEFINITION(Analyzer 섹션)                                | query, profiler  |
-|              | `rules/`     | DB_ACCESS_POLICY, ANALYSIS_GUIDE                               |                  |
-| Designer     | `workflows/` | ROLES_DEFINITION(Designer 섹션)                                | designer         |
-| Coder        | `workflows/` | ROLES_DEFINITION(Coder 섹션)                                   | coder            |
-|              | `rules/`     | CODE_STYLE, TDD_WORKFLOW                                       |                  |
-| ImLeader     | `workflows/` | ROLES_DEFINITION(Implementation Leader 섹션), HANDOFF_PROTOCOL | reviewer         |
-|              | `rules/`     | VALIDATION_GUIDE                                               |                  |
-| Human        | `/`          | README.md                                                      | -                |
-|              | `workflows/` | ⚠️*INCIDENT_PLAYBOOK* (Backstage)                              |                  |
+| Role         | 추가 로딩 문서                                                                       | Tools           | Why                       |
+| ------------ | ------------------------------------------------------------------------------------ | --------------- | ------------------------- |
+| **Leader**   | ROLES_DEFINITION#Leader, HANDOFF_PROTOCOL, PRD_GUIDE, AI_Playbook                    | ❌              | 전략 수립, 하위 Role 지휘 |
+| **Analyzer** | ROLES_DEFINITION#Analyzer, DB_ACCESS_POLICY, ANALYSIS_GUIDE                          | query, profiler | SQL 실행, 데이터 분석     |
+| **Designer** | ROLES_DEFINITION#Designer                                                            | designer        | IA/WF/SDD 설계            |
+| **Coder**    | ROLES_DEFINITION#Coder, CODE_STYLE, TDD_WORKFLOW                                     | coder           | 코드 구현                 |
+| **ImLeader** | ROLES_DEFINITION#ImLeader, HANDOFF_PROTOCOL, VALIDATION_GUIDE                        | reviewer        | 산출물 검증, PASS/FAIL    |
 
-> **범례**: ⚠️*이탤릭* = Backstage 문서 (시스템/운영자 전용, 필요 시 JIT 로딩), _이탤릭_ = 런타임 입력 문서
-> **상세 토폴로지**: README.md 섹션 1-3 참조
+> **JIT 원칙**: 전체 문서 로딩 금지. Role에 필요한 문서만 선택적 로딩.
 
 ---
 
-## SSOT 참조 원칙
+## Output Paths (산출물 저장 위치)
 
-| 문서                | 역할      | SSOT 원칙               |
-| ------------------- | --------- | ----------------------- |
-| CLAUDE.md           | 원칙 선언 | 구체적 규칙 정의 금지   |
-| DB_ACCESS_POLICY.md | **SSOT**  | 모든 DB 보안 규칙 정의  |
-| DOMAIN_SCHEMA.md    | 대상 정의 | 처리 방법은 POLICY 참조 |
-
----
-
-## Tools Registry
-
-| Tool         | Version | Owner        | 설명           |
-| ------------ | ------- | ------------ | -------------- |
-| QueryTool    | v1.2.0  | Analyzer     | SQL 쿼리 실행  |
-| CoderTool    | v3.0.1  | Coder        | 코드 구현      |
-| DesignerTool | v2.2.0  | Designer     | IA/WF/SDD 생성 |
-| DocSyncTool  | v2.1.0  | Orchestrator | Notion 동기화  |
-| ProfilerTool | v1.2.0  | Analyzer     | 프로필 분석    |
-| ReviewerTool | v2.0.0  | Impl Leader  | 품질 검증      |
-| ViewerTool   | v1.5.0  | Orchestrator | 웹 뷰어        |
-
-> **Role-Tool 권한 매트릭스**: ROLE_ARCHITECTURE.md `Role-Tool 권한 매트릭스` 섹션 참조
+| 용도            | 경로                                     | 예시                      |
+| --------------- | ---------------------------------------- | ------------------------- |
+| Case 산출물     | `docs/cases/{caseId}/{taskId}/`          | HANDOFF.md, IA.md, SDD.md |
+| 분석 결과       | `docs/cases/{caseId}/{taskId}/analysis/` | _.sql, _.json, report.md  |
+| 백엔드 코드     | `backend/src/{feature}/`                 | API, Service, Repository  |
+| 프론트엔드 코드 | `frontend/src/{feature}/`                | Components, Pages         |
+| 실행 로그       | `workspace/logs/{caseId}/{taskId}.json`  | 실행 이력                 |
 
 ---
 
-## Paths
+## Safety Rules (절대 금지)
 
-### Workspace (런타임)
+### 룰북 보호
 
-| Path                  | Description   | Status                         |
-| --------------------- | ------------- | ------------------------------ |
-| `workspace/logs/`     | 실행 로그     | Active                         |
-| `workspace/sessions/` | 세션 데이터   | Active                         |
-| `workspace/analysis/` | ~~분석 결과~~ | **Deprecated** → `docs/cases/` |
-
-### Docs (Case-Centric)
-
-| Path                                     | Description                          |
-| ---------------------------------------- | ------------------------------------ |
-| `docs/cases/{caseId}/`                   | Case 루트                            |
-| `docs/cases/{caseId}/{taskId}/`          | Task별 산출물 (HANDOFF, IA, SDD, WF) |
-| `docs/cases/{caseId}/{taskId}/analysis/` | 분석 결과 (SQL, JSON, 리포트)        |
-| `backend/src/{feature}/`                 | 백엔드 코드                          |
-| `frontend/src/{feature}/`                | 프론트엔드 코드                      |
-| `workspace/logs/{caseId}/{taskId}.json`  | 실행 로그 (Case/Task별 그룹화)       |
-
-> **구조**: 하나의 Case(프로젝트)에 여러 Task(작업)가 존재할 수 있음
-
-### Service (코드)
-
-| Path            | Description    | Role Access |
-| --------------- | -------------- | ----------- |
-| `backend/src/`  | Express API    | ✅ Coder    |
-| `frontend/src/` | React 프론트   | ✅ Coder    |
-| `orchestrator/` | 오케스트레이터 | ⚠️ 제한적   |
-| `mcp-server/`   | MCP 서버       | ✅ Coder    |
-
----
-
-## 문서 작성 규칙
-
-### 섹션 제목 변경 정책
-
-> 다른 문서에서 참조되는 섹션 제목은 **PO 승인 필수**
-
-| 문서              | 참조되는 섹션                                                           |
-| ----------------- | ----------------------------------------------------------------------- |
-| ROLE_ARCHITECTURE | `Role 정의 요약`, `Role-Tool 권한 매트릭스`                             |
-| ROLES_DEFINITION  | `Leader`, `Analyzer`, `Designer`, `Implementation Leader`, `Coder` 섹션 |
-| DOMAIN_SCHEMA     | `핵심 레거시 스키마`                                                    |
-
-### 참조 형식
-
-```markdown
-❌ Bad: ROLE_ARCHITECTURE.md 섹션 0 참조
-✅ Good: ROLE_ARCHITECTURE.md의 Role 정의 요약 섹션 참조
-```
-
----
-
-## 관련 문서
-
-| 문서                 | 역할                |
-| -------------------- | ------------------- |
-| CLAUDE.md            | 시스템 헌법         |
-| ROLE_ARCHITECTURE.md | 시스템 지도         |
-| ROLES_DEFINITION.md  | Role별 매뉴얼       |
-| README.md            | 다이어그램 (인간용) |
-
----
-
-## 변경 이력
-
-| 버전   | 날짜       | 변경 내용                                                                |
-| ------ | ---------- | ------------------------------------------------------------------------ |
-| 5.11.0 | 2026-01-06 | 신규 템플릿 추가 (SDD_TEMPLATE, WF_TEMPLATE, QUALITY_RULES, PRD_CHECKLIST) |
-| 5.10.0 | 2026-01-06 | Skills에 leader, imleader 추가, 실행 순서 명시                           |
-| 5.9.0  | 2026-01-06 | Role별 필수 로딩 문서 매트릭스 재정의 (공통/Role별 분리), 대상 헤더 추가 |
+- **수정 금지** - `.claude/rules/`, `.claude/workflows/`, `CLAUDE.md`
+- **수정 가능** - `.claude/project/` (PROJECT_STACK.md, PRD.md)
 
 ---
 

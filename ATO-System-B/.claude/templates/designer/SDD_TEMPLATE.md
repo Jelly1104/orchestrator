@@ -1,8 +1,8 @@
-# SDD Template v1.0
+# SDD_TEMPLATE.md
 
-> **템플릿 버전**: 1.0.0
-> **최종 업데이트**: 2026-01-06
-> **목적**: Software Design Document 작성 표준 템플릿
+> **버전**: 1.0.0 | **수정일**: 2026-01-06
+> **정의**: Software Design Document 템플릿
+> **대상**: Designer | **로딩**: 작업 시
 
 ---
 

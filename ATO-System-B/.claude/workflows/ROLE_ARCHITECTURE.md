@@ -1,21 +1,8 @@
 # ROLE_ARCHITECTURE.md
 
-> **문서 버전**: 3.7.0
-> **최종 업데이트**: 2026-01-06
-> **물리적 경로**: `.claude/workflows/ROLE_ARCHITECTURE.md` > **상위 문서**: `CLAUDE.md` > **대상**: Orchestrator, 개발자
-> **다이어그램**: README.md 참조
-
----
-
-## 문서 책임 경계
-
-| 구분       | ROLE_ARCHITECTURE (본 문서) | ROLES_DEFINITION            |
-| ---------- | --------------------------- | --------------------------- |
-| **비유**   | 🗺️ 지도 (Map)               | 📖 매뉴얼 (Manual)          |
-| **정의**   | Topology, Flow, Phase 구조  | Role별 시스템 프롬프트, R&R |
-| **참조자** | Orchestrator, 개발자        | 각 LLM Role                 |
-
-> **황금률**: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."
+> **버전**: 3.7.0 | **수정일**: 2026-01-06
+> **정의**: Topology, Phase, HITL, Role 흐름
+> **대상**: Orchestrator | **로딩**: 전체
 
 ---
 
@@ -77,14 +64,16 @@
 
 ### 파이프라인 타입
 
-| 타입              | Phase 조합 | 흐름 요약                                                 | 사용 케이스             |
-| ----------------- | ---------- | --------------------------------------------------------- | ----------------------- |
-| `analysis`        | A만        | PRD → HANDOFF → Analyzer(SQL) → 분석 리포트               | SQL 분석, 리포트        |
-| `design`          | B만        | PRD → HANDOFF → Designer(IA/WF/SDD) → 설계 문서           | IA/Wireframe/SDD 작성   |
-| `analyzed_design` | A → B      | PRD → HANDOFF → Analyzer → Designer → 설계 문서           | 데이터 기반 UX 설계     |
-| `code`            | C만        | HANDOFF → Coder(구현) → 소스코드 **(SDD 존재 필수)**      | 이미 설계 있고 코딩만   |
-| `ui_mockup`       | B → C      | PRD → HANDOFF → Designer → Coder → UI 코드                | IA/WF 기반 UI 코드 생성 |
-| `full`            | A → B → C  | PRD → HANDOFF → Analyzer → Designer → Coder → 전체 산출물 | 처음부터 끝까지         |
+| 타입              | Phase 조합 | Role 흐름                                                                                                         |
+| ----------------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `analysis`        | A만        | PRD → Leader → Analyzer → ImpLeader → Leader 보고 → HITL                                                          |
+| `design`          | B만        | PRD → Leader → Designer → ImpLeader → Leader 보고 → HITL                                                          |
+| `analyzed_design` | A → B      | PRD → Leader → Analyzer → ImpLeader → HITL → Designer → ImpLeader → Leader 보고 → HITL                            |
+| `code`            | C만        | PRD + SDD → Leader → Coder → ImpLeader → Leader 보고 → HITL **(SDD 필수)**                                        |
+| `ui_mockup`       | B → C      | PRD → Leader → Designer → ImpLeader → HITL → Coder → ImpLeader → Leader 보고 → HITL                               |
+| `full`            | A → B → C  | PRD → Leader → Analyzer → ImpLeader → HITL → Designer → ImpLeader → HITL → Coder → ImpLeader → Leader 보고 → HITL |
+
+> **입력/산출물**: 타입별 입력 및 산출물은 `DOCUMENT_PIPELINE.md`의 **타입별 산출물 요약** 섹션 참조
 
 > **상세 플로우 다이어그램**: README.md 섹션 2 참조
 
@@ -92,11 +81,11 @@
 
 > **용도**: VSCode Extension에서 Orchestrator 없이 Skill 직접 호출
 
-| 항목 | Orchestrator 모드 | Extension 모드 |
-|------|-------------------|----------------|
-| PRD | PRD_FULL.md | PRD_LITE.md |
+| 항목       | Orchestrator 모드               | Extension 모드              |
+| ---------- | ------------------------------- | --------------------------- |
+| PRD        | PRD_FULL.md                     | PRD_LITE.md                 |
 | Skill 정의 | `orchestrator/tools/*/SKILL.md` | `.claude/skills/*/SKILL.md` |
-| 실행 | 파이프라인 자동 라우팅 | `skills` 배열 순차 실행 |
+| 실행       | 파이프라인 자동 라우팅          | `skills` 배열 순차 실행     |
 
 > **상세**: PRD_GUIDE.md의 **Extension 경량 실행 모드** 섹션 참조
 
@@ -227,30 +216,5 @@ Phase C:
 | L2    | Leader       | Prompt Injection 방어                   |
 | L3    | Coder        | Output Validation, Protected Path 차단  |
 | L4    | Utils        | Audit Log, Rulebook 무결성              |
-
----
-
-## 관련 문서
-
-| 문서                | 역할                             |
-| ------------------- | -------------------------------- |
-| ROLES_DEFINITION.md | Role별 시스템 프롬프트, R&R 상세 |
-| HANDOFF_PROTOCOL.md | Leader → Role 업무 지시서 양식   |
-| DB_ACCESS_POLICY.md | DB 보안 정책                     |
-| VALIDATION_GUIDE.md | 품질 검증 기준                   |
-| README.md           | 다이어그램, 상세 설명 (인간용)   |
-
----
-
-## 변경 이력
-
-| 버전  | 날짜       | 변경 내용                                                                                 |
-| ----- | ---------- | ----------------------------------------------------------------------------------------- |
-| 3.7.0 | 2026-01-06 | Extension 경량 모드 섹션 추가 (파이프라인 타입 하위)                                      |
-| 3.6.0 | 2026-01-06 | 산출물 경로 섹션 → SYSTEM_MANIFEST.md 참조로 변경 (중복 제거)                             |
-| 3.5.0 | 2026-01-05 | 파이프라인 구현 상태 업데이트: 6개 타입 전체 구현 완료, mixed 제거 (analyzed_design 사용) |
-| 3.4.0 | 2026-01-05 | HITL 체크포인트 섹션 TO-BE 방식으로 재정의 (검증 실패 시에만 + 3-way 옵션)                |
-| 3.3.0 | 2026-01-05 | HANDOFF 흐름 명확화: Leader 생성 책임 추가, Orchestrator 저장, 경로 {caseId}/{taskId}     |
-| 3.2.0 | 2025-12-30 | 파이프라인 타입 4개→6개 확장 (code, analyzed_design, ui_mockup 추가), 스위칭 예시 추가    |
 
 **END OF ROLE_ARCHITECTURE.md**

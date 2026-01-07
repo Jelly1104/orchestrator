@@ -1,16 +1,79 @@
 ---
 name: profiler
+version: 3.0.0
 description: |
   회원 프로필 분석 및 세그먼트 특성 도출.
   트리거: "프로필 분석", "세그먼트 정의", "페르소나 생성", "회원 특성".
-  실행 전 필수 로딩: ROLES_DEFINITION.md(Analyzer 섹션), SEGMENT_RULES.md.
-  쿼리 결과를 기반으로 회원 그룹의 인구통계/행동 특성을 분석한다.
-  ⚠️ 작업 완료 후 반드시 하단의 [Skill Report] 형식으로 결과를 출력할 것.
+  ⚠️ v3.0.0: 필수 문서 로딩 검증 단계 추가 - Phase 0 완료 후에만 Phase 1 진행 가능.
 ---
 
 # Profiler Skill (Extension용)
 
 회원 프로필 분석 및 세그먼트 특성 도출.
+
+---
+
+## ⚠️ 실행 프로토콜 (위반 시 산출물 무효)
+
+### Phase 0: 문서 로딩 (필수) 🔴
+
+> **이 단계를 건너뛰면 Phase 1로 진행할 수 없습니다.**
+
+아래 문서를 **반드시 Read 도구로 읽고**, 각 문서의 핵심 내용을 요약 출력하세요.
+
+#### 공통 로딩 (모든 Skill 필수)
+
+| 문서 | 경로 | 요약할 내용 |
+|------|------|-------------|
+| 시스템 헌법 | `CLAUDE.md` | 절대 금지 사항 1가지 |
+| DB 스키마 | `.claude/rules/DOMAIN_SCHEMA.md` | 사용할 테이블 목록 |
+| 기술 스택 | `.claude/project/PROJECT_STACK.md` | DB 스택 |
+| 산출물 정의 | `.claude/workflows/DOCUMENT_PIPELINE.md` | Analyzer 산출물 목록 |
+
+#### Role별 추가 로딩 (Profiler/Analyzer 전용)
+
+| 문서 | 경로 | 요약할 내용 |
+|------|------|-------------|
+| Role 정의 | `.claude/workflows/ROLES_DEFINITION.md` | Analyzer 섹션 - 역할/제약 |
+| 세그먼트 규칙 | `.claude/templates/profiler/SEGMENT_RULES.md` | 세그먼트 정의 기준 |
+
+### Phase 0 출력 (검증용) 🔴
+
+**아래 형식으로 요약을 출력해야 Phase 1 진행 가능:**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 [문서 로딩 확인]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[공통]
+- CLAUDE.md: {절대 금지 사항 1가지}
+- DOMAIN_SCHEMA.md: {사용할 테이블 n개}
+- PROJECT_STACK.md: {DB 스택}
+- DOCUMENT_PIPELINE.md: {Analyzer 산출물 목록}
+
+[Profiler 전용]
+- ROLES_DEFINITION.md#Analyzer: {역할 1줄 요약}
+- SEGMENT_RULES.md: {세그먼트 정의 기준 요약}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+> ⚠️ **위 출력이 없으면 Phase 1 프로파일링이 무효 처리됩니다.**
+
+---
+
+### Phase 1: 데이터 확인
+
+- 쿼리 결과 확인
+- 분석 대상 세그먼트 파악
+
+### Phase 2: 프로필 분석
+
+- 인구통계/행동 특성 분석
+- 페르소나 생성
+
+### Phase 3: 인사이트 도출 및 보고서 출력
+
+---
 
 ## 핵심 역할
 
@@ -28,18 +91,19 @@ description: |
 | 비식별화 | 집계 통계만 출력, 개인정보 노출 금지 |
 | 최소 표본 | 30명 이상 세그먼트만 분석 |
 
-## 필수 참조 문서
-
-- `.claude/workflows/ROLES_DEFINITION.md` (Analyzer 섹션)
-- `.claude/templates/profiler/SEGMENT_RULES.md`
+---
 
 ## Skill Report (필수 출력)
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 [Profiler Skill Report]
-🔧 사용된 Skill: profiler v2.0
-📚 참조 문서: ROLES_DEFINITION.md ✅ | SEGMENT_RULES.md ✅
+🔧 사용된 Skill: profiler v3.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 문서 로딩 (Phase 0):
+  - 공통: {n}/4개 ✅
+  - Profiler 전용: {n}/2개 ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📥 입력: {segment_name}
 📤 출력: 프로필 분석 완료
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

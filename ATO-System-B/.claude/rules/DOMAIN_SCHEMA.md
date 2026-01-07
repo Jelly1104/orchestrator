@@ -1,14 +1,8 @@
 # DOMAIN_SCHEMA.md
 
-> **문서 버전**: 1.2.0
-
-> **최종 업데이트**: 2025-12-23
-
-> **물리적 경로**: `.claude/rules/DOMAIN_SCHEMA.md`
-
-> **상위 문서**: `CLAUDE.md`
-
-> **대상**: 도메인 이해가 필요한 AI ROLE
+> **버전**: 1.2.0 | **수정일**: 2025-12-23
+> **정의**: DB 테이블/컬럼, 레거시 매핑
+> **대상**: All | **로딩**: 전체
 
 ---
 
@@ -291,15 +285,5 @@ WHERE U_KIND = 'DOC001'
 | 추천/예측 | `USER_DETAIL` (전공/지역), `CBIZ_REC_*` (공고 조회) | - 의사 개인화 채용 공고 추천<br>- 관심사 기반 게시글 추천                                 |
 | 상권 분석 | `LOCATION_SALES_MONTHLY`, `CBIZ_LEASE`              | - 개원 입지 매출 예측 모델<br>- 임대료 적정성 평가                                        |
 | 네트워크  | `COMMENT` (대댓글 관계), `S_COLLEAGUE`              | - 의사 인맥/영향력 그래프 분석<br>- Key Opinion Leader (KOL) 발굴                         |
-
----
-
-## 관련 문서
-
-| 문서                  | 역할                            |
-| --------------------- | ------------------------------- |
-| `CLAUDE.md`           | 프로젝트 컨텍스트               |
-| `DB_ACCESS_POLICY.md` | 접근 권한, 실행 제한, 감사 로깅 |
-| `VALIDATION_GUIDE.md` | 쿼리 실행 전 검증 규칙          |
 
 **END OF DOMAIN_SCHEMA.MD**

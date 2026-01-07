@@ -1,16 +1,8 @@
 # DOCUMENT_PIPELINE.md
 
-> **문서 버전**: 1.4.1
-
-> **최종 업데이트**: 2026-01-05
-
-> **변경 이력**: 섹션 이모지/번호 제거, 스타일 통일
-
-> **물리적 경로**: `.claude/workflows/DOCUMENT_PIPELINE.md`
-
-> **상위 문서**: `CLAUDE.md`
-
-> **대상**: LEADER ROLE
+> **버전**: 1.4.1 | **수정일**: 2026-01-05
+> **정의**: 입력/산출물 정의, 의존성
+> **대상**: All | **로딩**: 전체
 
 ---
 
@@ -27,74 +19,33 @@
 
 > **다이어그램**: README.md 섹션 8 참조
 
-1. **PRD 입력** → Gap Check → [HITL: 기획 승인] → Leader가 HANDOFF.md 생성
-2. **Phase A** (Optional): Analyzer가 HANDOFF 기반 SQL 실행 → ImpLeader 검증 → 분석 리포트
-3. **Phase B**: Designer가 HANDOFF 기반 IA/Wireframe/SDD 작성 → ImpLeader 검증 → [HITL: 설계 승인]
-4. **Phase C**: Coder가 HANDOFF/SDD 기반 TDD Cycle 실행 → ImpLeader 검증 → [HITL: 배포 승인] → Deploy
+1. **PRD 입력** → **🧠 Leader: Gap Check (입력 분석)** → [HITL: 기획 승인] → Leader가 HANDOFF.md 생성
+   - Gap Check: PRD 필수 항목(목적, 타겟, 핵심기능, 성공지표) 확인 및 누락 시 질문
+
+2. **Phase A** (Optional): Analyzer가 HANDOFF 기반 SQL 실행 → **👮 ImpLeader 검증** → Leader 보고 → 분석 리포트
+
+3. **Phase B**: Designer가 HANDOFF 기반 IA/Wireframe/SDD 작성 → **👮 ImpLeader 검증** → Leader 보고 → [HITL: 설계 승인]
+
+4. **Phase C**: Coder가 HANDOFF/SDD 기반 TDD Cycle 실행 → **👮 ImpLeader 검증** → Leader 보고 → [HITL: 배포 승인] → Deploy
 
 ---
 
-## 파이프라인 타입별 흐름
+## 파이프라인 타입별 산출물
 
-> **파이프라인 정의**: 6가지 파이프라인 타입 정의는 `ROLE_ARCHITECTURE.md`의 **파이프라인 타입** 섹션 참조
+> **Role 흐름**: 6가지 파이프라인 타입의 **Role 흐름 및 Phase 조합**은 `ROLE_ARCHITECTURE.md`의 **파이프라인 타입** 섹션 참조
 
-Leader의 `{ pipeline: "..." }` 출력에 따라 해당 파이프라인이 실행됩니다.
+### 타입별 산출물 요약
 
-### 타입별 상세
+| 타입 | 최초 입력 | Executor 입력 (Phase별 누적) | 산출물 |
+|------|----------|------------------------------|--------|
+| `analysis` | `PRD.md` | `HANDOFF.md` | `*.sql`, `analysis_result.json`, `report.md` |
+| `design` | `PRD.md` | `HANDOFF.md` | `IA.md`, `Wireframe.md`, `SDD.md` |
+| `analyzed_design` | `PRD.md` | `HANDOFF.md`, `*.sql`, `analysis_result.json`, `insight_report.md` | `IA.md`, `Wireframe.md`, `SDD.md` |
+| `code` | `PRD.md`, `SDD.md` | `HANDOFF.md` | `backend/src/*`, `frontend/src/*`, `tests/*.test.ts` |
+| `ui_mockup` | `PRD.md` | `HANDOFF.md`, `IA.md`, `Wireframe.md`, `SDD.md` | `frontend/src/*`, `tests/*.test.ts` |
+| `full` | `PRD.md` | `HANDOFF.md`, `*.sql`, `analysis_result.json`, `insight_report.md`, `IA.md`, `Wireframe.md`, `SDD.md` | `backend/src/*`, `frontend/src/*`, `tests/*` |
 
-**analysis (A만)**: 데이터 분석만 필요한 경우
-
-- 흐름: `PRD → Leader(HANDOFF 생성) → HANDOFF → Analyzer(SQL) → 결과 해석`
-- 입력: `HANDOFF.md` (Leader 생성)
-- 산출물: `*.sql`, `analysis_result.json`, `report.md`
-- 예: 세그먼트 분석, KPI 리포트
-
-> 데이터 분석만 수행, 설계/구현 없음
-
-**design (B만)**: 설계만 필요한 경우
-
-- 흐름: `PRD → Leader(HANDOFF 생성) → HANDOFF → Designer(IA/WF/SDD) → HITL 승인`
-- 입력: `HANDOFF.md` (Leader 생성)
-- 산출물: `IA.md`, `Wireframe.md`, `SDD.md`
-- 예: 신규 화면 기획, UX 개선 제안
-
-> UX 설계만 수행, 분석/구현 없음
-
-**analyzed_design (A→B)**: 분석 후 설계가 필요한 경우
-
-- 흐름: `PRD → Leader(HANDOFF 생성) → HANDOFF → Analyzer → Designer`
-- 입력: `HANDOFF.md` (Leader 생성)
-- 산출물: `*.sql`, `insight_report.md`, `IA.md`, `Wireframe.md`, `SDD.md`
-- 예: 데이터 기반 UX 설계, 인사이트 → 제안
-
-> 데이터 분석 후 설계 문서 생성
-
-**code (C만)**: 이미 설계(SDD)가 있고 구현만 필요한 경우
-
-- 흐름: `HANDOFF + SDD → Coder(구현) → Self-Check → ImpLeader 검증`
-- 입력: `HANDOFF.md` + `SDD.md` (기존 설계 문서 필수)
-- 산출물: `backend/src/*`, `frontend/src/*`, `tests/*.test.ts`
-- 예: SDD 기반 코딩, 버그 수정
-
-> ⚠️ **SDD 별첨 필수**: Coder는 PRD를 직접 참조하지 않음
-
-**ui_mockup (B→C)**: 분석 없이 설계부터 화면 구현까지
-
-- 흐름: `PRD → Leader(HANDOFF 생성) → HANDOFF → Designer → Coder`
-- 입력: `HANDOFF.md` (Leader 생성)
-- 산출물: `IA.md`, `Wireframe.md`, `SDD.md`, `frontend/src/*`, `tests/*.test.ts`
-- 예: 신규 기능 개발 (IA/WF → React 컴포넌트)
-
-> 분석 없이 설계부터 시작하여 화면 구현까지 수행
-
-**full (A→B→C)**: 전체 파이프라인
-
-- 흐름: `PRD → Leader(HANDOFF 생성) → HANDOFF → Analyzer → Designer → Coder`
-- 입력: `HANDOFF.md` (Leader 생성)
-- 산출물: `*.sql`, `IA.md`, `Wireframe.md`, `SDD.md`, `backend/src/*`, `frontend/src/*`, `tests/*`
-- 예: 데이터 분석부터 화면 구현까지 전체 흐름
-
-> **HITL 참조**: ROLE_ARCHITECTURE.md의 **HITL 체크포인트** 섹션 참조
+> ⚠️ **code 타입 주의**: `SDD.md` 별첨 필수 (Coder는 PRD를 직접 참조하지 않음)
 
 ---
 
@@ -252,20 +203,4 @@ paths:
 - [ ] 테스트 케이스가 "실제 컬럼명(`U_ID` 등)"을 사용하고 있는가?
 - [ ] 레거시 데이터(삭제 플래그, 승인 플래그) 처리가 시나리오에 있는가?
 
----
-
-## 관련 문서
-
-| 문서                   | 물리적 경로                              | 역할                                       |
-| ---------------------- | ---------------------------------------- | ------------------------------------------ |
-| `ROLE_ARCHITECTURE.md` | `.claude/workflows/ROLE_ARCHITECTURE.md` | **HITL 체크포인트** 섹션                   |
-| `DOMAIN_SCHEMA.md`     | `.claude/rules/DOMAIN_SCHEMA.md`         | **SDD 작성 시 필수 참조** (DB 구조 확인)   |
-| `TDD_WORKFLOW.md`      | `.claude/rules/TDD_WORKFLOW.md`          | **TDD Spec 작성 시 필수 참조** (규칙/절차) |
-| `AI_Playbook.md`       | `.claude/context/AI_Playbook.md`         | PRD 작성 시 필수 참조 (비즈니스 목표)      |
-| `PRD_GUIDE.md`         | `.claude/workflows/PRD_GUIDE.md`         | PRD 양식 및 작성 가이드                    |
-
----
-
 **END OF DOCUMENT_PIPELINE.MD**
-
-문서는 죽어있는 글자가 아니라, **실행될 코드의 예언서**여야 합니다.

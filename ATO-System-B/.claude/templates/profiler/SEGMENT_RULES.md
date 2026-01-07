@@ -1,6 +1,8 @@
-# Segment Rules
+# SEGMENT_RULES.md
 
-> ProfileAgent가 참조하는 세그먼트 정의 규칙
+> **버전**: 1.0.0 | **수정일**: 2026-01-07
+> **정의**: 세그먼트 정의 규칙
+> **대상**: Analyzer | **로딩**: 작업 시
 
 ---
 

@@ -127,12 +127,13 @@ graph LR
 
     subgraph COMMON ["공통 (모든 AI Role)"]
         ROOT["CLAUDE.md"]:::root
+        COM_MANIFEST["SYSTEM_MANIFEST.md"]:::common
         COM_SCHEMA["DOMAIN_SCHEMA.md"]:::common
         COM_STACK["PROJECT_STACK.md"]:::common
+        COM_DOCPIPE["DOCUMENT_PIPELINE.md"]:::common
     end
 
     subgraph ORC ["Orchestrator (JS Module)"]
-        ORC_MAN["SYSTEM_MANIFEST.md"]:::protocol
         ORC_ARCH["ROLE_ARCHITECTURE.md"]:::protocol
         ORC_TOOLS["Tools/JS Classes"]:::tool
     end
@@ -140,7 +141,6 @@ graph LR
     subgraph LEADER ["Leader Role"]
         L_ROLES["ROLES_DEFINITION.md<br/>(Leader 섹션)"]:::def
         L_HANDOFF["HANDOFF_PROTOCOL.md"]:::protocol
-        L_DOCPIPE["DOCUMENT_PIPELINE.md"]:::protocol
         L_PRDGUIDE["PRD_GUIDE.md"]:::protocol
         L_PRD["PRD.md"]:::input
         L_PLAYBOOK["AI_Playbook.md"]:::def
@@ -173,18 +173,21 @@ graph LR
         B_INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Human)"]:::backstage
     end
 
-    ROOT --> ORC_MAN
-    ROOT --> L_ROLES
-    ROOT --> D_ROLES
-    ROOT --> C_ROLES
-    ROOT --> A_ROLES
-    ROOT --> I_ROLES
+    ROOT --> COM_MANIFEST
+    ROOT --> COM_SCHEMA
+    ROOT --> COM_STACK
+    ROOT --> COM_DOCPIPE
 
-    ORC_MAN --> ORC_ARCH
-    ORC_MAN --> ORC_TOOLS
+    COM_MANIFEST --> L_ROLES
+    COM_MANIFEST --> D_ROLES
+    COM_MANIFEST --> C_ROLES
+    COM_MANIFEST --> A_ROLES
+    COM_MANIFEST --> I_ROLES
+    COM_MANIFEST --> ORC_ARCH
+
+    ORC_ARCH --> ORC_TOOLS
 
     L_ROLES --> L_HANDOFF
-    L_ROLES --> L_DOCPIPE
     L_ROLES --> L_PRDGUIDE
     L_ROLES --> L_PRD
     L_ROLES --> L_PLAYBOOK
@@ -198,7 +201,7 @@ graph LR
     I_ROLES --> I_HANDOFF
     I_ROLES --> I_VALID
 
-    ORC_MAN -.->|On Error| B_ERROR
+    ORC_ARCH -.->|On Error| B_ERROR
     B_ERROR -.->|Escalate| B_INCIDENT
 ```
 
@@ -219,15 +222,16 @@ graph TD
     %% 1. 헌법 (Constitution)
     CLAUDE["CLAUDE.md<br/>(Absolute Law)"]:::constitution
 
-    %% 2. 공통 문서 (모든 Role)
+    %% 2. 공통 문서 (모든 Role) - 순차 로딩
     subgraph COMMON ["공통 (모든 AI Role)"]
+        MANIFEST["SYSTEM_MANIFEST.md"]:::common
         SCHEMA["DOMAIN_SCHEMA.md"]:::common
         STACK["PROJECT_STACK.md"]:::common
+        DOCPIPE["DOCUMENT_PIPELINE.md"]:::common
     end
 
     %% 3. 시스템 구조 문서 (Orchestrator)
     subgraph SYSTEM ["시스템 구조 (Orchestrator)"]
-        MANIFEST["SYSTEM_MANIFEST.md"]:::workflow
         ARCH["ROLE_ARCHITECTURE.md"]:::workflow
     end
 
@@ -235,7 +239,6 @@ graph TD
     subgraph WORKFLOWS ["워크플로우 (Role별 선택)"]
         ROLES["ROLES_DEFINITION.md<br/>(모든 Role - 각 섹션)"]:::workflow
         HANDOFF["HANDOFF_PROTOCOL.md<br/>(Leader, ImLeader)"]:::workflow
-        PIPELINE["DOCUMENT_PIPELINE.md<br/>(Leader)"]:::workflow
     end
 
     %% 5. 규칙 문서 (Role별 선택 로딩)
@@ -260,21 +263,21 @@ graph TD
         INCIDENT["INCIDENT_PLAYBOOK.md<br/>(Human)"]:::backstage
     end
 
-    %% 의존성 관계
-    CLAUDE --> COMMON
-    CLAUDE --> SYSTEM
-    SYSTEM --> WORKFLOWS
+    %% 위계 관계 (헌법 → 공통 → 시스템)
+    CLAUDE --> MANIFEST
+    MANIFEST --> SCHEMA
+    SCHEMA --> STACK
+    STACK --> DOCPIPE
+    DOCPIPE --> ARCH
+
+    %% 시스템 → 하위 그룹
+    ARCH --> WORKFLOWS
     WORKFLOWS --> RULES
     WORKFLOWS --> LEADER
-    SYSTEM -.-> BACKSTAGE
+    ARCH -.-> BACKSTAGE
 
-    %% 문서 간 참조 관계
-    MANIFEST --> ARCH
-    ARCH --> ROLES
-    ROLES --> HANDOFF
-    POLICY --> SCHEMA
-    ANALYSIS --> SCHEMA
-    ERROR -.->|"On Error"| INCIDENT
+    %% Backstage 내부
+    ERROR -.->|"Escalate"| INCIDENT
 ```
 
 > **범례**: ⬛ 헌법 | 🩵 공통 | 🟡 워크플로우 | 🔵 규칙 | 🟣 Leader 전용 | ⬜ 점선=Backstage
@@ -627,8 +630,9 @@ graph TD
 PRD 입력
     ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ Phase 0: PRD Gap Check (기획 단계)                               │
+│ Phase 0: PRD Gap Check (기획 단계) - 🧠 Leader                   │
 │   - 필수 항목 체크 (목적, 타겟, 기능, 지표, type, pipeline)        │
+│   - Leader는 PRD 작성자가 아니므로 입력 분석으로 분류 (황금률 준수) │
 │   - 레퍼런스 매칭                                                │
 │   - 간극 질문 생성 → 사용자 확인 (HITL)                           │
 └─────────────────────────────────────────────────────────────────┘
