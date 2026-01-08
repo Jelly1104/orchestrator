@@ -1,6 +1,6 @@
 # TDD_WORKFLOW.md
 
-> **버전**: 1.3.2 | **수정일**: 2025-12-23
+> **버전**: 1.3.2 | **수정일**: 2026-01-08
 > **정의**: Red-Green-Refactor 사이클
 > **대상**: Coder | **로딩**: 작업 시
 
@@ -20,6 +20,15 @@ AI 에이전트는 이 문서의 프로세스를 따르지 않는 기능 구현�
 - [ ] `CLAUDE.md` 아키텍처 원칙 숙지
 - [ ] `DOMAIN_SCHEMA.md`의 관련 테이블 및 컬럼 확인 (필수)
 - [ ] 요구사항/버그 리포트의 모호함 제거
+
+---
+
+## 데이터 전략: Fixture as a Contract
+
+**"UI는 DB가 아니라 스키마(계약)를 믿어야 한다."**
+
+- **Discovery (Phase A):** 이미 완료됨. 우리는 DB를 탐색하는 것이 아니라, 확정된 `DOMAIN_SCHEMA.md`를 재현해야 함.
+- **Reproduction (Phase C):** 테스트 코드와 UI 스토리북에는 **Real DB 연결을 금지**하고, **Schema-Compliant Fixture**를 사용해야 함.
 
 ---
 
@@ -48,8 +57,11 @@ AI 에이전트는 이 문서의 프로세스를 따르지 않는 기능 구현�
 
 **목표**: 기능 요구사항을 실패하는 테스트로 명확히 정의합니다.
 
-1. **테스트 파일 생성**: `tests/unit/[feature].unit.spec.tsx`
-2. **Schema 준수**: 테스트 데이터(Mock) 생성 시 `DOMAIN_SCHEMA.md`의 실제 컬럼명을 사용하세요.
+1. **테스트 파일 생성**: `tests/unit/[feature].unit.spec.ts` (Backend) 또는 `.spec.tsx` (Frontend)
+2. **Fixture 정의 (The Contract)**:
+   - 테스트 데이터는 임의로 만들지 말고, `DOMAIN_SCHEMA.md` 또는 `ANALYSIS_RESULT.json`에서 발견된 실제 데이터 구조를 복사하여 Fixture로 정의하세요.
+   - **목표:** "실제 DB가 끊겨도, UI는 약속된 데이터가 들어오면 완벽하게 렌더링되어야 한다."
+3. **Schema 준수**: 테스트 데이터(Fixture) 생성 시 `DOMAIN_SCHEMA.md`의 실제 컬럼명을 사용하세요.
 
 ```typescript
 // ✅ 좋은 예: 실제 레거시 스키마 반영
@@ -71,7 +83,7 @@ describe("게시글 생성", () => {
 
 **체크리스트**
 
-- [ ] `.unit.spec.tsx` 파일 생성
+- [ ] `.unit.spec.ts` 또는 `.unit.spec.tsx` 파일 생성
 - [ ] `DOMAIN_SCHEMA.md`의 실제 컬럼명 사용 확인
 - [ ] 테스트 실행 결과: **FAIL** (Assertion Error여야 함, 컴파일 에러 지양)
 - [ ] **금지**: 구현 코드 먼저 작성 ❌ / 여러 기능 한 테스트에 포함 ❌

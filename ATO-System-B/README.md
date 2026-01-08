@@ -57,12 +57,12 @@ node index.js --prd <PRD경로> "작업 설명"
 
 | 타입 | Phase | 설명 | Skill 순서 |
 |------|-------|------|------------|
-| `analysis` | A | DB 분석 → SQL 리포트 | leader → query → profiler → reviewer |
+| `analysis` | A | DB 분석 → SQL 리포트 | leader → profiler → query → reviewer |
 | `design` | B | IA/Wireframe/SDD 생성 | leader → designer → reviewer |
 | `code` | C | HANDOFF 기반 코드 구현 | leader → coder → imleader |
-| `analyzed_design` | A→B | 분석 후 설계 | leader → query → profiler → designer → reviewer |
+| `analyzed_design` | A→B | 분석 후 설계 | leader → profiler → query → designer → reviewer |
 | `ui_mockup` | B→C | 설계 후 UI 코드 생성 | leader → designer → coder → imleader |
-| `full` | A→B→C | 전체 파이프라인 | leader → query → profiler → designer → coder → imleader |
+| `full` | A→B→C | 전체 파이프라인 | leader → profiler → query → designer → coder → imleader |
 
 ## 사용 방법
 

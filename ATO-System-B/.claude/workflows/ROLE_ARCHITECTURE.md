@@ -8,14 +8,18 @@
 
 ## Role 정의 요약 (R&R)
 
-| Role                      | Scope   | Tools           | Responsibility                                                              |
-| ------------------------- | ------- | --------------- | --------------------------------------------------------------------------- |
-| **Leader**                | All     | -               | PRD 분석, 파이프라인 전략 수립, 목표 하달, **HANDOFF 생성**, HITL 최종 승인 |
-| **Analyzer**              | Phase A | Query, Profiler | 데이터 분석 및 전략 근거 마련                                               |
-| **Designer**              | Phase B | Designer        | UX 기획(IA/WF) + 기술 설계(SDD)                                             |
-| **Implementation Leader** | A,B,C   | Reviewer        | Quality Gate 관리, 각 Phase 산출물 검증                                     |
-| **Coder**                 | Phase C | Coder           | HANDOFF, SDD 기반 코드 구현                                                 |
+> **황금률**: "실행하는 자는 검증하지 않고, 검증하는 자는 실행하지 않는다."
 
+| Role                              | Scope       | Tools (Orchestrator)      | Skills (Extension)       | Responsibility                                            |
+| --------------------------------- | ----------- | ------------------------- | ------------------------ | --------------------------------------------------------- |
+| **1. Leader (PM & Commander)**    | All         | -                         | `/leader` ⭐             | PRD 분석, 파이프라인 전략 수립, 목표 하달, HITL 최종 승인 |
+| **2. Analyzer**                   | Phase A     | ProfilerTool, QueryTool   | `/profiler`, `/query`    | 데이터 분석 및 전략 근거 마련                             |
+| **3. Designer (Architect)**       | Phase B     | DesignerTool              | `/designer`              | UX 기획(IA/WF) + 기술 설계(SDD), 화면-데이터 정합성 책임  |
+| **4. Implementation Leader (QM)** | Phase A,B,C | ReviewerTool              | `/imleader` ⚠️           | Quality Gate 관리, 각 Phase 산출물 검증                   |
+| **5. Coder**                      | Phase C     | CoderTool                 | `/coder`                 | HANDOFF 기반 코드 구현, **SDD 준수 구현**, Self-Check     |
+
+> **범례**: ⭐ Extension에만 존재 (Orchestrator Tool 없음) | ⚠️ Tool/Skill 이름 다름 (ReviewerTool → /imleader)
+>
 > **상세 정의**: ROLES_DEFINITION.md 참조
 
 ---
@@ -64,17 +68,19 @@
 
 ### 파이프라인 타입
 
-| 타입              | Phase 조합 | Role 흐름                                                                                                         |
-| ----------------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| `analysis`        | A만        | PRD → Leader → Analyzer → ImpLeader → Leader 보고 → HITL                                                          |
-| `design`          | B만        | PRD → Leader → Designer → ImpLeader → Leader 보고 → HITL                                                          |
-| `analyzed_design` | A → B      | PRD → Leader → Analyzer → ImpLeader → HITL → Designer → ImpLeader → Leader 보고 → HITL                            |
-| `code`            | C만        | PRD + SDD → Leader → Coder → ImpLeader → Leader 보고 → HITL **(SDD 필수)**                                        |
-| `ui_mockup`       | B → C      | PRD → Leader → Designer → ImpLeader → HITL → Coder → ImpLeader → Leader 보고 → HITL                               |
-| `full`            | A → B → C  | PRD → Leader → Analyzer → ImpLeader → HITL → Designer → ImpLeader → HITL → Coder → ImpLeader → Leader 보고 → HITL |
+| 타입              | Phase 조합 | Role 흐름                                                                                                                                        |
+| ----------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `analysis`        | A만        | PRD → Leader → Analyzer → ImpLeader → Leader 보고 → HITL                                                                                         |
+| `design`          | B만        | PRD → Leader → Designer → ImpLeader → Leader 보고 → HITL                                                                                         |
+| `analyzed_design` | A → B      | PRD → Leader → Analyzer → ImpLeader → HITL → Designer → ImpLeader → Leader 보고 → HITL                                                           |
+| `code`            | C만        | PRD + SDD → Leader → Coder → ImpLeader → Leader 보고 → HITL **(SDD 필수)**                                                                       |
+| `ui_mockup`       | B → C      | PRD → Leader → Designer → ImpLeader → HITL → Coder → ImpLeader → Leader 보고 → HITL                                                              |
+| `full`            | A → B → C  | PRD → Leader → Analyzer → ImpLeader → HITL → Designer → ImpLeader → HITL → Coder → ImpLeader → Leader 보고 → HITL                                |
 
 > **입력/산출물**: 타입별 입력 및 산출물은 `DOCUMENT_PIPELINE.md`의 **타입별 산출물 요약** 섹션 참조
-
+>
+> **Extension 모드**: Skills를 사용하는 Extension의 경우 HITL은 파이프라인 최종 완료 후 한 번만 진행합니다.
+>
 > **상세 플로우 다이어그램**: README.md 섹션 2 참조
 
 ### Extension 경량 모드
@@ -144,28 +150,30 @@ Phase C:
 
 ---
 
-## Role-Tool 권한 매트릭스
+## Role-Tool/Skill 권한 매트릭스
 
-| Tool     | 소유 Role    | Phase |
-| -------- | ------------ | ----- |
-| query    | Analyzer     | A     |
-| profiler | Analyzer     | A     |
-| designer | Designer     | B     |
-| coder    | Coder        | C     |
-| reviewer | Impl Leader  | All   |
-| doc-sync | Orchestrator | All   |
-| viewer   | Orchestrator | -     |
+| Tool     | Skill     | 소유 Role    | Phase |
+| -------- | --------- | ------------ | ----- |
+| query    | /query    | Analyzer     | A     |
+| profiler | /profiler | Analyzer     | A     |
+| designer | /designer | Designer     | B     |
+| coder    | /coder    | Coder        | C     |
+| reviewer | /imleader | Impl Leader  | All   |
+| -        | /leader   | Leader       | All   |
+| doc-sync | -         | Orchestrator | All   |
+| viewer   | -         | Orchestrator | -     |
 
 ### 권한 매트릭스
 
-| Role         | query | profiler | designer | coder | reviewer | doc-sync | viewer |
-| ------------ | ----- | -------- | -------- | ----- | -------- | -------- | ------ |
-| Leader       | -     | -        | -        | -     | -        | -        | -      |
-| Analyzer     | ✅    | ✅       | -        | -     | -        | -        | -      |
-| Designer     | -     | -        | ✅       | -     | -        | -        | -      |
-| Impl Leader  | -     | -        | -        | -     | ✅       | -        | -      |
-| Coder        | -     | -        | -        | ✅    | -        | -        | -      |
-| Orchestrator | -     | -        | -        | -     | -        | ✅       | ✅     |
+| Role         | Tool                                                   ||| Skill                                              ||
+|              | query | profiler | designer | coder | reviewer | doc-sync | viewer | /leader | /query | /profiler | /designer | /imleader | /coder |
+| ------------ | :---: | :------: | :------: | :---: | :------: | :------: | :----: | :-----: | :----: | :-------: | :-------: | :-------: | :----: |
+| Leader       | -     | -        | -        | -     | -        | -        | -      | ✅      | -      | -         | -         | -         | -      |
+| Analyzer     | ✅    | ✅       | -        | -     | -        | -        | -      | -       | ✅     | ✅        | -         | -         | -      |
+| Designer     | -     | -        | ✅       | -     | -        | -        | -      | -       | -      | -         | ✅        | -         | -      |
+| Impl Leader  | -     | -        | -        | -     | ✅       | -        | -      | -       | -      | -         | -         | ✅        | -      |
+| Coder        | -     | -        | -        | ✅    | -        | -        | -      | -       | -      | -         | -         | -         | ✅     |
+| Orchestrator | -     | -        | -        | -     | -        | ✅       | ✅     | -       | -      | -         | -         | -         | -      |
 
 ---
 

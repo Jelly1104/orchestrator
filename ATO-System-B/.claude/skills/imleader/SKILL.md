@@ -1,143 +1,105 @@
 ---
 name: imleader
-version: 2.0.0
+version: 3.0.0
 description: |
   산출물 품질 검증 (Quality Manager).
   트리거: "검증", "리뷰", "품질 체크", "QA".
-  ⚠️ v2.0.0: 필수 문서 로딩 검증 단계 추가 - Phase 0 완료 후에만 Phase 1 진행 가능.
-  ⚠️ 코드 산출물 검증 시 동적 검증(빌드/구동) 필수.
+  🔴 필수: 실행 전 이 SKILL.md 파일 전체를 Read 도구로 읽고 Step 라우팅 규칙에 따라 진행할 것.
+allowed-tools: Read, Grep, Glob
 ---
 
 # Implementation Leader Skill (Extension용)
 
-산출물 품질 검증.
+**HANDOFF 기준** 산출물 품질 검증.
+
+> **핵심 원칙**: PRD를 직접 참조하지 않음. HANDOFF의 Output/Constraints/CompletionCriteria만 보고 검증.
 
 ---
 
-## ⚠️ 실행 프로토콜 (위반 시 산출물 무효)
+## Step 라우팅 규칙 🔴
 
-### Phase 0: 문서 로딩 (필수) 🔴
+> **Step 0은 항상 필수**. 이후 Step은 직전 컨텍스트를 확인하여 검증 대상으로 분기.
 
-> **이 단계를 건너뛰면 Phase 1로 진행할 수 없습니다.**
+| 호출 시점        | 진입 Step         | 검증 대상                       |
+| ---------------- | ----------------- | ------------------------------- |
+| Phase A 완료 후  | Step 0 → 1 → 2 → 3 | SQL, analysis_report.md         |
+| Phase B 완료 후  | Step 0 → 1 → 2 → 3 | IA.md, Wireframe.md, SDD.md     |
+| Phase C 완료 후  | Step 0 → 1 → 2 → 3 | 코드 (동적 검증 필수)           |
 
-아래 문서를 **반드시 Read 도구로 읽고**, 각 문서의 핵심 내용을 요약 출력하세요.
-
-#### 공통 로딩 (모든 Skill 필수)
-
-| 문서 | 경로 | 요약할 내용 |
-|------|------|-------------|
-| 시스템 헌법 | `CLAUDE.md` | 절대 금지 사항 1가지 |
-| DB 스키마 | `.claude/rules/DOMAIN_SCHEMA.md` | 스키마 검증 대상 |
-| 기술 스택 | `.claude/project/PROJECT_STACK.md` | 검증 기준 스택 |
-| 산출물 정의 | `.claude/workflows/DOCUMENT_PIPELINE.md` | 검증 대상 산출물 |
-
-#### Role별 추가 로딩 (ImLeader 전용)
-
-| 문서 | 경로 | 요약할 내용 |
-|------|------|-------------|
-| Role 정의 | `.claude/workflows/ROLES_DEFINITION.md` | ImLeader 섹션 - 검증 항목 |
-| HANDOFF 양식 | `.claude/workflows/HANDOFF_PROTOCOL.md` | 보고 형식 |
-| 검증 가이드 | `.claude/rules/VALIDATION_GUIDE.md` | Quality Gates |
-
-### Phase 0 출력 (검증용) 🔴
-
-**아래 형식으로 요약을 출력해야 Phase 1 진행 가능:**
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 [문서 로딩 확인]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[공통]
-- CLAUDE.md: {절대 금지 사항 1가지}
-- DOMAIN_SCHEMA.md: {스키마 검증 대상}
-- PROJECT_STACK.md: {검증 기준 스택}
-- DOCUMENT_PIPELINE.md: {검증 대상 산출물}
-
-[ImLeader 전용]
-- ROLES_DEFINITION.md#ImLeader: {역할 1줄 요약}
-- HANDOFF_PROTOCOL.md: {보고 형식 요약}
-- VALIDATION_GUIDE.md: Quality Gates {n}개
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-> ⚠️ **위 출력이 없으면 Phase 1 검증이 무효 처리됩니다.**
+> **입출력 정의**: DOCUMENT_PIPELINE.md - **파이프라인 타입별 산출물** 섹션 참조
 
 ---
 
-### Phase 1: 산출물 확인
+## Step 0: 문서 참조 (필수) 🔴
 
-- 검증 대상 파일 목록 확인
-- 산출물 유형 파악 (분석/설계/코드)
+> **전체 문서 읽기 금지** - 해당 섹션만 선택적 Read
 
-### Phase 2: 검증 수행
+#### 확인 체크리스트
 
-| 유형 | 검증 항목 |
-|------|----------|
-| **정적 검증** | 파일 존재, SDD↔코드 정합성, 타입 |
-| **동적 검증** | 빌드 테스트, 엔트리포인트, 구동 |
+- [ ] `SYSTEM_MANIFEST.md` → Quick Context, Role별 필수 로딩
+- [ ] `DOMAIN_SCHEMA.md` → 핵심 레거시 스키마, 복합 쿼리 제한
+- [ ] `PROJECT_STACK.md` → 기술 스택
+- [ ] `DOCUMENT_PIPELINE.md` → 파이프라인 타입별 산출물
+- [ ] `ROLES_DEFINITION.md` → Implementation Leader 섹션
+- [ ] `HANDOFF_PROTOCOL.md` → 완료 보고 양식
+- [ ] `VALIDATION_GUIDE.md` → **해당 Phase 섹션** (상세 검증 기준)
+- [ ] `CODE_STYLE.md` → 공통 원칙, 네이밍 컨벤션 (코드 검증 시)
+- [ ] `DB_ACCESS_POLICY.md` → 민감 컬럼, 쿼리 제한 (SQL 검증 시)
 
-### Phase 3: 판정 및 보고서 출력
-
----
-
-## 핵심 역할
-
-| 역할 | 설명 |
-|------|------|
-| **산출물 검증** | 분석/설계/코드 산출물의 품질 검증 |
-| **PASS/FAIL 판정** | 검증 기준 충족 여부 판정 |
-| **피드백 제공** | FAIL 시 Actionable Feedback 필수 |
-
-## 검증 유형
-
-### 정적 검증 (Static)
-
-| 유형 | 설명 |
-|------|------|
-| 파일 존재 | 산출물 파일 존재 여부 |
-| SDD ↔ 코드 정합성 | 타입, Props, 클래스명 일치 |
-| TypeScript 문법 | any 타입, 타입 정의 확인 |
-
-### 동적 검증 (Dynamic) ⚠️ 필수
-
-| 유형 | 설명 | 명령어 |
-|------|------|--------|
-| **빌드 테스트** | TypeScript 컴파일 성공 여부 | `npm run build` 또는 `tsc --noEmit` |
-| **엔트리포인트 연결** | main.tsx에서 컴포넌트 import 확인 | 파일 읽기 검증 |
-| **구동 테스트** | 개발 서버 실행 및 렌더링 확인 | `npm run dev` (선택) |
-
-> ⚠️ **중요**: 코드 산출물 검증 시 반드시 빌드 테스트를 실행해야 합니다.
+> **참조 가이드**: `docs/reports/Role-reference-guide.md`
 
 ---
 
-## 검증 체크리스트
+## Step 1: 산출물 확인
 
-### 코드 산출물 검증 시 필수 항목
+- [ ] 검증 대상 파일 목록 확인
+- [ ] 산출물 유형 파악 (분석/설계/코드)
+
+---
+
+## Step 2: 검증 수행
+
+> **상세 검증 기준**: VALIDATION_GUIDE.md - 해당 Phase 섹션 참조
+
+| Phase | 참조 섹션                    |
+| ----- | ---------------------------- |
+| A     | Phase A: Analysis 검증       |
+| B     | Phase B: Design 검증         |
+| C     | Phase C: Implementation 검증 |
+
+### 수행 확인 체크리스트
+
+#### 분석 산출물 (Phase A)
+
+- [ ] SQL 안전성 검증 수행
+- [ ] 스키마 정합성 검증 수행
+- [ ] 결과 품질 검증 수행
+
+#### 설계 산출물 (Phase B)
+
+- [ ] IA → Wireframe → SDD 정합성 검증 수행
+- [ ] HANDOFF CompletionCriteria 충족 여부 확인
+- [ ] 컴포넌트 Props 정의 완결성 확인
+- [ ] 엔트리포인트 연결 가이드 포함 여부 확인 (SDD)
+
+#### 코드 산출물 (Phase C)
 
 - [ ] 파일 존재 확인
-- [ ] SDD 명세 ↔ 코드 정합성
-- [ ] TypeScript 타입 정확성
-- [ ] **빌드 성공 여부** (`npm run build` 또는 `tsc --noEmit`)
-- [ ] **엔트리포인트 연결 확인** (main.tsx에서 import 여부)
-- [ ] TailwindCSS 클래스 사용 (inline style 없음)
-
-### 설계 산출물 검증 시 필수 항목
-
-- [ ] IA → Wireframe → SDD 정합성
-- [ ] PRD 요구사항 충족률
-- [ ] 컴포넌트 Props 정의 완결성
-- [ ] **엔트리포인트 연결 가이드 포함 여부** (SDD에 명시)
+- [ ] SDD 명세 ↔ 코드 정합성 검증 수행
+- [ ] CODE_STYLE.md 준수 여부 확인
+- [ ] **빌드 테스트 실행** (PROJECT_STACK.md 빌드 명령어 참조)
+- [ ] **엔트리포인트 연결 확인**
 
 ---
 
-## Skill Report (필수 출력)
+## Step 3: 판정 및 보고서 출력
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 [ImLeader Skill Report]
-🔧 사용된 Skill: imleader v2.0
+🔧 사용된 Skill: imleader v3.0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 문서 로딩 (Phase 0):
+📖 문서 로딩 (Step 0):
   - 공통: {n}/4개 ✅
   - ImLeader 전용: {n}/3개 ✅
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,80 +1,127 @@
 ---
 name: query
-version: 3.0.0
+version: 3.4.0
 description: |
   SQL 쿼리 생성 및 데이터 분석.
   트리거: "SQL 생성", "데이터 분석", "쿼리 작성", "세그먼트 분석".
-  ⚠️ v3.0.0: 필수 문서 로딩 검증 단계 추가 - Phase 0 완료 후에만 Phase 1 진행 가능.
+  🔴 필수: 실행 전 이 SKILL.md 파일 전체를 Read 도구로 읽고 Step 라우팅 규칙에 따라 진행할 것.
+allowed-tools: Read, Grep, Glob
 ---
 
 # Query Skill (Extension용)
 
 SQL 쿼리 생성 및 데이터 분석.
 
+> **순서**: `/profiler` (WHO) → `/query` (WHAT)
+> **역할**: `/profiler`가 정의한 세그먼트 조건을 기반으로 SQL 작성
+
+---
+
+## 파이프라인 위치
+
+**호출 여부 판단**:
+1. HANDOFF.md의 `pipeline` 필드 확인
+2. `analysis`, `analyzed_design`, `full` 중 하나인가?
+3. segment_definition.md 존재 시 해당 조건 기반 SQL 작성
+
+> **상세 파이프라인 흐름**: `.claude/workflows/ROLE_ARCHITECTURE.md` - 파이프라인 타입 섹션 참조
+
+---
+
+## DB 연결
+
+| 항목 | 설명 |
+|------|------|
+| 연결 정보 | 프로젝트 루트의 `.env` 파일 사용 |
+| 환경 변수 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` |
+| 실행 방법 | `mysql2` 또는 mysql CLI 사용 |
+| 연결 실패 시 | HITL 요청 (사용자에게 연결 정보 확인 요청) |
+
+> **중요**: 쿼리 생성만 하지 말고, **실제 DB에 연결하여 실행**해야 합니다.
+
+---
+
+## Step 라우팅 규칙 🔴
+
+> **Step 0은 항상 필수**. 이후 Step은 순서대로 진행.
+> **참고**: Pipeline Phase (A/B/C)와 Skill 내부 Step은 별개 개념입니다.
+
+| 호출 시점 | 진입 Step | 설명 |
+|-----------|-----------|------|
+| Phase A (profiler 후) | Step 0 → 1 → 2 → 3 | SQL 생성, 실행, 결과 분석 |
+
 ---
 
 ## ⚠️ 실행 프로토콜 (위반 시 산출물 무효)
 
-### Phase 0: 문서 로딩 (필수) 🔴
+### Step 0: 문서 참조 (필수) 🔴
 
-> **이 단계를 건너뛰면 Phase 1로 진행할 수 없습니다.**
+> **전체 문서 읽기 금지** - 해당 섹션만 선택적 Read
 
-아래 문서를 **반드시 Read 도구로 읽고**, 각 문서의 핵심 내용을 요약 출력하세요.
-
-#### 공통 로딩 (모든 Skill 필수)
-
-| 문서 | 경로 | 요약할 내용 |
-|------|------|-------------|
-| 시스템 헌법 | `CLAUDE.md` | 절대 금지 사항 1가지 |
-| DB 스키마 | `.claude/rules/DOMAIN_SCHEMA.md` | 사용할 테이블 목록 |
-| 기술 스택 | `.claude/project/PROJECT_STACK.md` | DB 스택 |
-| 산출물 정의 | `.claude/workflows/DOCUMENT_PIPELINE.md` | Analyzer 산출물 목록 |
-
-#### Role별 추가 로딩 (Query/Analyzer 전용)
-
-| 문서 | 경로 | 요약할 내용 |
-|------|------|-------------|
-| Role 정의 | `.claude/workflows/ROLES_DEFINITION.md` | Analyzer 섹션 - 역할/제약 |
-| DB 접근 정책 | `.claude/rules/DB_ACCESS_POLICY.md` | 허용/금지 패턴 |
-| SQL 패턴 | `.claude/templates/query/SQL_PATTERNS.md` | 쿼리 템플릿 |
-
-### Phase 0 출력 (검증용) 🔴
-
-**아래 형식으로 요약을 출력해야 Phase 1 진행 가능:**
+#### 참조 디렉토리 구조
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 [문서 로딩 확인]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[공통]
-- CLAUDE.md: {절대 금지 사항 1가지}
-- DOMAIN_SCHEMA.md: {사용할 테이블 n개}
-- PROJECT_STACK.md: {DB 스택}
-- DOCUMENT_PIPELINE.md: {Analyzer 산출물 목록}
-
-[Query 전용]
-- ROLES_DEFINITION.md#Analyzer: {역할 1줄 요약}
-- DB_ACCESS_POLICY.md: {허용 패턴, 금지 패턴 요약}
-- SQL_PATTERNS.md: {쿼리 템플릿 n개}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+.claude/
+├── SYSTEM_MANIFEST.md              # Quick Context, Role별 필수 로딩
+├── rules/
+│   ├── DOMAIN_SCHEMA.md            # 핵심 레거시 스키마, 데이터 규모, 복합 쿼리 제한
+│   └── DB_ACCESS_POLICY.md         # 권한 레벨, 쿼리 제한, 민감 컬럼 블랙리스트
+├── workflows/
+│   ├── ROLES_DEFINITION.md         # Analyzer 섹션만
+│   └── DOCUMENT_PIPELINE.md        # 파이프라인 타입별 산출물
+├── templates/
+│   └── query/
+│       └── SQL_PATTERNS.md         # 쿼리 템플릿 (전체)
+└── project/
+    └── PROJECT_STACK.md            # 기술 스택
 ```
 
-> ⚠️ **위 출력이 없으면 Phase 1 쿼리 생성이 무효 처리됩니다.**
+#### 확인 체크리스트
+
+- [ ] `SYSTEM_MANIFEST.md` → Quick Context, Role별 필수 로딩
+- [ ] `DOMAIN_SCHEMA.md` → 핵심 레거시 스키마, 데이터 규모, 복합 쿼리 제한
+- [ ] `PROJECT_STACK.md` → 기술 스택
+- [ ] `DOCUMENT_PIPELINE.md` → 파이프라인 타입별 산출물
+- [ ] `ROLES_DEFINITION.md` → Analyzer 섹션
+- [ ] `DB_ACCESS_POLICY.md` → 권한 레벨, 쿼리 제한, 민감 컬럼 블랙리스트
+- [ ] `SQL_PATTERNS.md` → 쿼리 템플릿 (전체)
+
+> **참조 가이드**: `docs/reports/Role-reference-guide.md`
 
 ---
 
-### Phase 1: 요구사항 분석
+### Step 1: 입력 분석
 
-- HANDOFF.md 읽기
-- 분석 목표 파악
+#### 수행 확인 체크리스트
 
-### Phase 2: SQL 생성
+- [ ] HANDOFF.md 읽기
+- [ ] segment_definition.md 읽기 (있는 경우)
+- [ ] 분석 목표 파악
+- [ ] 세그먼트 조건 확인 (WHERE절 조건)
 
-- SELECT 쿼리만 허용
-- DOMAIN_SCHEMA.md 테이블/컬럼 사용
-- LIMIT 필수
+---
 
-### Phase 3: 결과 해석 및 보고서 출력
+### Step 2: SQL 생성 및 실행
+
+#### 수행 확인 체크리스트
+
+- [ ] `/profiler`가 정의한 세그먼트 조건을 WHERE절에 반영
+- [ ] SELECT 쿼리만 사용 (INSERT/UPDATE/DELETE 금지)
+- [ ] DOMAIN_SCHEMA.md 테이블/컬럼 사용
+- [ ] LIMIT 필수 (최대 10,000행)
+- [ ] 민감 컬럼 블랙리스트 확인 (DB_ACCESS_POLICY.md)
+- [ ] DB 연결 후 쿼리 실행
+
+---
+
+### Step 3: 결과 해석 및 보고서 출력
+
+#### 수행 확인 체크리스트
+
+- [ ] `analysis/results/*.sql` 생성
+- [ ] `analysis/analysis_report.md` 생성
+- [ ] 결과 행 수 확인 (빈 결과 시 조건 재검토)
+- [ ] 인사이트 도출 (패턴/이상치)
 
 ---
 
@@ -82,7 +129,8 @@ SQL 쿼리 생성 및 데이터 분석.
 
 | 역할 | 설명 |
 |------|------|
-| **What** | "무엇이 일어났는가?" - 데이터 분석 |
+| **What** | "무엇을 추출할 것인가?" - 데이터 분석 |
+| **Input** | HANDOFF.md + segment_definition.md (선택) |
 | **Output** | SQL 쿼리, 분석 결과, 인사이트 |
 
 ## 제약사항
@@ -101,14 +149,14 @@ SQL 쿼리 생성 및 데이터 분석.
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 [Query Skill Report]
-🔧 사용된 Skill: query v3.0
+🔧 사용된 Skill: query v3.4
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 문서 로딩 (Phase 0):
+📖 문서 로딩 (Step 0):
   - 공통: {n}/4개 ✅
   - Query 전용: {n}/3개 ✅
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📥 입력: {analysis_goal}
-📤 출력: {n}개 쿼리 생성
+📥 입력: HANDOFF.md + segment_definition.md
+📤 출력: {n}개 쿼리 생성, analysis_report.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ SQL 쿼리: {n}개
 ✅ 인사이트: {n}개

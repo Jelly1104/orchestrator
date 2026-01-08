@@ -19,18 +19,6 @@
 
 프로젝트별 기술 스택 및 버전은 `PROJECT_STACK.md`에서 정의합니다.
 
-```
-프로젝트/
-├── CLAUDE.md              # Claude Code 자동 로딩 (진입점)
-└── .claude/
-    ├── rules/             # [Group A] 제약 사항 (Code Style, DB Schema)
-    ├── workflows/         # [Group B] 실행 절차
-    ├── context/           # [Group C] 배경 지식
-    ├── templates/         # [Group D] 템플릿 (SSOT)
-    └── project/           # 프로젝트별 설정
-        └── PROJECT_STACK.md
-```
-
 ---
 
 ## 공통 원칙 (General Principles)
@@ -52,12 +40,13 @@ Testing:
 
 ### 절대 금지 사항 (Never)
 
-| 금지 항목                 | 설명                                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------------------- |
-| **Mock 데이터/가짜 구현** | 실제 동작하는 로직만 작성 (TDD 준수)                                                      |
-| **타입 회피**             | `any`, `dynamic`, `Object` 사용 금지                                                      |
-| **Magic Number**          | 의미 불명한 숫자는 반드시 `const`로 추출                                                  |
-| **Legacy Renaming**       | **DB 컬럼명(`U_ID` 등)을 임의로 camelCase(`userId`)로 변환 금지.** (매핑 오류 원인 1순위) |
+| 금지 항목           | 설명                                                                                      | 예외 (허용)                                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Fake Logic**      | 비즈니스 로직을 `return true`로 하드코딩하는 행위 금지                                     | -                                                                                                                                 |
+| **Ad-hoc Mocking**  | 스키마와 무관한 임의의 JSON 데이터 사용 금지                                              | **Schema-Compliant Fixture:** `DOMAIN_SCHEMA.md` 구조와 실제 컬럼명을 따르는 Fixture는 UI 개발 및 TDD 시 **필수 권장**           |
+| **타입 회피**       | `any`, `dynamic`, `Object` 사용 금지                                                      | -                                                                                                                                 |
+| **Magic Number**    | 의미 불명한 숫자는 반드시 `const`로 추출                                                  | -                                                                                                                                 |
+| **Legacy Renaming** | **DB 컬럼명(`U_ID` 등)을 임의로 camelCase(`userId`)로 변환 금지.** (매핑 오류 원인 1순위) | -                                                                                                                                 |
 
 ### 함수 작성 규칙
 
@@ -99,116 +88,5 @@ AI는 아래 **두 가지 세계**를 명확히 구분해야 합니다.
 2. **Business Layer (로직 내부)**: 가독성 우선. 레거시 데이터를 다룰 때는 현대적인 이름으로 **래핑(Wrapping)**하거나 **매핑 함수**를 사용하여 격리하십시오.
    - 예: `const userMajor = legacyUser.U_MAJOR_CODE_1;` (O)
    - 금지: `U_MAJOR_CODE_1` 컬럼 자체를 `userMajor`로 `ALTER TABLE` 하려는 시도 (X)
-
----
-
-## TypeScript/JavaScript (FE)
-
-### 2.1 타입 안정성 (Type Safety)
-
-`tsconfig.json`의 `strict: true`를 절대적으로 준수합니다.
-
-```typescript
-// ❌ 금지: 레거시 컬럼을 마음대로 camelCase로 변경
-interface User {
-  userId: string; // 실제 DB엔 U_ID로 되어 있어 매핑 에러 발생함
-}
-
-// ✅ 권장: 레거시 스키마와 일치시킴
-interface UserLegacyDto {
-  U_ID: string;
-  U_NAME: string;
-  U_ALIVE: "Y" | "N";
-}
-```
-
-### React 컴포넌트 & 파일 구조
-
-**Feature-Sliced Design (FSD)** 패턴을 지향합니다.
-
-```
-src/
-├── entities/           # 도메인 (User, Board)
-│   └── board/
-│       ├── model/      # types, store
-│       └── ui/         # Dumb Components
-├── features/           # 기능 (LikeBoard, WriteComment)
-├── shared/             # 공용 (UI Kit, Libs)
-└── pages/              # 라우팅 페이지
-```
-
----
-
-## Java/Kotlin (BE)
-
-### Legacy Entity Mapping
-
-JPA/MyBatis 사용 시, **DB 컬럼명과 필드명을 매핑**할 때 주의합니다.
-
-```java
-// ✅ Good: 명시적 매핑으로 혼란 방지
-@Entity
-@Table(name = "USERS")
-public class User {
-
-    @Id
-    @Column(name = "U_ID") // 레거시 컬럼명 명시
-    private String uId;    // Java 내부는 camelCase 허용하되, 매핑 명시 필수
-
-    @Column(name = "U_NAME")
-    private String uName;
-}
-```
-
-### JavaDoc 필수 대상
-
-- `public` 메서드 전체
-- 복잡한 비즈니스 로직 (특히 **예외 처리** 로직)
-
----
-
-## Dart/Flutter (App)
-
-### Null Safety
-
-Dart의 강점인 Null Safety를 무력화하지 마십시오.
-
-```dart
-// ❌ Bad
-String? name;
-print(name!); // 런타임 에러 위험
-
-// ✅ Good
-print(name ?? 'Unknown');
-```
-
-### Widget 구조
-
-- **const 생성자**를 적극 사용하여 리빌드 성능을 최적화합니다.
-- 비즈니스 로직은 Widget에서 분리하여 `Provider`나 `Bloc`으로 위임합니다.
-
----
-
-## Infrastructure (Terraform/Docker)
-
-### Terraform
-
-- **리소스명**: `snake_case` (예: `aws_s3_bucket`)
-- **변수명**: 명확한 설명(`description`) 필수 포함
-
-### 5.2 SQL (Legacy Schema)
-
-- **`DOMAIN_SCHEMA.md` 위반 시 코드 리뷰 즉시 반려**
-
-```sql
--- ❌ Bad: 인덱스 안 타는 쿼리, 컬럼명 추측
-SELECT * FROM COMMENT WHERE content LIKE '%욕설%';
-
--- ✅ Good: 인덱스 활용, 실제 컬럼명 사용
-SELECT COMMENT_IDX, CONTENT
-FROM COMMENT
-WHERE REG_DATE > '2025-01-01'
-AND BOARD_IDX = 100;
-```
 
 **END OF CODE_STYLE.md**

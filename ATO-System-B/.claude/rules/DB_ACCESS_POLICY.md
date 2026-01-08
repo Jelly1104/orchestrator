@@ -1,6 +1,6 @@
 # DB_ACCESS_POLICY.md
 
-> **버전**: 1.3.0 | **수정일**: 2025-12-29
+> **버전**: 1.3.0 | **수정일**: 2026-01-08
 > **정의**: 권한/금지 패턴, 민감 컬럼
 > **대상**: Analyzer | **로딩**: 작업 시
 
@@ -39,6 +39,13 @@ SHOW TABLES; DESCRIBE table; EXPLAIN SELECT ...;
 ---
 
 ## 권한 레벨
+
+### 접근 규칙 (Role-Based Access)
+
+| Role         | 계정          | 허용          | 금지                  | 목적                                           |
+| :----------- | :------------ | :------------ | :-------------------- | :--------------------------------------------- |
+| **Analyzer** | `ai_readonly` | **SELECT**    | INSERT/UPDATE/DELETE  | **발견(Discovery):** 데이터 구조 및 패턴 파악  |
+| **Coder**    | -             | **접근 차단** | **ALL (SELECT 포함)** | **재현(Reproduction):** 계약/Fixture 기반 구현 |
 
 | 항목      | 설정                   |
 | --------- | ---------------------- |
@@ -176,62 +183,5 @@ const FORBIDDEN_PATTERNS = [
 ```
 
 ---
-
-## 감사 로깅
-
-```json
-{
-  "timestamp": "2024-12-19T12:00:00Z",
-  "agent": "QueryAgent",
-  "taskId": "task-123",
-  "query": "SELECT U_ID, U_KIND FROM USERS LIMIT 100",
-  "rowCount": 100,
-  "executionTime": "245ms",
-  "status": "success"
-}
-```
-
-| 유형           | 보존 기간 |
-| -------------- | --------- |
-| 일반 쿼리 로그 | 30일      |
-| 에러 로그      | 90일      |
-| 보안 이벤트    | 1년       |
-
----
-
-## 비상 대응
-
-### 이상 징후
-
-- 비정상적 쿼리 빈도 (분당 100회 초과)
-- 대량 데이터 조회 (10,000행 초과)
-- 반복적인 에러 발생
-
-### 자동 차단
-
-```javascript
-if (queryCount > 100 || errorRate > 0.5) {
-  await killSwitch.activate("DB_ACCESS");
-  await alertTeam("DB 접근 차단됨: 이상 징후 감지");
-}
-```
-
-### 수동 차단
-
-```bash
-echo '{"DB_ACCESS": false}' > orchestrator/config/kill-switch.json
-# 또는
-REVOKE ALL PRIVILEGES ON medigate.* FROM 'ai_readonly'@'%';
-```
-
----
-
-## 규정 준수
-
-| 규정           | 준수 사항                                   |
-| -------------- | ------------------------------------------- |
-| 개인정보보호법 | 최소 권한, 목적 제한, 데이터 최소화, 익명화 |
-| 의료법         | 환자 정보 보호                              |
-| GDPR           | 해당 시 적용                                |
 
 **END OF DB_ACCESS_POLICY.md**
