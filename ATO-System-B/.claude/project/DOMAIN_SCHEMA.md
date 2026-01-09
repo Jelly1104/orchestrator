@@ -275,4 +275,48 @@ WHERE U_KIND = 'DOC001'
 
 ---
 
+## 흔한 실수 (Common Mistakes) 🚨
+
+> AI가 자주 틀리는 테이블명/컬럼명입니다. **아래 "올바른 사용"만 허용됩니다.**
+
+### 테이블명
+
+| ❌ 잘못된 사용 | ✅ 올바른 사용 | 비고 |
+|---------------|---------------|------|
+| `USER` | `USERS` | 복수형 |
+| `COMMENTS` | `COMMENT` | 단수형 |
+| `BOARD` | `BOARD_MUZZIMA` 등 | 접미사 필수 |
+
+### 컬럼명
+
+| ❌ 잘못된 사용 | ✅ 올바른 사용 | 테이블 |
+|---------------|---------------|--------|
+| `id`, `user_id`, `userId` | `U_ID` | USERS |
+| `status`, `is_active` | `U_ALIVE` | USERS |
+| `U_STATUS = 'A'` | `U_ALIVE = 'Y'` | USERS (값도 주의) |
+| `U_NO` | `U_ID` | USERS |
+| `MAJOR_CODE` | `U_MAJOR_CODE_1` | USER_DETAIL |
+| `WORK_TYPE`, `WORK_TYPE_CODE` | `U_WORK_TYPE_1` | USER_DETAIL |
+| `REG_DATE` (USERS) | `U_REG_DATE` | USERS (접두사 주의) |
+| `CMT_IDX` | `COMMENT_IDX` | COMMENT |
+| `P_CMT_IDX` | `PARENT_IDX` | COMMENT |
+| `SVC_CODE` (게시판) | `CTG_CODE` | BOARD_MUZZIMA |
+
+### 타입/값
+
+| ❌ 잘못된 사용 | ✅ 올바른 사용 | 비고 |
+|---------------|---------------|------|
+| `U_ALIVE = 'Y'` (VARCHAR) | `U_ALIVE = 'Y'` (CHAR(6)) | 타입은 CHAR(6) |
+| `U_KIND = 'DOCTOR'` | `U_KIND = 'DOC001'` | 6자리 코드 사용 |
+
+### 금지 패턴
+
+| ❌ 금지 | 이유 |
+|--------|------|
+| `SELECT *` | 민감 컬럼 노출 위험 |
+| `LIMIT` 없는 대용량 조회 | 성능 문제 |
+| 존재하지 않는 컬럼 추측 | Hallucination |
+
+---
+
 **END OF DOMAIN_SCHEMA.MD**

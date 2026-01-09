@@ -1,6 +1,6 @@
 ---
 name: imleader
-version: 3.0.0
+version: 3.1.0
 description: |
   산출물 품질 검증 (Quality Manager).
   트리거: "검증", "리뷰", "품질 체크", "QA".
@@ -61,6 +61,26 @@ allowed-tools: Read, Grep, Glob
 
 > **상세 검증 기준**: VALIDATION_GUIDE.md - 해당 Phase 섹션 참조
 
+### 🔴 확장 사고 (Contextual Checklist)
+
+> VALIDATION_GUIDE.md의 **공통 원칙**을 기준으로, 현재 컨텍스트에 맞는 체크리스트를 **동적 생성**하세요.
+
+**참조 문서** (체크리스트 확장 시):
+- `PROJECT_STACK.md` → 기술 스택별 기준 (커버리지 임계값, 빌드 명령어 등)
+- `HANDOFF.md` → 피쳐별 완료 조건 (CompletionCriteria)
+- `SDD.md` → 컴포넌트별 요구사항
+
+**예시**:
+```
+VALIDATION_GUIDE: "테스트 필수"
+PROJECT_STACK: "커버리지 ≥ 85%"
+HANDOFF: "DailyBestCard 컴포넌트 테스트 포함"
+
+→ 생성된 체크리스트:
+  - [ ] DailyBestCard.test.tsx 존재 확인
+  - [ ] 커버리지 85% 이상 확인
+```
+
 | Phase | 참조 섹션                    |
 | ----- | ---------------------------- |
 | A     | Phase A: Analysis 검증       |
@@ -94,10 +114,15 @@ allowed-tools: Read, Grep, Glob
 
 ## Step 3: 판정 및 보고서 출력
 
+#### 수행 확인 체크리스트
+
+- [ ] 판정 결과 `imleader-review.md` 파일로 저장
+- [ ] 저장 경로: DOCUMENT_PIPELINE.md **파이프라인 타입별 산출물** 참조
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 [ImLeader Skill Report]
-🔧 사용된 Skill: imleader v3.0
+🔧 사용된 Skill: imleader v3.1
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📖 문서 로딩 (Step 0):
   - 공통: {n}/4개 ✅

@@ -69,7 +69,7 @@ allowed-tools: Read, Grep, Glob
 │   └── DOCUMENT_PIPELINE.md        # 파이프라인 타입별 산출물
 ├── templates/
 │   └── profiler/
-│       └── SEGMENT_RULES.md        # 세그먼트 정의 기준 (전체)
+│       └── TARGET_TEMPLATE.md      # 타겟 정의 템플릿 (전체)
 └── project/
     └── PROJECT_STACK.md            # 기술 스택
 ```
@@ -81,7 +81,7 @@ allowed-tools: Read, Grep, Glob
 - [ ] `PROJECT_STACK.md` → 기술 스택
 - [ ] `DOCUMENT_PIPELINE.md` → 파이프라인 타입별 산출물
 - [ ] `ROLES_DEFINITION.md` → Analyzer 섹션
-- [ ] `SEGMENT_RULES.md` → 세그먼트 정의 기준 (전체)
+- [ ] `TARGET_TEMPLATE.md` → 타겟 정의 템플릿 (전체)
 
 > **참조 가이드**: `docs/reports/Role-reference-guide.md`
 
@@ -112,7 +112,7 @@ allowed-tools: Read, Grep, Glob
 
 #### 수행 확인 체크리스트
 
-- [ ] `analysis/segment_definition.md` 생성
+- [ ] `analysis/TARGET_DEFINITION.md` 생성
 - [ ] `/query`가 사용할 SQL 조건 명세 포함
 - [ ] 세그먼트별 최소 표본(30명 이상) 확인
 
@@ -131,7 +131,7 @@ allowed-tools: Read, Grep, Glob
 | 제약 | 설명 |
 |------|------|
 | 코드 마스터 참조 | 코드값은 CODE_MASTER 기반 해석 |
-| 세그먼트 규칙 | SEGMENT_RULES.md 기준 적용 |
+| 타겟 정의 규칙 | TARGET_TEMPLATE.md 기준 적용 |
 | 비식별화 | 집계 통계만 출력, 개인정보 노출 금지 |
 | 최소 표본 | 30명 이상 세그먼트만 분석 |
 
@@ -149,7 +149,7 @@ allowed-tools: Read, Grep, Glob
   - Profiler 전용: {n}/2개 ✅
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📥 입력: HANDOFF.md
-📤 출력: segment_definition.md
+📤 출력: TARGET_DEFINITION.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ 세그먼트: {n}개 정의
 ✅ 페르소나: {n}개 생성

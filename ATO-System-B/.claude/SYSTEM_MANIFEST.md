@@ -1,6 +1,6 @@
 # SYSTEM_MANIFEST.md (LLM Control Tower)
 
-> **Version**: 6.1.0 | **대상**: Orchestrator 내 모든 AI Role
+> **Version**: 6.2.0 | **대상**: Orchestrator 내 모든 AI Role
 
 ---
 
@@ -43,50 +43,61 @@
 
 ## Document Map
 
-### Group A: Rules (제약 사항)
+> **`CLAUDE.md`**: 그룹 정의와 무관하게 **항상 자동 로딩**되는 시스템 헌법. 모든 AI Role이 암묵적으로 준수해야 함.
 
-| Pri | Path                                | 비유          | 정의 범위                     | Who      | 로딩    |
-| --- | ----------------------------------- | ------------- | ----------------------------- | -------- | ------- |
-| P0  | `.claude/rules/DOMAIN_SCHEMA.md`    | 📚 사전       | DB 테이블/컬럼, 레거시 매핑   | All      | 전체    |
-| P0  | `.claude/rules/CODE_STYLE.md`       | ⚖️ 법전       | 네이밍/구조 규칙, 필수 조건   | Coder    | 전체    |
-| P0  | `.claude/rules/VALIDATION_GUIDE.md` | ✅ 체크리스트 | Quality Gates, 검증 기준      | ImLeader | 전체    |
-| P1  | `.claude/rules/TDD_WORKFLOW.md`     | 🔄 절차서     | Red-Green-Refactor 사이클     | Coder    | 작업 시 |
-| P1  | `.claude/rules/DB_ACCESS_POLICY.md` | 🔒 보안정책   | 권한/금지 패턴, 민감 컬럼     | Analyzer | 작업 시 |
-| P1  | `.claude/rules/ANALYSIS_GUIDE.md`   | 📊 가이드     | 쿼리 전략, 샘플링, 파이프라인 | Analyzer | 작업 시 |
+### Group 0: System (시스템 메타)
 
-### Group B: Workflows (실행 절차)
+| Pri  | Path                         | 비유     | 정의 범위                       | Who | 로딩 |
+| ---- | ---------------------------- | -------- | ------------------------------- | --- | ---- |
+| Root | `.claude/SYSTEM_MANIFEST.md` | 🗺️ 지도 | 문서 맵, 로딩 전략, Role별 필수 | All | 전체 |
 
-| Pri | Path                                        | 비유           | 정의 범위                            | Who              | 로딩            |
-| --- | ------------------------------------------- | -------------- | ------------------------------------ | ---------------- | --------------- |
-| P0  | `.claude/workflows/ROLE_ARCHITECTURE.md`    | 🏗️ 설계도      | Topology, Phase, HITL, **Role 흐름** | Orchestrator     | 전체            |
-| P0  | `.claude/workflows/ROLES_DEFINITION.md`     | 📖 매뉴얼      | Role별 R&R, **파이프라인 요약**      | 각 Role          | JIT (해당 섹션) |
-| P0  | `.claude/workflows/HANDOFF_PROTOCOL.md`     | 📋 양식        | 업무 지시/보고 형식                  | Leader, ImLeader | 전체            |
-| P0  | `.claude/workflows/DOCUMENT_PIPELINE.md`    | 📦 산출물 명세 | **입력/산출물 정의**, 의존성         | All              | 전체            |
-| P1  | `.claude/workflows/PRD_GUIDE.md`            | 📝 가이드      | PRD Gap Check, PRD 완성도 체크       | Leader           | 작업 시         |
-| P1  | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | 🚨 대응책      | 재시도/폴백 로직                     | Orchestrator     | 에러 시         |
-| P1  | `.claude/workflows/INCIDENT_PLAYBOOK.md`    | 🆘 비상매뉴얼  | 에스컬레이션 절차                    | Human            | 장애 시         |
+### Group A: Project (프로젝트 설정)
 
-### Group C: Context (배경 지식)
+| Pri | Path                               | 비유     | 정의 범위                       | Who | 로딩 |
+| --- | ---------------------------------- | -------- | ------------------------------- | --- | ---- |
+| P0  | `.claude/project/PROJECT_STACK.md` | 🔧 설정  | 프로젝트별 기술 스택 오버라이드 | All | 전체 |
+| P0  | `.claude/project/DOMAIN_SCHEMA.md` | 📚 사전  | DB 스키마, Hallucination 방지   | All | 전체 |
 
-| Pri  | Path                               | 비유      | 정의 범위                       | Who    | 로딩    |
-| ---- | ---------------------------------- | --------- | ------------------------------- | ------ | ------- |
-| Root | `CLAUDE.md`                        | ⚖️ 헌법   | 절대 원칙, 금지 사항, 아키텍처  | All    | 전체    |
-| Key  | `.claude/context/AI_Playbook.md`   | 🧭 나침반 | 팀 철학, 행동 강령              | Leader | 판단 시 |
-| Key  | `.claude/project/PROJECT_STACK.md` | 🔧 설정   | 프로젝트별 기술 스택 오버라이드 | All    | 전체    |
+### Group B: Rules (제약 사항)
 
-### Group D: Templates (SSOT) - 산출물 작성 시 참조
+| Pri | Path                                | 비유          | 정의 범위                     | Who      | 로딩            |
+| --- | ----------------------------------- | ------------- | ----------------------------- | -------- | --------------- |
+| P0  | `.claude/rules/CODE_STYLE.md`       | ⚖️ 법전       | 네이밍/구조 규칙, 필수 조건   | Coder    | 전체            |
+| P0  | `.claude/rules/VALIDATION_GUIDE.md` | ✅ 체크리스트 | Quality Gates, 검증 기준      | ImLeader | 전체            |
+| P0  | `.claude/rules/ROLES_DEFINITION.md` | 📖 매뉴얼     | Role별 R&R, 책임/권한 제약    | 각 Role  | JIT (해당 섹션) |
+| P1  | `.claude/rules/TDD_WORKFLOW.md`     | 🔄 절차서     | Red-Green-Refactor 사이클     | Coder    | 작업 시         |
+| P1  | `.claude/rules/DB_ACCESS_POLICY.md` | 🔒 보안정책   | 권한/금지 패턴, 민감 컬럼     | Analyzer | 작업 시         |
+| P1  | `.claude/rules/ANALYSIS_GUIDE.md`   | 📊 가이드     | 쿼리 전략, 샘플링, 파이프라인 | Analyzer | 작업 시         |
 
-| Pri | Path                                          | Who      |
-| --- | --------------------------------------------- | -------- |
-| P1  | `.claude/templates/designer/IA_TEMPLATE.md`   | Designer |
-| P1  | `.claude/templates/designer/WF_TEMPLATE.md`   | Designer |
-| P1  | `.claude/templates/designer/SDD_TEMPLATE.md`  | Designer |
-| P1  | `.claude/templates/query/SQL_PATTERNS.md`     | Analyzer |
-| P1  | `.claude/templates/profiler/SEGMENT_RULES.md` | Analyzer |
-| P2  | `.claude/templates/prd/PRD_LITE.md`           | Human    |
-| P2  | `.claude/templates/prd/PRD_FULL.md`           | Human    |
+### Group C: Workflows (실행 절차)
 
-### Group E: Skills (Extension용) - 슬래시 커맨드 실행 시
+| Pri | Path                                        | 비유           | 정의 범위                            | Who              | 로딩    |
+| --- | ------------------------------------------- | -------------- | ------------------------------------ | ---------------- | ------- |
+| P0  | `.claude/workflows/ROLE_ARCHITECTURE.md`    | 🏗️ 설계도      | Topology, Phase, HITL, **Role 흐름** | Orchestrator     | 전체    |
+| P0  | `.claude/workflows/HANDOFF_PROTOCOL.md`     | 📋 양식        | 업무 지시/보고 형식                  | Leader, ImLeader | 전체    |
+| P0  | `.claude/workflows/DOCUMENT_PIPELINE.md`    | 📦 산출물 명세 | **입력/산출물 정의**, 의존성         | All              | 전체    |
+| P1  | `.claude/workflows/PRD_GUIDE.md`            | 📝 가이드      | PRD Gap Check, PRD 완성도 체크       | Leader           | 작업 시 |
+| P1  | `.claude/workflows/ERROR_HANDLING_GUIDE.md` | 🚨 대응책      | 재시도/폴백 로직                     | Orchestrator     | 에러 시 |
+| P1  | `.claude/workflows/INCIDENT_PLAYBOOK.md`    | 🆘 비상매뉴얼  | 에스컬레이션 절차                    | Human            | 장애 시 |
+
+### Group D: Context (배경 지식)
+
+| Pri | Path                             | 비유      | 정의 범위          | Who    | 로딩    |
+| --- | -------------------------------- | --------- | ------------------ | ------ | ------- |
+| Key | `.claude/context/AI_Playbook.md` | 🧭 나침반 | 팀 철학, 행동 강령 | Leader | 판단 시 |
+
+### Group E: Templates (SSOT) - 산출물 작성 시 참조
+
+| Pri | Path                                            | Who      |
+| --- | ----------------------------------------------- | -------- |
+| P1  | `.claude/templates/designer/IA_TEMPLATE.md`     | Designer |
+| P1  | `.claude/templates/designer/WF_TEMPLATE.md`     | Designer |
+| P1  | `.claude/templates/designer/SDD_TEMPLATE.md`    | Designer |
+| P1  | `.claude/templates/profiler/TARGET_TEMPLATE.md` | Analyzer |
+| P2  | `.claude/templates/prd/PRD_LITE.md`             | Human    |
+| P2  | `.claude/templates/prd/PRD_FULL.md`             | Human    |
+
+### Group F: Skills (Extension용) - 슬래시 커맨드 실행 시
 
 > **용도**: VSCode Extension에서 Orchestrator 없이 Skill 직접 호출 (LLM 프롬프트 기반)
 
@@ -108,13 +119,15 @@
 
 ### 공통 (모든 AI Role)
 
-| 문서                                     | Why                             |
-| ---------------------------------------- | ------------------------------- |
-| `SYSTEM_MANIFEST.md`                     | 시스템 지도, 문서 맵, 로딩 전략 |
-| `CLAUDE.md`                              | 시스템 헌법, 절대 금지 사항     |
-| `.claude/rules/DOMAIN_SCHEMA.md`         | DB 스키마, Hallucination 방지   |
-| `.claude/project/PROJECT_STACK.md`       | 프로젝트별 기술 스택            |
-| `.claude/workflows/DOCUMENT_PIPELINE.md` | 입력/산출물 정의, 의존성        |
+> 아래 문서는 **Group 0, A** 에 해당하며 모든 Role이 작업 전 로딩해야 함
+
+| 문서                                     | Group   | Why                             |
+| ---------------------------------------- | ------- | ------------------------------- |
+| `CLAUDE.md`                              | (암묵적) | 시스템 헌법, 절대 금지 사항     |
+| `.claude/SYSTEM_MANIFEST.md`             | 0       | 시스템 지도, 문서 맵, 로딩 전략 |
+| `.claude/project/PROJECT_STACK.md`       | A       | 프로젝트별 기술 스택            |
+| `.claude/project/DOMAIN_SCHEMA.md`       | A       | DB 스키마, Hallucination 방지   |
+| `.claude/workflows/DOCUMENT_PIPELINE.md` | C       | 입력/산출물 정의, 의존성        |
 
 ### Role별 추가 로딩
 

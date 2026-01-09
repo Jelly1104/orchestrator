@@ -22,7 +22,7 @@ SQL 쿼리 생성 및 데이터 분석.
 **호출 여부 판단**:
 1. HANDOFF.md의 `pipeline` 필드 확인
 2. `analysis`, `analyzed_design`, `full` 중 하나인가?
-3. segment_definition.md 존재 시 해당 조건 기반 SQL 작성
+3. TARGET_DEFINITION.md 존재 시 해당 조건 기반 SQL 작성
 
 > **상세 파이프라인 흐름**: `.claude/workflows/ROLE_ARCHITECTURE.md` - 파이프라인 타입 섹션 참조
 
@@ -69,9 +69,6 @@ SQL 쿼리 생성 및 데이터 분석.
 ├── workflows/
 │   ├── ROLES_DEFINITION.md         # Analyzer 섹션만
 │   └── DOCUMENT_PIPELINE.md        # 파이프라인 타입별 산출물
-├── templates/
-│   └── query/
-│       └── SQL_PATTERNS.md         # 쿼리 템플릿 (전체)
 └── project/
     └── PROJECT_STACK.md            # 기술 스택
 ```
@@ -84,7 +81,6 @@ SQL 쿼리 생성 및 데이터 분석.
 - [ ] `DOCUMENT_PIPELINE.md` → 파이프라인 타입별 산출물
 - [ ] `ROLES_DEFINITION.md` → Analyzer 섹션
 - [ ] `DB_ACCESS_POLICY.md` → 권한 레벨, 쿼리 제한, 민감 컬럼 블랙리스트
-- [ ] `SQL_PATTERNS.md` → 쿼리 템플릿 (전체)
 
 > **참조 가이드**: `docs/reports/Role-reference-guide.md`
 
@@ -95,7 +91,7 @@ SQL 쿼리 생성 및 데이터 분석.
 #### 수행 확인 체크리스트
 
 - [ ] HANDOFF.md 읽기
-- [ ] segment_definition.md 읽기 (있는 경우)
+- [ ] TARGET_DEFINITION.md 읽기 (있는 경우)
 - [ ] 분석 목표 파악
 - [ ] 세그먼트 조건 확인 (WHERE절 조건)
 
@@ -130,7 +126,7 @@ SQL 쿼리 생성 및 데이터 분석.
 | 역할 | 설명 |
 |------|------|
 | **What** | "무엇을 추출할 것인가?" - 데이터 분석 |
-| **Input** | HANDOFF.md + segment_definition.md (선택) |
+| **Input** | HANDOFF.md + TARGET_DEFINITION.md (선택) |
 | **Output** | SQL 쿼리, 분석 결과, 인사이트 |
 
 ## 제약사항
@@ -155,7 +151,7 @@ SQL 쿼리 생성 및 데이터 분석.
   - 공통: {n}/4개 ✅
   - Query 전용: {n}/3개 ✅
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📥 입력: HANDOFF.md + segment_definition.md
+📥 입력: HANDOFF.md + TARGET_DEFINITION.md
 📤 출력: {n}개 쿼리 생성, analysis_report.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ SQL 쿼리: {n}개

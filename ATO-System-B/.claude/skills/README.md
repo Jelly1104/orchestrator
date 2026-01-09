@@ -151,7 +151,7 @@ docs/cases/{case-id}/
 ├── PRD.md              # 사용자 작성
 ├── HANDOFF.md          # /leader 생성
 └── analysis/
-    ├── segment_definition.md  # /profiler 생성
+    ├── TARGET_DEFINITION.md  # /profiler 생성
     ├── analysis_report.md     # /query 생성
     └── results/
         └── *.sql              # /query 생성
