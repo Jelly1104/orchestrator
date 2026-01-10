@@ -1,0 +1,6 @@
+ ATO-System-B/.claude/SYSTEM_MANIFEST.md            | 144 ++++++++++--
+ ATO-System-B/.claude/rules/ROLES_DEFINITION.md     |   3 +-
+ .../.claude/workflows/DOCUMENT_PIPELINE.md         |  27 ++-
+ ATO-System-B/docs/reports/Migration-Guide.md       | 255 +++++++++++++++++++++
+ ATO-System-B/scripts/validate-docs.sh              |  34 +++
+ 5 files changed, 435 insertions(+), 28 deletions(-)
