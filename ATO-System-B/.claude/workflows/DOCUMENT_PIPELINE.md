@@ -1,8 +1,9 @@
 # DOCUMENT_PIPELINE.md
 
-> **버전**: 2.0.0 | **수정일**: 2026-01-08
+> **버전**: 2.1.0 | **수정일**: 2026-01-10
 > **정의**: 입력/산출물 정의, 의존성
 > **대상**: All | **로딩**: 전체
+> **변경 이력**: Plan05 경로 매핑 주석 추가
 
 ---
 
@@ -26,16 +27,24 @@ PRD.md → HANDOFF.md → [Phase A] → [Phase B] → [Phase C] → Deploy
 
 ## 파이프라인 타입별 산출물
 
-| 타입              | 최초 입력          | Executor 입력 (Phase별 누적)                                                                                                                        | 산출물                                                              |
-| ----------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `analysis`        | `PRD.md`           | `HANDOFF.md`, `TARGET_DEFINITION.md`                                                                                                               | `*.sql`, `analysis_result.json`, `analysis_report.md`               |
-| `design`          | `PRD.md`           | `HANDOFF.md`                                                                                                                                        | `IA.md`, `Wireframe.md`, `SDD.md`                                   |
-| `analyzed_design` | `PRD.md`           | `HANDOFF.md`, `TARGET_DEFINITION.md`, `*.sql`, `analysis_result.json`, `analysis_report.md`                                                        | `IA.md`, `Wireframe.md`, `SDD.md`                                   |
-| `code`            | `PRD.md`, `SDD.md` | `HANDOFF.md`, `DOMAIN_SCHEMA.md`                                                                                                                    | `backend/src/*`, `frontend/src/*`, `src/mocks/*`, `tests/*.test.ts` |
-| `ui_mockup`       | `PRD.md`           | `HANDOFF.md`, `IA.md`, `Wireframe.md`, `SDD.md`, `DOMAIN_SCHEMA.md`                                                                                 | `frontend/src/*`, `src/mocks/*`, `tests/*.test.ts`                  |
-| `full`            | `PRD.md`           | `HANDOFF.md`, `TARGET_DEFINITION.md`, `*.sql`, `analysis_result.json`, `analysis_report.md`, `IA.md`, `Wireframe.md`, `SDD.md`, `DOMAIN_SCHEMA.md` | `backend/src/*`, `frontend/src/*`, `src/mocks/*`, `tests/*`         |
+> **경로 참조**: 아래 산출물 경로는 현재 사용 중(Current) 구조입니다.
+> Plan05 목표 구조는 [SYSTEM_MANIFEST.md](../SYSTEM_MANIFEST.md#output-paths-산출물-저장-위치) 참조.
+
+| 타입              | 최초 입력          | Executor 입력 (Phase별 누적)                                                                                                                        | 산출물 (Current)                                                              |
+| ----------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `analysis`        | `PRD.md`           | `HANDOFF.md`, `TARGET_DEFINITION.md`                                                                                                               | `docs/cases/.../analysis/*.sql`, `analysis_result.json`, `analysis_report.md` |
+| `design`          | `PRD.md`           | `HANDOFF.md`                                                                                                                                        | `docs/cases/.../IA.md`, `Wireframe.md`, `SDD.md`                              |
+| `analyzed_design` | `PRD.md`           | `HANDOFF.md`, `TARGET_DEFINITION.md`, `*.sql`, `analysis_result.json`, `analysis_report.md`                                                        | `docs/cases/.../IA.md`, `Wireframe.md`, `SDD.md`                              |
+| `code`            | `PRD.md`, `SDD.md` | `HANDOFF.md`, `DOMAIN_SCHEMA.md`                                                                                                                    | `backend/src/*`, `frontend/src/features/*`, `mocks/*`, `tests/*.test.ts`      |
+| `ui_mockup`       | `PRD.md`           | `HANDOFF.md`, `IA.md`, `Wireframe.md`, `SDD.md`, `DOMAIN_SCHEMA.md`                                                                                 | `frontend/src/features/*`, `mocks/*`, `tests/*.test.ts`                       |
+| `full`            | `PRD.md`           | `HANDOFF.md`, `TARGET_DEFINITION.md`, `*.sql`, `analysis_result.json`, `analysis_report.md`, `IA.md`, `Wireframe.md`, `SDD.md`, `DOMAIN_SCHEMA.md` | 위 analysis + design + code 산출물 전체                                       |
 
 > ⚠️ **code 타입 주의**: `SDD.md` 별첨 필수 (Coder는 PRD를 직접 참조하지 않음)
+>
+> 📁 **Plan05 목표 경로** (향후):
+> - 문서: `services/{service}/docs/features/{feature}/`
+> - 코드: `services/{service}/apps/{web,api}/src/features/{feature}/`
+> - 분석: `services/{service}/docs/features/{feature}/analysis/`
 
 ---
 
