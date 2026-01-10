@@ -1,6 +1,7 @@
 # SYSTEM_MANIFEST.md (LLM Control Tower)
 
-> **Version**: 6.2.0 | **대상**: Orchestrator 내 모든 AI Role
+> **Version**: 7.0.0 | **대상**: Orchestrator 내 모든 AI Role
+> **변경 이력**: Plan05 정합성 반영 (경로 매핑, Migration Roadmap 추가)
 
 ---
 
@@ -13,7 +14,8 @@
 1. **Quick Context** → 시스템이 무엇인지 30초 안에 파악
 2. **Role별 필수 로딩** → 내가 어떤 Role인지 확인하고, 필수 문서 로딩
 3. **Document Map** → 작업 중 필요한 문서를 찾아서 JIT 로딩
-4. **Safety Rules** → 절대 하면 안 되는 것 확인
+4. **Output Paths** → 산출물을 어디에 저장할지 확인 (Plan05 매핑 포함)
+5. **Safety Rules** → 절대 하면 안 되는 것 확인
 
 ### 컬럼 설명
 
@@ -44,6 +46,8 @@
 ## Document Map
 
 > **`CLAUDE.md`**: 그룹 정의와 무관하게 **항상 자동 로딩**되는 시스템 헌법. 모든 AI Role이 암묵적으로 준수해야 함.
+>
+> ⚠️ **현재 위치**: `/CLAUDE.md` (프로젝트 루트) → **향후 이동**: `.claude/CLAUDE.md` (Migration Phase 1)
 
 ### Group 0: System (시스템 메타)
 
@@ -60,6 +64,8 @@
 
 ### Group B: Rules (제약 사항)
 
+> ⚠️ **향후 변경**: 현재 `.claude/rules/`는 Migration Phase 2에서 `.claude/rulebook/rules/` (submodule)로 전환 예정
+
 | Pri | Path                                | 비유          | 정의 범위                     | Who      | 로딩            |
 | --- | ----------------------------------- | ------------- | ----------------------------- | -------- | --------------- |
 | P0  | `.claude/rules/CODE_STYLE.md`       | ⚖️ 법전       | 네이밍/구조 규칙, 필수 조건   | Coder    | 전체            |
@@ -70,6 +76,8 @@
 | P1  | `.claude/rules/ANALYSIS_GUIDE.md`   | 📊 가이드     | 쿼리 전략, 샘플링, 파이프라인 | Analyzer | 작업 시         |
 
 ### Group C: Workflows (실행 절차)
+
+> ⚠️ **향후 변경**: Migration Phase 2에서 `.claude/rulebook/workflows/` (submodule)로 전환 예정
 
 | Pri | Path                                        | 비유           | 정의 범위                            | Who              | 로딩    |
 | --- | ------------------------------------------- | -------------- | ------------------------------------ | ---------------- | ------- |
@@ -82,11 +90,15 @@
 
 ### Group D: Context (배경 지식)
 
+> ⚠️ **향후 변경**: Migration Phase 2에서 `.claude/rulebook/context/` (submodule)로 전환 예정
+
 | Pri | Path                             | 비유      | 정의 범위          | Who    | 로딩    |
 | --- | -------------------------------- | --------- | ------------------ | ------ | ------- |
 | Key | `.claude/context/AI_Playbook.md` | 🧭 나침반 | 팀 철학, 행동 강령 | Leader | 판단 시 |
 
 ### Group E: Templates (SSOT) - 산출물 작성 시 참조
+
+> ⚠️ **향후 변경**: Migration Phase 2에서 `.claude/rulebook/templates/` (submodule)로 전환 예정
 
 | Pri | Path                                            | Who      |
 | --- | ----------------------------------------------- | -------- |
@@ -100,13 +112,15 @@
 ### Group F: Skills (Extension용) - 슬래시 커맨드 실행 시
 
 > **용도**: VSCode Extension에서 Orchestrator 없이 Skill 직접 호출 (LLM 프롬프트 기반)
+>
+> ⚠️ **향후 변경**: Migration Phase 2에서 `.claude/rulebook/skills/` (submodule)로 전환 예정
 
 | Pri | Path                                | 비유         | 정의 범위                  | Who      | 로딩   |
 | --- | ----------------------------------- | ------------ | -------------------------- | -------- | ------ |
 | P2  | `.claude/skills/README.md`          | 📖 가이드    | 파이프라인별 Skill 순서    | Human    | 참조용 |
 | P0  | `.claude/skills/leader/SKILL.md`    | 🧠 지휘관    | PRD 분석, 파이프라인 결정  | Leader   | 작업 시 |
 | P1  | `.claude/skills/profiler/SKILL.md`  | 🎯 분석가    | 세그먼트 정의, 페르소나    | Analyzer | 작업 시 |
-| P1  | `.claude/skills/query/SKILL.md`     | 📊 쿼리 실행 | SQL 생성/실행              | Analyzer | 작업 시 |
+| P1  | `.claude/skills/query/SKILL.md`     | 📊 ��리 실행 | SQL 생성/실행              | Analyzer | 작업 시 |
 | P1  | `.claude/skills/designer/SKILL.md`  | 📐 설계자    | IA/WF/SDD 생성             | Designer | 작업 시 |
 | P1  | `.claude/skills/coder/SKILL.md`     | 💻 개발자    | 코드 구현                  | Coder    | 작업 시 |
 | P0  | `.claude/skills/imleader/SKILL.md`  | 👮 검증자    | 산출물 검증, PASS/FAIL     | ImLeader | 작업 시 |
@@ -145,25 +159,113 @@
 
 ## Output Paths (산출물 저장 위치)
 
-| 용도            | 경로                                     | 예시                      |
-| --------------- | ---------------------------------------- | ------------------------- |
-| Case 산출물     | `docs/cases/{caseId}/{taskId}/`          | HANDOFF.md, IA.md, SDD.md |
-| 분석 결과       | `docs/cases/{caseId}/{taskId}/analysis/` | *.sql, *.json, report.md  |
-| 백엔드 코드     | `backend/src/{feature}/`                 | API, Service, Repository  |
-| 프론트엔드 코드 | `frontend/src/features/{feature}/`       | Components, Pages         |
-| 실행 로그       | `workspace/logs/{caseId}/{taskId}.json`  | 실행 이력                 |
+### 현재 → Plan05 경로 매핑
+
+> **참조**: [FileTree-Plan05.md](../../docs/reports/FileTree-Plan05.md)
+>
+> ⚠️ **현재 작업 시**: "Current 사용 중" 경로 사용
+> 📅 **문서 참조 시**: Plan05 구조 우선 기재 (향후 전환 대비)
+
+| 용도               | Plan05 목표 구조 (향후)                               | Current 사용 중 (현재)                   | 전환 시점 |
+| ------------------ | ----------------------------------------------------- | ---------------------------------------- | --------- |
+| **CLAUDE.md**      | `.claude/CLAUDE.md`                                   | `/CLAUDE.md` (루트)                      | Phase 1   |
+| **룰북 (Rules)**   | `.claude/rulebook/rules/*` (submodule)                | `.claude/rules/*` (직접)                 | Phase 2   |
+| **워크플로우**     | `.claude/rulebook/workflows/*` (submodule)            | `.claude/workflows/*` (직접)             | Phase 2   |
+| **컨텍스트**       | `.claude/rulebook/context/*` (submodule)              | `.claude/context/*` (직접)               | Phase 2   |
+| **템플릿**         | `.claude/rulebook/templates/*` (submodule)            | `.claude/templates/*` (직접)             | Phase 2   |
+| **Skills**         | `.claude/rulebook/skills/*` (submodule)               | `.claude/skills/*` (직접)                | Phase 2   |
+| **Frontend 코드**  | `services/{service}/apps/web/src/features/{feature}/` | `frontend/src/features/{feature}/`       | Phase 3   |
+| **Backend 코드**   | `services/{service}/apps/api/src/features/{feature}/` | `backend/src/{feature}/`                 | Phase 3   |
+| **문서 (산출물)**  | `services/{service}/docs/features/{feature}/`         | `docs/cases/{caseId}/{taskId}/`          | Phase 4   |
+| **분석 결과**      | `.../docs/features/{feature}/analysis/`               | `docs/cases/{caseId}/{taskId}/analysis/` | Phase 4   |
+| **실행 이력**      | `.../docs/features/{feature}/runs/{run-id}/`          | `workspace/logs/{caseId}/{taskId}.json`  | Phase 4   |
+| **테스트 코드**    | `services/{service}/tests/{feature}.test.ts`          | `backend/tests/`, `frontend/src/*.test.tsx` | Phase 3   |
+| **Mock 데이터**    | `.../apps/{web,api}/src/mocks/{feature}.mock.ts`      | `frontend/src/mocks/handlers.ts`         | Phase 3   |
+
+### 현재 사용 중인 경로 (Current)
+
+**문서 산출물**:
+- PRD, HANDOFF: `docs/cases/{caseId}/{taskId}/`
+- IA, Wireframe, SDD: `docs/cases/{caseId}/{taskId}/`
+- 분석 결과: `docs/cases/{caseId}/{taskId}/analysis/`
+  - `*.sql`, `analysis_result.json`, `analysis_report.md`, `fixture_source.json`
+
+**코드**:
+- Backend: `backend/src/{feature}/`
+  - API, Service, Repository
+- Frontend: `frontend/src/features/{feature}/`
+  - Components, Hooks, Pages
+
+**테스트 & Mock**:
+- Mock Handlers: `frontend/src/mocks/handlers.ts`
+- 테스트: `backend/tests/`, `frontend/src/{feature}/*.test.tsx`
+
+**로그**:
+- 실행 이력: `workspace/logs/{caseId}/{taskId}.json`
 
 ### Discovery vs Reproduction 데이터 경로
 
 > **"실데이터는 발견에 쓰고, Mock 데이터는 재현에 쓴다."**
 
-| Phase | 용도 | 경로 | 설명 |
-|-------|------|------|------|
-| **Phase A** | Fixture Source | `docs/cases/{caseId}/{taskId}/analysis/fixture_source.json` | Real DB에서 추출한 계약 데이터 |
-| **Phase C** | Mock Handlers | `frontend/src/mocks/handlers.ts` | MSW 기반 API Mocking |
+| Phase       | 용도           | Current 경로 (사용 중)                                  | Plan05 경로 (향후)                                                     |
+| ----------- | -------------- | ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Phase A** | Fixture Source | `docs/cases/{caseId}/{taskId}/analysis/fixture_source.json` | `services/{service}/docs/features/{feature}/analysis/fixture_source.json` |
+| **Phase C** | Mock Handlers  | `frontend/src/mocks/handlers.ts`                        | `services/{service}/apps/web/src/mocks/{feature}.mock.ts`              |
 
-- **Phase A (Discovery)**: `/query`가 Real DB에서 추출한 데이터를 `fixture_source.json`으로 저장
-- **Phase C (Reproduction)**: `/coder`는 `fixture_source.json` 또는 SDD 스키마 기반으로 `handlers.ts` 작성
+**데이터 흐름**:
+- **Phase A (Discovery)**: `/query`가 Real DB에서 추출 → `fixture_source.json` 저장 (계약 데이터)
+- **Phase C (Reproduction)**: `/coder`는 `fixture_source.json` 또는 SDD 스키마 기반 → `*.mock.ts` 작성
+
+---
+
+## Migration Roadmap
+
+> **상태**: Phase 0 완료 (문서 정합성) → Phase 1-4 향후 진행
+
+### Phase 0: 문서 정합성 ✅ (완료)
+- [x] SYSTEM_MANIFEST.md v7.0.0 업데이트
+- [x] 경로 매핑 테이블 작성
+- [x] Plan05 참조 문서화
+
+### Phase 1: CLAUDE.md 이동 (예정)
+- [ ] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
+- [ ] 모든 문서의 CLAUDE.md 참조 경로 업데이트
+- [ ] 검증: `grep -r "CLAUDE.md" .claude/`
+
+**예상 영향**: Low (경로 참조만 변경)
+
+### Phase 2: Submodule 분리 (예정)
+- [ ] 전역 룰북 레포 생성: `github.com/strategy-ai-lab/role-skill-protocol`
+- [ ] `.claude/{rules,workflows,context,templates,skills}` → 전역 레포 이동
+- [ ] `.claude/rulebook/` submodule 연결
+- [ ] 검증: `git submodule status`
+
+**예상 영향**: Medium (git 구조 변경, 다른 프로젝트 동기화 필요)
+
+### Phase 3: services/ 구조 전환 (예정)
+- [ ] `backend/src/` → `services/{service}/apps/api/src/` 이동
+- [ ] `frontend/src/` → `services/{service}/apps/web/src/` 이동
+- [ ] 빌드 설정 업데이트 (`package.json`, `tsconfig.json`)
+- [ ] 검증: `npm run build`, `npm test`
+
+**예상 영향**: High (전체 경로 변경, 빌드 시스템 영향)
+
+### Phase 4: cases → features 마이그레이션 (예정)
+- [ ] `docs/cases/{caseId}/{taskId}/` → `services/{service}/docs/features/{feature}/` 이동
+- [ ] `runs/{run-id}/{task-id}/` 구조 도입
+- [ ] Publish 프로세��� 구현 (runs → docs 발행)
+- [ ] 검증: 기존 문서 접근성 확인
+
+**예상 영향**: Medium (문서 구조 변경, 스크립트 업데이트 필요)
+
+### 리스크 및 대응책
+
+| Phase   | 주요 리스크                | 대응책                                   |
+| ------- | -------------------------- | ---------------------------------------- |
+| Phase 1 | 경로 참조 누락             | 자동 검증 스크립트 실행                  |
+| Phase 2 | Submodule 동기화 이슈      | 단계별 테스트, 롤백 플랜 준비            |
+| Phase 3 | 빌드 실패, Import 깨짐     | Feature flag로 점진 전환, CI/CD 테스트   |
+| Phase 4 | 기존 문서 링크 깨짐        | 리다이렉트 스크립트, 병행 운영 기간 설정 |
 
 ---
 
@@ -171,8 +273,14 @@
 
 ### 룰북 보호
 
-- **수정 금지** - `.claude/rules/`, `.claude/workflows/`, `CLAUDE.md`
-- **수정 가능** - `.claude/project/` (PROJECT_STACK.md, PRD.md)
+- **수정 금지** - `.claude/rules/`, `.claude/workflows/`, `.claude/context/`, `CLAUDE.md`
+- **수정 가능** - `.claude/project/` (PROJECT_STACK.md, DOMAIN_SCHEMA.md)
+
+### 경로 참조 원칙
+
+- **현재 작업**: Current 경로 사용 (실제 파일 위치)
+- **문서 작성**: Plan05 경로 우선 기재 (향후 호환성)
+- **검증**: `validate-path-references.mjs` 스크립트 실행
 
 ---
 
