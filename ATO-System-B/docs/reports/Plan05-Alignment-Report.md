@@ -181,30 +181,60 @@ $ ./scripts/validate-docs.sh
 
 ---
 
+## 📋 Phase별 완료 체크리스트
+
+### Phase 0: 문서 정합성 ✅ (완료)
+- [x] Git 스냅샷 및 브랜치 생성
+- [x] SYSTEM_MANIFEST.md v7.0.0 → v7.0.1 작성
+- [x] DOCUMENT_PIPELINE.md v2.0.0 → v2.2.0 업데이트 (Option A)
+- [x] ROLES_DEFINITION.md v1.6.1 → v1.6.2 업데이트
+- [x] 검증 스크립트 작성 (validate-docs.sh)
+- [x] Migration-Guide.md 작성
+- [x] Plan05-Alignment-Report.md 작성
+- [x] Diff 파일 저장
+
+### Phase 1: CLAUDE.md 이동 ✅ (완료)
+- [x] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
+- [x] Git 이동 기록 유지 (git mv)
+- [x] SYSTEM_MANIFEST.md 경로 업데이트
+  - [x] Document Map 현재 위치 갱신
+  - [x] Output Paths 완료 표시
+  - [x] Migration Roadmap Phase 1 체크
+- [x] 검증: `find . -name "CLAUDE.md"` → `.claude/CLAUDE.md`만 존재
+- [x] feat/plan05-docs-alignment 브랜치에 커밋 및 푸시
+
+**실제 영향**: Low (경로 참조만 변경, CLAUDE.md는 자동 로딩)
+
+---
+
 ## 📌 다음 단계 (향후 작업)
 
-### Phase 1: CLAUDE.md 이동 (예정)
-- [ ] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
-- [ ] 모든 문서 참조 경로 업데이트
-- **예상 소요**: 30분
-- **리스크**: Low
-
-### Phase 2: Submodule 분리 (예정)
-- [ ] 전역 룰북 레포 생성: `role-skill-protocol`
-- [ ] `.claude/rulebook/` submodule 연결
+### Phase 2: Submodule 분리 ⏳ (예정)
+- [ ] Step 1: 전역 룰북 레포 생성 (strategy-ai-lab/role-skill-protocol)
+- [ ] Step 2: 파일 이동 및 초기화
+- [ ] Step 3: `.claude/rulebook/` submodule 추가
+- [ ] Step 4: 기존 파일 제거 (.claude/rules, workflows 등)
+- [ ] Step 5: 문서 경로 업데이트
+- [ ] Step 6: 검증 (`git submodule status`)
 - **예상 소요**: 2시간
 - **리스크**: Medium
 
-### Phase 3: services/ 구조 전환 (예정)
-- [ ] `backend/` → `services/main/apps/api/`
-- [ ] `frontend/` → `services/main/apps/web/`
-- [ ] 빌드 설정 업데이트
+### Phase 3: services/ 구조 전환 ⏳ (예정)
+- [ ] Step 1: 서비스 이름 결정 (community/main/core)
+- [ ] Step 2: 디렉토리 생성
+- [ ] Step 3: 파일 이동 (`backend/` → `services/main/apps/api/`)
+- [ ] Step 4: 파일 이동 (`frontend/` → `services/main/apps/web/`)
+- [ ] Step 5: 빌드 설정 업데이트
+- [ ] Step 6: 검증 (빌드 테스트)
 - **예상 소요**: 4시간
 - **리스크**: High
 
-### Phase 4: cases → features 마이그레이션 (예정)
-- [ ] `docs/cases/` → `services/main/docs/features/`
-- [ ] `runs/{run-id}/{task-id}/` 구조 도입
+### Phase 4: cases → features 마이그레이션 ⏳ (예정)
+- [ ] Step 1: 매핑 테이블 작성
+- [ ] Step 2: 이동 스크립트 작성
+- [ ] Step 3: `runs/{run-id}/{task-id}/` 구조 도입
+- [ ] Step 4: Publish 프로세스 구현
+- [ ] Step 5: 검증 (문서 링크 접근성)
 - **예상 소요**: 2시간
 - **리스크**: Medium
 
@@ -245,10 +275,29 @@ $ ./scripts/validate-docs.sh
 
 ---
 
-**작업 완료일**: 2026-01-10
-**작업 시간**: 약 2시간
-**커밋 수**: 6개
-**변경 파일**: 8개
-**상태**: ✅ PASS
+---
+
+## 📊 최종 통계 (Phase 1까지)
+
+**Phase 0 (문서 정합성)**:
+- 작업 완료일: 2026-01-10
+- 작업 시간: 약 2시간
+- 커밋 수: 6개
+- 변경 파일: 8개
+- 상태: ✅ PASS
+
+**Phase 1 (CLAUDE.md 이동)**:
+- 작업 완료일: 2026-01-11
+- 작업 시간: 약 10분
+- 커밋 수: 2개
+- 변경 파일: 3개 (CLAUDE.md, SYSTEM_MANIFEST.md, Migration-Guide.md)
+- 상태: ✅ PASS
+
+**누적**:
+- 총 커밋: 8개
+- 총 변경 파일: 11개
+- 총 작업 시간: 약 2시간 10분
+
+---
 
 **END OF REPORT**

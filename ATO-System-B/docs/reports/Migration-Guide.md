@@ -50,24 +50,38 @@ Plan05와 현재 구조의 차이를 문서화하고, 모든 문서가 일관된
 
 ---
 
-## Phase 1: CLAUDE.md 이동 (✅ 완료)
+## Phase 1: CLAUDE.md 이동
 
 ### 목표
 CLAUDE.md를 프로젝트 루트에서 `.claude/` 직하로 이동하여 Claude Code가 인식하도록 함.
 
-### 체크리스트
-- [x] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
-- [x] Git에서 이동 기록 유지: `git mv CLAUDE.md .claude/`
-- [x] SYSTEM_MANIFEST.md 경로 업데이트
-  - Document Map: 현재 위치 갱신
-  - Output Paths: 완료 표시 ✅
-  - Migration Roadmap: Phase 1 체크
-- [x] 검증: `find . -name "CLAUDE.md"` → `.claude/CLAUDE.md`만 존재
+### 작업 절차
 
-### 실제 영향
+1. **파일 이동 (git mv 사용)**
+   ```bash
+   git mv CLAUDE.md .claude/CLAUDE.md
+   ```
+
+2. **SYSTEM_MANIFEST.md 경로 업데이트**
+   - Document Map: 현재 위치 갱신
+   - Output Paths: 완료 표시 ✅
+   - Migration Roadmap: Phase 1 체크
+
+3. **검증**
+   ```bash
+   find . -name "CLAUDE.md"
+   # 결과: .claude/CLAUDE.md만 존재해야 함
+   ```
+
+4. **커밋 및 푸시**
+   ```bash
+   git commit -m "feat: CLAUDE.md를 .claude/ 디렉토리로 이동"
+   git push origin feat/plan05-docs-alignment
+   ```
+
+### 예상 영향
 - **Low**: 경로 참조만 변경
 - **참조 업데이트 불필요**: CLAUDE.md는 시스템 헌법으로 자동 로딩됨
-- **커밋**: feat/plan05-docs-alignment 브랜치에 푸시 완료
 
 ### 롤백 플랜
 ```bash
@@ -77,56 +91,60 @@ git commit -m "revert: CLAUDE.md 위치 원복"
 
 ---
 
-## Phase 2: Submodule 분리 (예정)
+## Phase 2: Submodule 분리
 
 ### 목표
 전역 룰북을 별도 레포(`role-skill-protocol`)로 분리하고 submodule로 참조.
 
-### 사전 준비
-1. **전역 룰북 레포 생성**
-   ```bash
-   # GitHub에서 레포 생성
-   gh repo create strategy-ai-lab/role-skill-protocol --public
+### 작업 절차
 
-   cd ~/repos
-   git clone https://github.com/strategy-ai-lab/role-skill-protocol
-   cd role-skill-protocol
-   ```
+#### Step 1: 전역 룰북 레포 생성
+```bash
+# GitHub에서 레포 생성
+gh repo create strategy-ai-lab/role-skill-protocol --public
 
-2. **파일 이동**
-   ```bash
-   # 현재 프로젝트에서 복사
-   cp -r /path/to/ATO-System-B/.claude/rules ./
-   cp -r /path/to/ATO-System-B/.claude/workflows ./
-   cp -r /path/to/ATO-System-B/.claude/context ./
-   cp -r /path/to/ATO-System-B/.claude/templates ./
-   cp -r /path/to/ATO-System-B/.claude/skills ./
-   cp /path/to/ATO-System-B/CLAUDE.md ./
+cd ~/repos
+git clone https://github.com/strategy-ai-lab/role-skill-protocol
+cd role-skill-protocol
+```
 
-   # SYSTEM_MANIFEST.md 추가
-   cp /path/to/ATO-System-B/.claude/SYSTEM_MANIFEST.md ./
+#### Step 2: 파일 이동
+```bash
+# 현재 프로젝트에서 복사
+cp -r /path/to/ATO-System-B/.claude/rules ./
+cp -r /path/to/ATO-System-B/.claude/workflows ./
+cp -r /path/to/ATO-System-B/.claude/context ./
+cp -r /path/to/ATO-System-B/.claude/templates ./
+cp -r /path/to/ATO-System-B/.claude/skills ./
+cp /path/to/ATO-System-B/CLAUDE.md ./
+cp /path/to/ATO-System-B/.claude/SYSTEM_MANIFEST.md ./
 
-   git add .
-   git commit -m "feat: 전역 룰북 초기 구조"
-   git push origin main
-   ```
+git add .
+git commit -m "feat: 전역 룰북 초기 구조"
+git push origin main
+```
 
-### 체크리스트
-- [ ] 전역 룰북 레포 생성 및 초기화
-- [ ] `.claude/rulebook/` submodule 추가
-  ```bash
-  cd /path/to/ATO-System-B
-  git submodule add https://github.com/strategy-ai-lab/role-skill-protocol .claude/rulebook
-  ```
-- [ ] 기존 파일 제거
-  ```bash
-  git rm -r .claude/rules .claude/workflows .claude/context .claude/templates .claude/skills
-  ```
-- [ ] 문서 경로 업데이트
-  - `.claude/rules/*` → `.claude/rulebook/rules/*`
-  - `.claude/workflows/*` → `.claude/rulebook/workflows/*`
-  - 등등
-- [ ] 검증: `git submodule status`
+#### Step 3: Submodule 추가
+```bash
+cd /path/to/ATO-System-B
+git submodule add https://github.com/strategy-ai-lab/role-skill-protocol .claude/rulebook
+```
+
+#### Step 4: 기존 파일 제거
+```bash
+git rm -r .claude/rules .claude/workflows .claude/context .claude/templates .claude/skills
+```
+
+#### Step 5: 문서 경로 업데이트
+- `.claude/rules/*` → `.claude/rulebook/rules/*`
+- `.claude/workflows/*` → `.claude/rulebook/workflows/*`
+- 기타 경로 참조 수정
+
+#### Step 6: 검증
+```bash
+git submodule status
+git submodule update --init --recursive
+```
 
 ### 예상 영향
 - **Medium**: git 구조 변경, 다른 프로젝트에도 동기화 필요
@@ -143,33 +161,40 @@ rm -rf .git/modules/.claude/rulebook
 
 ---
 
-## Phase 3: services/ 구조 전환 (예정)
+## Phase 3: services/ 구조 전환
 
 ### 목표
-`backend/`, `frontend/` → `services/{service}/apps/{api,web}/` 구조로 전환.
+`backend/`, `frontend/` → `services/{service-name}/apps/{api,web}/` 구조로 전환.
 
-### 체크리스트
-- [ ] 서비스 이름 결정 (예: `community`, `main`, `core`)
-- [ ] 디렉토리 생성
-  ```bash
-  mkdir -p services/main/apps/{api,web}
-  ```
-- [ ] 파일 이동
-  ```bash
-  git mv backend/src services/main/apps/api/src
-  git mv frontend/src services/main/apps/web/src
-  ```
-- [ ] 빌드 설정 업데이트
-  - `package.json` 경로 수정
-  - `tsconfig.json` paths 수정
-  - `vite.config.ts` root 수정
-- [ ] 검증
-  ```bash
-  cd services/main/apps/web
-  npm run build
-  cd ../api
-  npm run build
-  ```
+### 작업 절차
+
+#### Step 1: 서비스 이름 결정
+예: `community`, `main`, `core` 중 선택
+
+#### Step 2: 디렉토리 생성
+```bash
+mkdir -p services/main/apps/{api,web}
+```
+
+#### Step 3: 파일 이동
+```bash
+git mv backend/src services/main/apps/api/src
+git mv frontend/src services/main/apps/web/src
+```
+
+#### Step 4: 빌드 설정 업데이트
+- `package.json` 경로 수정
+- `tsconfig.json` paths 수정
+- `vite.config.ts` root 수정
+
+#### Step 5: 검증
+```bash
+cd services/main/apps/web
+npm run build
+
+cd ../api
+npm run build
+```
 
 ### 예상 영향
 - **High**: 전체 경로 변경, 빌드 시스템 영향
@@ -185,25 +210,33 @@ git mv services/main/apps/web/src frontend/src
 
 ---
 
-## Phase 4: cases → features 마이그레이션 (예정)
+## Phase 4: cases → features 마이그레이션
 
 ### 목표
-`docs/cases/{caseId}/{taskId}/` → `services/{service}/docs/features/{feature}/` 전환.
+`docs/cases/{caseId}/{taskId}/` → `services/{service-name}/docs/features/{feature-name}/` 전환.
 
-### 체크리스트
-- [ ] 매핑 테이블 작성
-  ```
-  cases/case-001/task-001 → features/daily-best
-  cases/case-001/task-002 → features/comments
-  ```
-- [ ] 이동 스크립트 작성
-  ```bash
-  # scripts/migrate-cases-to-features.sh
-  ```
-- [ ] `runs/{run-id}/{task-id}/` 구조 도입
-- [ ] Publish 프로세스 구현
-  - ImLeader 검증 PASS → output/ 발행
-- [ ] 검증: 기존 문서 링크 접근성 확인
+### 작업 절차
+
+#### Step 1: 매핑 테이블 작성
+```
+cases/case-001/task-001 → features/daily-best
+cases/case-001/task-002 → features/comments
+...
+```
+
+#### Step 2: 이동 스크립트 작성
+```bash
+# scripts/migrate-cases-to-features.sh
+```
+
+#### Step 3: runs/ 구조 도입
+`runs/{run-id}/{task-id}/` 구조 생성
+
+#### Step 4: Publish 프로세스 구현
+ImLeader 검증 PASS → output/ 발행
+
+#### Step 5: 검증
+기존 문서 링크 접근성 확인
 
 ### 예상 영향
 - **Medium**: 문서 구조 변경, 스크립트 업데이트
@@ -217,19 +250,28 @@ git mv services/main/apps/web/src frontend/src
 
 ---
 
-## 검증 체크리스트 (모든 Phase 공통)
+## 최종 검증 (Phase 4 완료 후)
 
-### 각 Phase 완료 후
-- [ ] `scripts/validate-docs.sh` 실행
-- [ ] 모든 문서 Read 테스트
-- [ ] Git diff 확인
-- [ ] Diff 파일 저장: `git diff before-plan05-migration HEAD > migration-phase-N.diff`
+> **검증 체크리스트는 [Plan05-Alignment-Report.md](./Plan05-Alignment-Report.md)에서 관리**
 
-### 최종 검증 (Phase 4 완료 후)
-- [ ] 빌드 성공: `npm run build`
-- [ ] 테스트 통과: `npm test`
-- [ ] 문서 링크 검증: 모든 SYSTEM_MANIFEST 링크 클릭 테스트
-- [ ] Submodule 동기화: `git submodule update --remote`
+### 빌드 검증
+```bash
+npm run build
+npm test
+```
+
+### 문서 검증
+```bash
+./scripts/validate-docs.sh
+```
+- 모든 SYSTEM_MANIFEST 링크 클릭 테스트
+
+### Git 검증
+```bash
+git diff before-plan05-migration HEAD > migration-final.diff
+git submodule status
+git submodule update --remote
+```
 
 ---
 
