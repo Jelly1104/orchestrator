@@ -266,18 +266,22 @@ $ ./scripts/validate-docs.sh
 
 ## ✨ 결론
 
-**Phase 0 (문서 정합성)** 작업을 성공적으로 완료했습니다.
+**Phase 0-1** 작업을 성공적으로 완료했습니다.
 
 **핵심 성과**:
-1. ✅ Plan05와 Current 구조의 차이를 명확히 문서화
-2. ✅ 모든 문서에 일관된 경로 참조 적용 (FileTree-Plan05 형식 통일)
-3. ✅ Migration Roadmap으로 향후 단계 명확화
-4. ✅ 검증 스크립트로 지속적 일관성 확보
-5. ✅ Option A 설계 원칙 확립 (경로/산출물 책임 분리)
+1. ✅ **Phase 0 (문서 정합성)**: Plan05와 Current 구조의 차이를 명확히 문서화
+2. ✅ **경로 명명 통일**: FileTree-Plan05 형식 적용 (`{service-name}`, `{feature-name}`)
+3. ✅ **Phase 1 (CLAUDE.md 이동)**: `.claude/CLAUDE.md`로 이동 완료
+4. ✅ **Migration Roadmap**: 향후 Phase 2-4 단계 명확화
+5. ✅ **검증 스크립트**: 지속적 일관성 확보 체계 구축
+6. ✅ **Option A 설계 원칙**: 경로(SYSTEM_MANIFEST)/산출물(DOCUMENT_PIPELINE) 책임 분리
+7. ✅ **실제 서비스명 적용**: medigate-community 서비스와 실제 feature명으로 예시 구체화
 
 **다음 작업**:
-- 사용자 승인 후 Phase 1-4 진행 여부 결정
-- 또는 현재 상태(문서 정합성)로 유지하며 점진적 전환
+- **Phase 2**: Submodule 분리 (전역 룰북 레포 생성 및 연결)
+- **Phase 3**: services/ 구조 전환 (medigate-community 서비스)
+- **Phase 4**: cases → features 마이그레이션
+- 사용자 승인 후 단계별 진행
 
 ---
 
@@ -292,17 +296,22 @@ $ ./scripts/validate-docs.sh
 - 변경 파일: 8개
 - 상태: ✅ PASS
 
-**Phase 1 (CLAUDE.md 이동)**:
+**Phase 1 (CLAUDE.md 이동 + 문서 정비)**:
 - 작업 완료일: 2026-01-11
-- 작업 시간: 약 10분
-- 커밋 수: 2개
-- 변경 파일: 3개 (CLAUDE.md, SYSTEM_MANIFEST.md, Migration-Guide.md)
+- 작업 시간: 약 30분
+- 커밋 수: 5개
+  - CLAUDE.md 이동 및 SYSTEM_MANIFEST 업데이트
+  - 문서 역할 분리 (Guide vs Report)
+  - feature-name 경로 추가
+  - 실제 서비스명(medigate-community) 적용
+  - SYSTEM_MANIFEST Phase 3/4 경로 형식 통일
+- 변경 파일: 4개 (CLAUDE.md, SYSTEM_MANIFEST.md, Migration-Guide.md, Plan05-Alignment-Report.md)
 - 상태: ✅ PASS
 
-**누적**:
-- 총 커밋: 8개
-- 총 변경 파일: 11개
-- 총 작업 시간: 약 2시간 10분
+**누적 (Phase 0-1)**:
+- 총 커밋: 11개
+- 총 변경 파일: 4개 (핵심 문서)
+- 총 작업 시간: 약 2시간 30분
 
 ---
 

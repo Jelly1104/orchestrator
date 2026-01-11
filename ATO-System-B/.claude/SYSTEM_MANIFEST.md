@@ -243,15 +243,15 @@
 **예상 영향**: Medium (git 구조 변경, 다른 프로젝트 동기화 필요)
 
 ### Phase 3: services/ 구조 전환 (예정)
-- [ ] `backend/src/` → `services/{service}/apps/api/src/` 이동
-- [ ] `frontend/src/` → `services/{service}/apps/web/src/` 이동
-- [ ] 빌드 설정 업데이트 (`package.json`, `tsconfig.json`)
+- [ ] `backend/src/` → `services/{service-name}/apps/api/src/features/{feature-name}/` 이동
+- [ ] `frontend/src/` → `services/{service-name}/apps/web/src/features/{feature-name}/` 이동
+- [ ] 빌드 설정 업데이트 (`package.json`, `tsconfig.json`, `vite.config.ts`)
 - [ ] 검증: `npm run build`, `npm test`
 
 **예상 영향**: High (전체 경로 변경, 빌드 시스템 영향)
 
 ### Phase 4: cases → features 마이그레이션 (예정)
-- [ ] `docs/cases/{caseId}/{taskId}/` → `services/{service}/docs/features/{feature}/` 이동
+- [ ] `docs/cases/{caseId}/{taskId}/` → `services/{service-name}/docs/features/{feature-name}/` 이동
 - [ ] `runs/{run-id}/{task-id}/` 구조 도입
 - [ ] Publish 프로세��� 구현 (runs → docs 발행)
 - [ ] 검증: 기존 문서 접근성 확인
