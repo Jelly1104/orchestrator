@@ -220,15 +220,18 @@ $ ./scripts/validate-docs.sh
 - **리스크**: Medium
 
 ### Phase 3: services/ 구조 전환 ⏳ (예정)
-**목표**: `backend/`, `frontend/` → `services/{service-name}/apps/{api,web}/src/features/{feature-name}/` 구조 전환
+**목표**: `backend/`, `frontend/` → `services/medigate-community/apps/{api,web}/src/features/{feature-name}/` 구조 전환
 
-- [ ] Step 1: 서비스 이름 결정 (community/main/core)
-- [ ] Step 2: 디렉토리 생성 (`mkdir -p services/main/apps/{api,web}`)
-- [ ] Step 3: 파일 이동 (feature별 또는 전체 src 이동)
-  - [ ] Backend: `backend/src/` → `services/main/apps/api/src/features/`
-  - [ ] Frontend: `frontend/src/features/` → `services/main/apps/web/src/features/`
-- [ ] Step 4: 빌드 설정 업데이트 (package.json, tsconfig.json, vite.config.ts)
-- [ ] Step 5: 검증 (빌드 테스트)
+**서비스명**: `medigate-community` (메디게이트 커뮤니티 서비스)
+- 기존 features: podcast, workout-diary 등 모두 포함
+
+- [ ] Step 1: 디렉토리 생성 (`mkdir -p services/medigate-community/apps/{api,web}/src/features`)
+- [ ] Step 2: 파일 이동 (feature별 이동 권장)
+  - [ ] Backend: `backend/src/routes/podcast` → `services/medigate-community/apps/api/src/features/podcast`
+  - [ ] Frontend: `frontend/src/features/podcast-player` → `services/medigate-community/apps/web/src/features/podcast-player`
+  - [ ] Frontend: `frontend/src/features/workout-diary` → `services/medigate-community/apps/web/src/features/workout-diary`
+- [ ] Step 3: 빌드 설정 업데이트 (package.json, tsconfig.json, vite.config.ts)
+- [ ] Step 4: 검증 (빌드 테스트)
 - **예상 소요**: 4시간
 - **리스크**: High
 

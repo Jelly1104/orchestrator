@@ -169,23 +169,28 @@ rm -rf .git/modules/.claude/rulebook
 ### 작업 절차
 
 #### Step 1: 서비스 이름 결정
-예: `community`, `main`, `core` 중 선택
+**현재 프로젝트**: `medigate-community` (메디게이트 커뮤니티 서비스)
+- 모든 기존 features (podcast, workout-diary 등)는 이 서비스 하위에 속함
 
 #### Step 2: 디렉토리 생성
 ```bash
-mkdir -p services/main/apps/{api,web}
+mkdir -p services/medigate-community/apps/{api,web}/src/features
 ```
 
 #### Step 3: 파일 이동
 ```bash
-# 예시: feature별로 이동
-git mv backend/src/podcast services/main/apps/api/src/features/podcast
-git mv frontend/src/features/podcast-player services/main/apps/web/src/features/podcast-player
+# 현재 구조에서 새 구조로 feature별 이동
+# Backend features
+git mv backend/src/routes/podcast services/medigate-community/apps/api/src/features/podcast
 
-# 또는 전체 src를 먼저 이동 후 features/ 구조 내부 재구성
-git mv backend/src services/main/apps/api/src
-git mv frontend/src services/main/apps/web/src
-# 이후 features/ 디렉토리 구조 정리
+# Frontend features
+git mv frontend/src/features/podcast-player services/medigate-community/apps/web/src/features/podcast-player
+git mv frontend/src/features/workout-diary services/medigate-community/apps/web/src/features/workout-diary
+
+# 또는 전체 이동 후 재구성
+git mv backend/src services/medigate-community/apps/api/src
+git mv frontend/src services/medigate-community/apps/web/src
+# 이후 api/src/features/, web/src/features/ 구조로 정리
 ```
 
 #### Step 4: 빌드 설정 업데이트
@@ -195,7 +200,7 @@ git mv frontend/src services/main/apps/web/src
 
 #### Step 5: 검증
 ```bash
-cd services/main/apps/web
+cd services/medigate-community/apps/web
 npm run build
 
 cd ../api
@@ -209,12 +214,14 @@ npm run build
 
 ### 롤백 플랜
 ```bash
-# features/ 구조에서 원래 구조로 복원
-git mv services/main/apps/api/src/features/* backend/src/
-git mv services/main/apps/web/src/features/* frontend/src/features/
-# 또는
-git mv services/main/apps/api/src backend/src
-git mv services/main/apps/web/src frontend/src
+# medigate-community 서비스 구조에서 원래 구조로 복원
+git mv services/medigate-community/apps/api/src/features/podcast backend/src/routes/podcast
+git mv services/medigate-community/apps/web/src/features/podcast-player frontend/src/features/podcast-player
+git mv services/medigate-community/apps/web/src/features/workout-diary frontend/src/features/workout-diary
+
+# 또는 전체 복원
+git mv services/medigate-community/apps/api/src backend/src
+git mv services/medigate-community/apps/web/src frontend/src
 # 설정 파일 원복
 ```
 
@@ -229,8 +236,9 @@ git mv services/main/apps/web/src frontend/src
 
 #### Step 1: 매핑 테이블 작성
 ```
-cases/case-001/task-001 → features/daily-best
-cases/case-001/task-002 → features/comments
+# 현재 case/task 구조 → medigate-community 서비스의 feature로 매핑
+docs/cases/case-001/task-001 → services/medigate-community/docs/features/podcast-player
+docs/cases/case-002/task-001 → services/medigate-community/docs/features/workout-diary
 ...
 ```
 
