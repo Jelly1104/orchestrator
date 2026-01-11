@@ -180,8 +180,11 @@ mkdir -p services/medigate-community/apps/{api,web}/src/features
 #### Step 3: 파일 이동
 ```bash
 # 현재 구조에서 새 구조로 feature별 이동
+# ⚠️ 중요: Backend와 Frontend는 동일한 feature-name 사용
+
 # Backend features
-git mv backend/src/routes/podcast services/medigate-community/apps/api/src/features/podcast
+git mv backend/src/podcast services/medigate-community/apps/api/src/features/podcast-player
+git mv backend/src/routes/podcast.routes.ts services/medigate-community/apps/api/src/features/podcast-player/
 
 # Frontend features
 git mv frontend/src/features/podcast-player services/medigate-community/apps/web/src/features/podcast-player
@@ -191,6 +194,7 @@ git mv frontend/src/features/workout-diary services/medigate-community/apps/web/
 git mv backend/src services/medigate-community/apps/api/src
 git mv frontend/src services/medigate-community/apps/web/src
 # 이후 api/src/features/, web/src/features/ 구조로 정리
+# ⚠️ Backend와 Frontend의 feature 이름은 반드시 동일하게 유지
 ```
 
 #### Step 4: 빌드 설정 업데이트
@@ -215,7 +219,7 @@ npm run build
 ### 롤백 플랜
 ```bash
 # medigate-community 서비스 구조에서 원래 구조로 복원
-git mv services/medigate-community/apps/api/src/features/podcast backend/src/routes/podcast
+git mv services/medigate-community/apps/api/src/features/podcast-player backend/src/podcast
 git mv services/medigate-community/apps/web/src/features/podcast-player frontend/src/features/podcast-player
 git mv services/medigate-community/apps/web/src/features/workout-diary frontend/src/features/workout-diary
 
