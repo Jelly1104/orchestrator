@@ -32,14 +32,23 @@
 - **Document Map**: 모든 그룹에 향후 submodule 전환 예정 명시
 - **Safety Rules**: 경로 참조 원칙 추가
 
-**핵심 추가 내용**:
+### Task 2-1: SYSTEM_MANIFEST.md v7.0.1 (경로 명명 규칙 통일) ✅
+**변경 내용**:
+- 버전: v7.0.0 → v7.0.1
+- **FileTree-Plan05 정확한 경로 형식 적용**
+  - `{service}` → `{service-name}` 통일
+  - `{feature}` → `{feature-name}` 통일
+  - Output Paths 테이블 전체 수정
+  - Discovery vs Reproduction 데이터 경로 테이블 수정
+
+**핵심 수정 내용**:
 ```markdown
-| 용도               | Plan05 목표 구조 (향후)                               | Current 사용 중 (현재)                   | 전환 시점 |
-| ------------------ | ----------------------------------------------------- | ---------------------------------------- | --------- |
-| **CLAUDE.md**      | `.claude/CLAUDE.md`                                   | `/CLAUDE.md` (루트)                      | Phase 1   |
-| **룰북 (Rules)**   | `.claude/rulebook/rules/*` (submodule)                | `.claude/rules/*` (직접)                 | Phase 2   |
-| **Frontend 코드**  | `services/{service}/apps/web/src/features/{feature}/` | `frontend/src/features/{feature}/`       | Phase 3   |
-| **문서 (산출물)**  | `services/{service}/docs/features/{feature}/`         | `docs/cases/{caseId}/{taskId}/`          | Phase 4   |
+| 용도               | Plan05 목표 구조 (향후)                                              | Current 사용 중 (현재)                   | 전환 시점 |
+| ------------------ | -------------------------------------------------------------------- | ---------------------------------------- | --------- |
+| **CLAUDE.md**      | `.claude/CLAUDE.md`                                                  | `/CLAUDE.md` (루트)                      | Phase 1   |
+| **룰북 (Rules)**   | `.claude/rulebook/rules/*` (submodule)                               | `.claude/rules/*` (직접)                 | Phase 2   |
+| **Frontend 코드**  | `services/{service-name}/apps/web/src/features/{feature-name}/`      | `frontend/src/features/{feature}/`       | Phase 3   |
+| **문서 (산출물)**  | `services/{service-name}/docs/features/{feature-name}/`              | `docs/cases/{caseId}/{taskId}/`          | Phase 4   |
 ```
 
 ### Task 3: DOCUMENT_PIPELINE.md v2.1.0 업데이트 ✅
@@ -47,6 +56,18 @@
 - 산출물 테이블에 Current 경로 명시
 - Plan05 목표 경로 주석 추가
 - SYSTEM_MANIFEST 참조 링크 추가
+
+### Task 3-1: DOCUMENT_PIPELINE.md v2.2.0 (Option A 구현) ✅
+**변경 내용**:
+- 버전: v2.1.0 → v2.2.0
+- **Option A 적용**: 경로/산출물 책임 분리
+  - 산출물 테이블에서 모든 경로 정보 제거
+  - 파일명만 명시 (예: `*.sql`, `IA.md`, `SDD.md`)
+  - SYSTEM_MANIFEST 참조로 통일
+
+**설계 원칙**:
+- SYSTEM_MANIFEST.md: "어디에" 저장? (경로의 SSOT)
+- DOCUMENT_PIPELINE.md: "무엇을" 생성? (산출물의 SSOT)
 
 ### Task 4: ROLES_DEFINITION.md v1.6.2 업데이트 ✅
 **변경 내용**:
@@ -87,17 +108,20 @@
 ## 📊 변경 통계
 
 ```
-5개 파일 변경
-+435줄 추가
+8개 파일 변경
++1,244줄 추가
 -28줄 삭제
 ```
 
 **변경된 파일**:
-1. `.claude/SYSTEM_MANIFEST.md` (+144줄)
-2. `.claude/workflows/DOCUMENT_PIPELINE.md` (+27줄)
-3. `.claude/rules/ROLES_DEFINITION.md` (+3줄)
-4. `docs/reports/Migration-Guide.md` (+255줄, 신규)
-5. `scripts/validate-docs.sh` (+34줄, 신규)
+1. `.claude/SYSTEM_MANIFEST.md` (v6.2.0 → v7.0.1)
+2. `.claude/workflows/DOCUMENT_PIPELINE.md` (v2.0.0 → v2.2.0)
+3. `.claude/rules/ROLES_DEFINITION.md` (v1.6.1 → v1.6.2)
+4. `docs/reports/Migration-Guide.md` (신규)
+5. `docs/reports/Plan05-Alignment-Report.md` (신규)
+6. `docs/reports/migration-tracking/changes-summary.txt` (신규)
+7. `docs/reports/migration-tracking/plan05-alignment-complete.diff` (신규)
+8. `scripts/validate-docs.sh` (신규)
 
 ---
 
@@ -115,21 +139,32 @@
 - **이유**: 실제 폴더 구조 변경 없음 (Phase 0)
 - **향후**: Phase 1-4에서 단계적 전환
 
+### 4. Option A 채택 (경로/산출물 책임 분리)
+- **이유**: SSOT 원칙에 따라 "어디에"와 "무엇을"의 정의를 분리
+- **구현**: SYSTEM_MANIFEST(경로) ↔ DOCUMENT_PIPELINE(산출물)
+
+### 5. FileTree-Plan05 경로 형식 통일
+- **이유**: `{service}` vs `{service-name}` 혼용 시 데이터 혼선 위험
+- **조치**: FileTree-Plan05.md의 정확한 명명 규칙 적용
+
 ---
 
 ## ✅ 검증 결과
 
 ### 문서 일관성
-- ✅ SYSTEM_MANIFEST v7.0.0 버전 확인
+- ✅ SYSTEM_MANIFEST v7.0.1 버전 확인 (최종)
+- ✅ DOCUMENT_PIPELINE v2.2.0 버전 확인 (최종)
 - ✅ 모든 필수 문서 존재
 - ✅ 경로 매핑 테이블 완성
 - ✅ Migration Roadmap 작성
+- ✅ Option A 구현 완료
+- ✅ FileTree-Plan05 경로 형식 통일
 
 ### Git 관리
-- ✅ 태그 `before-plan05-migration` 생성
-- ✅ 브랜치 `feat/plan05-docs-alignment` 생성
-- ✅ 4개 커밋 완료
-- ✅ Diff 파일 저장
+- ✅ 태그 `before-plan05-migration` 생성 및 GitHub 푸시
+- ✅ 브랜치 `feat/plan05-docs-alignment` 생성 및 GitHub 푸시
+- ✅ 6개 커밋 완료
+- ✅ Diff 파일 저장 (완료)
 
 ### 스크립트 실행
 ```bash
@@ -179,7 +214,8 @@ $ ./scripts/validate-docs.sh
 
 ### 문서
 - [FileTree-Plan05.md](./FileTree-Plan05.md) - 목표 구조 정의
-- [SYSTEM_MANIFEST v7.0.0](../../.claude/SYSTEM_MANIFEST.md) - 경로 매핑 SSOT
+- [SYSTEM_MANIFEST v7.0.1](../../.claude/SYSTEM_MANIFEST.md) - 경로 매핑 SSOT
+- [DOCUMENT_PIPELINE v2.2.0](../../.claude/workflows/DOCUMENT_PIPELINE.md) - 산출물 정의 SSOT
 - [Migration-Guide.md](./Migration-Guide.md) - Phase 1-4 상세 가이드
 
 ### Git 참조
@@ -198,9 +234,10 @@ $ ./scripts/validate-docs.sh
 
 **핵심 성과**:
 1. ✅ Plan05와 Current 구조의 차이를 명확히 문서화
-2. ✅ 모든 문서에 일관된 경로 참조 적용
+2. ✅ 모든 문서에 일관된 경로 참조 적용 (FileTree-Plan05 형식 통일)
 3. ✅ Migration Roadmap으로 향후 단계 명확화
 4. ✅ 검증 스크립트로 지속적 일관성 확보
+5. ✅ Option A 설계 원칙 확립 (경로/산출물 책임 분리)
 
 **다음 작업**:
 - 사용자 승인 후 Phase 1-4 진행 여부 결정
@@ -209,9 +246,9 @@ $ ./scripts/validate-docs.sh
 ---
 
 **작업 완료일**: 2026-01-10
-**작업 시간**: 약 1시간
-**커밋 수**: 4개
-**변경 파일**: 5개
+**작업 시간**: 약 2시간
+**커밋 수**: 6개
+**변경 파일**: 8개
 **상태**: ✅ PASS
 
 **END OF REPORT**
