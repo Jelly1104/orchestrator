@@ -234,13 +234,14 @@
 
 **실제 영향**: Low (경로 참조만 변경, CLAUDE.md는 자동 로딩되므로 참조 업데이트 불필요)
 
-### Phase 2: Submodule 분리 (예정)
-- [ ] 전역 룰북 레포 생성: `github.com/strategy-ai-lab/role-skill-protocol`
-- [ ] `.claude/{rules,workflows,context,templates,skills}` → 전역 레포 이동
-- [ ] `.claude/rulebook/` submodule 연결
-- [ ] 검증: `git submodule status`
+### Phase 2: Submodule 분리 ✅ (완료)
+- [x] 전역 룰북 레포 생성: `github.com/Jelly1104/role-skill-protocol`
+- [x] `.claude/{rules,workflows,context,templates,skills}` → 전역 레포 이동
+- [x] `.claude/rulebook/` submodule 연결
+- [x] 기존 파일 제거
+- [x] 검증: `git submodule status`
 
-**예상 영향**: Medium (git 구조 변경, 다른 프로젝트 동기화 필요)
+**실제 영향**: Medium (git 구조 변경, 다른 프로젝트에서 submodule update 필요)
 
 ### Phase 3: services/ 구조 전환 (예정)
 - [ ] `backend/src/` → `services/{service-name}/apps/api/src/features/{feature-name}/` 이동

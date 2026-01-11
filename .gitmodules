@@ -1,0 +1,3 @@
+[submodule "ATO-System-B/.claude/rulebook"]
+	path = ATO-System-B/.claude/rulebook
+	url = https://github.com/Jelly1104/role-skill-protocol.git
