@@ -1,106 +1,191 @@
 # ATO-System-B
 
-> **Human-in-the-Loop AI Orchestration System**
-> **Version**: 5.0.0 | **Updated**: 2026-01-06
+> **프로젝트**: 메디게이트 커뮤니티 서비스 (Medigate Community Service)
+> **아키텍처**: FileTree-Plan05 (Role-Skill-Protocol 기반)
+> **마이그레이션 상태**: Phase 0-4 완료 ✅
+> **Version**: 6.0.0 | **Updated**: 2026-01-11
 
-ATO-System-B는 Leader-Role 협업 구조 기반의 AI 오케스트레이션 시스템입니다.
+---
 
-## 핵심 특징
+## 📋 프로젝트 개요
 
-- **HITL (Human-in-the-Loop)**: 검증 실패 시에만 3-way 옵션으로 개입
-- **6개 파이프라인**: analysis, design, analyzed_design, code, ui_mockup, full
-- **Role 기반 협업**: Leader가 전략 수립, Role별 실행 (Analyzer, Designer, Coder)
-- **Constitution 기반 문서 체계**: CLAUDE.md를 최상위 헌법으로 하는 계층적 규칙
+AI 기반 자동화 태스크 오케스트레이션 시스템(ATO-System-B)으로, **Role-Skill-Protocol**을 적용한 구조화된 개발 환경입니다.
 
-## 프로젝트 구조
+**핵심 특징**:
+- ✅ **전역 룰북 Submodule**: `.claude/rulebook/` (role-skill-protocol)
+- ✅ **서비스 기반 구조**: `services/{service-name}/apps/{api,web}/`
+- ✅ **Feature 단위 관리**: 코드/문서/테스트 통합 관리
+- ✅ **Run 기반 이력**: `runs/{run-id}/` 실행 로그 추적
+- ✅ **HITL (Human-in-the-Loop)**: 검증 실패 시 3-way 옵션 개입
+
+---
+
+## 📁 디렉토리 구조
 
 ```
 ATO-System-B/
-├── CLAUDE.md                       # 팀 공통 헌법 (최상위 문서)
-├── .claude/                        # Constitution 체계
-│   ├── SYSTEM_MANIFEST.md          # 시스템 설정 맵 (Control Tower)
-│   ├── README.md                   # 상세 아키텍처 문서 ⭐
-│   ├── rules/                      # 제약 사항 (DB 정책, 코드 스타일 등)
-│   ├── workflows/                  # Role/Pipeline/HITL 정의
-│   ├── context/                    # 팀 철학 (AI_Playbook.md)
-│   ├── skills/                     # Claude Code Extension 스킬 정의
-│   ├── templates/                  # 문서 템플릿 (SSOT)
-│   └── project/                    # 프로젝트별 설정 (PRD, PROJECT_STACK)
-├── orchestrator/                   # 오케스트레이션 엔진
-│   ├── README.md                   # Orchestrator 상세 문서 ⭐
-│   ├── agents/                     # Role 구현
-│   ├── tools/                      # 도구 (query, designer, coder 등)
-│   └── providers/                  # LLM 프로바이더
-├── docs/cases/                     # 케이스별 산출물
-└── workspace/                      # 런타임 산출물 (Git 제외)
+├── .claude/                          # 🔧 프로젝트 설정
+│   ├── CLAUDE.md                     # ⚖️ 헌법 (절대 원칙)
+│   ├── rulebook/                     # 📚 전역 룰북 (Submodule → role-skill-protocol)
+│   │   ├── SYSTEM_MANIFEST.md        # 시스템 지도 (문서 맵, 로딩 전략)
+│   │   ├── rules/                    # 정적 규칙 (CODE_STYLE, TDD_WORKFLOW 등)
+│   │   ├── workflows/                # 실행 절차 (DOCUMENT_PIPELINE, ROLE_ARCHITECTURE 등)
+│   │   ├── context/                  # 배경 지식 (AI_Playbook.md)
+│   │   ├── skills/                   # Claude Code Skills
+│   │   └── templates/                # 산출물 템플릿
+│   └── project/                      # 프로젝트 오버라이드
+│       ├── PROJECT_STACK.md          # 기술 스택
+│       └── DOMAIN_SCHEMA.md          # DB 스키마
+│
+├── services/                         # 🎯 서비스 계층
+│   └── medigate-community/           # 메디게이트 커뮤니티 서비스
+│       ├── apps/                     # 애플리케이션 코드
+│       │   ├── api/                  # Backend (Node.js + Express)
+│       │   │   └── src/features/     # Feature별 Backend 코드
+│       │   └── web/                  # Frontend (React + TypeScript)
+│       │       └── src/features/     # Feature별 Frontend 코드
+│       ├── docs/features/            # Feature별 문서
+│       │   └── {feature-name}/
+│       │       ├── PRD.md            # 요구사항 정의
+│       │       ├── HANDOFF.md        # 작업 지시서
+│       │       ├── SDD.md            # 상세 설계
+│       │       ├── analysis/         # 분석 결과
+│       │       └── runs/             # 실행 이력
+│       └── README.md                 # 서비스 가이드
+│
+├── docs/                             # 📊 시스템 문서
+│   ├── README.md                     # 문서 네비게이션 가이드
+│   ├── cases-archive/                # 기존 문서 아카이브 (읽기 전용)
+│   └── reports/                      # 시스템 리포트
+│       ├── FileTree-Plan05.md        # 목표 구조 정의
+│       ├── Migration-Guide.md        # 마이그레이션 가이드
+│       └── Plan05-Alignment-Report.md # 진행 상황 리포트
+│
+├── scripts/                          # 🔨 유틸리티 스크립트
+│   └── validate-docs.sh              # 문서 검증 스크립트
+│
+└── _archive/                         # 🗄️ 기존 구조 보관 (참조 전용)
+    ├── backend/                      # 기존 Backend
+    ├── frontend/                     # 기존 Frontend
+    ├── orchestrator/                 # Orchestrator 도구 (JavaScript 기반)
+    └── README.md                     # Archive 안내
 ```
 
-## Quick Start
+---
+
+## 🚀 빠른 시작
+
+### 1. Submodule 초기화
 
 ```bash
-# 1. 저장소 클론
-git clone <repository-url>
-cd ATO-System-B
-
-# 2. 환경 변수 설정
-cp orchestrator/.env.example orchestrator/.env
-# .env 파일에 API 키 입력
-
-# 3. 의존성 설치 및 실행
-cd orchestrator && npm install
-node index.js --prd <PRD경로> "작업 설명"
+git submodule update --init --recursive
 ```
 
-> **상세 실행법**: [orchestrator/README.md](orchestrator/README.md) 참조
-
-## 파이프라인 타입 (6개)
-
-| 타입 | Phase | 설명 | Skill 순서 |
-|------|-------|------|------------|
-| `analysis` | A | DB 분석 → SQL 리포트 | leader → profiler → query → reviewer |
-| `design` | B | IA/Wireframe/SDD 생성 | leader → designer → reviewer |
-| `code` | C | HANDOFF 기반 코드 구현 | leader → coder → imleader |
-| `analyzed_design` | A→B | 분석 후 설계 | leader → profiler → query → designer → reviewer |
-| `ui_mockup` | B→C | 설계 후 UI 코드 생성 | leader → designer → coder → imleader |
-| `full` | A→B→C | 전체 파이프라인 | leader → profiler → query → designer → coder → imleader |
-
-## 사용 방법
-
-### CLI (Orchestrator)
+### 2. 새 Feature 개발
 
 ```bash
-cd orchestrator
-node index.js --prd ../docs/cases/case1/PRD.md "작업 설명"
+# Feature 이름 결정 (예: user-profile)
+FEATURE_NAME="user-profile"
+
+# 디렉토리 생성
+mkdir -p services/medigate-community/apps/api/src/features/$FEATURE_NAME
+mkdir -p services/medigate-community/apps/web/src/features/$FEATURE_NAME
+mkdir -p services/medigate-community/docs/features/$FEATURE_NAME/analysis
+
+# 문서 작성 (순서 준수)
+# 1. PRD.md - 요구사항 정의
+# 2. HANDOFF.md - Leader가 작업 지시 생성
+# 3. 분석 (Phase A) → 설계 (Phase B) → 구현 (Phase C)
 ```
 
-> **CLI 옵션, 환경 변수, Provider 설정**: [orchestrator/README.md](orchestrator/README.md) 섹션 7-8 참조
+### 3. 예시 참조
 
-### Extension (Claude Code)
+템플릿으로 사용할 예시 Feature:
+```bash
+# 문서 구조 확인
+ls services/medigate-community/docs/features/podcast-player/
 
+# 코드 구조 확인
+ls services/medigate-community/apps/web/src/features/podcast-player/
+ls services/medigate-community/apps/api/src/features/podcast-player/
 ```
-/leader PRD.md 기반으로 HANDOFF.md 생성해줘
-/designer HANDOFF.md 기반으로 IA.md, Wireframe.md, SDD.md 생성해줘
-/coder SDD.md 기반으로 React 컴포넌트 구현해줘
-/imleader 코드 검증해줘 (빌드/엔트리포인트/구동)
-```
 
-> **Extension Skills 상세**: [orchestrator/README.md](orchestrator/README.md) 섹션 11 참조
+---
 
-## 문서 체계
+## 📚 문서 가이드
 
-| 문서 | 역할 |
-|------|------|
-| `CLAUDE.md` | 팀 공통 헌법 (최상위) |
-| `.claude/README.md` | 상세 아키텍처 (Role, Phase, 다이어그램) |
-| `.claude/SYSTEM_MANIFEST.md` | 시스템 설정 맵 |
-| `orchestrator/README.md` | Orchestrator 실행 가이드, Skills |
+### 시스템 문서
 
-## 기술 스택
+| 문서 | 위치 | 용도 |
+|------|------|------|
+| **CLAUDE.md** | `.claude/CLAUDE.md` | 팀 공통 헌법 (절대 원칙) |
+| **SYSTEM_MANIFEST.md** | `.claude/rulebook/SYSTEM_MANIFEST.md` | 시스템 지도 (문서 맵, 경로 매핑) |
+| **PROJECT_STACK.md** | `.claude/project/PROJECT_STACK.md` | 기술 스택 정의 |
+| **DOMAIN_SCHEMA.md** | `.claude/project/DOMAIN_SCHEMA.md` | DB 스키마 정의 |
 
-- **Runtime**: Node.js 18+
-- **AI**: Claude API (Primary), OpenAI GPT (Fallback)
-- **Database**: MySQL (읽기 전용)
+### 개발 문서
 
-## 라이선스
+| 문서 | 위치 | 용도 |
+|------|------|------|
+| **FileTree-Plan05.md** | `docs/reports/FileTree-Plan05.md` | 목표 구조 정의 |
+| **Migration-Guide.md** | `docs/reports/Migration-Guide.md` | 마이그레이션 가이드 |
+| **서비스 README** | `services/medigate-community/README.md` | 서비스별 가이드 |
 
-Private - 미래전략실 (ATO Team)
+---
+
+## 🔧 기술 스택
+
+**Backend**:
+- Node.js 18+
+- Express.js
+- MySQL 8.0
+- TypeScript
+
+**Frontend**:
+- React 18+
+- TypeScript
+- Vite
+- TailwindCSS
+
+**Tools**:
+- Git Submodules (전역 룰북 참조)
+- Claude Code (AI 개발 도구)
+- ESLint + Prettier
+
+---
+
+## 📖 주요 원칙
+
+### 1. 문서 우선 (Documentation First)
+코드 작성 전 반드시 PRD → HANDOFF → 분석/설계 완료
+
+### 2. Feature 이름 일관성
+Backend와 Frontend는 **동일한 feature-name** 사용 필수
+
+### 3. Archive 참조 금지
+`_archive/`는 읽기 전용, 새 코드는 반드시 Plan05 구조 준수
+
+### 4. Submodule 동기화
+전역 룰북 업데이트 시 `git submodule update --remote` 실행
+
+---
+
+## 🔗 바로가기
+
+- [새 Feature 생성 가이드](./services/medigate-community/README.md#새-feature-생성-가이드)
+- [문서 네비게이션](./docs/README.md)
+- [Archive 안내](./_archive/README.md)
+- [마이그레이션 진행 상황](./docs/reports/Plan05-Alignment-Report.md)
+
+---
+
+## 📞 문의
+
+- **Issue**: [GitHub Issues](https://github.com/Jelly1104/orchestrator/issues)
+- **Pull Request**: `feat/plan05-docs-alignment` 브랜치 기준
+
+---
+
+**Last Updated**: 2026-01-11
+**Version**: 6.0.0 (FileTree-Plan05 Phase 0-4 완료)
+**License**: Private - 미래전략실 (ATO Team)
