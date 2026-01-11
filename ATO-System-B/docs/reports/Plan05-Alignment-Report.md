@@ -209,15 +209,15 @@ $ ./scripts/validate-docs.sh
 
 ## 📌 다음 단계 (향후 작업)
 
-### Phase 2: Submodule 분리 ⏳ (예정)
-- [ ] Step 1: 전역 룰북 레포 생성 (strategy-ai-lab/role-skill-protocol)
-- [ ] Step 2: 파일 이동 및 초기화
-- [ ] Step 3: `.claude/rulebook/` submodule 추가
-- [ ] Step 4: 기존 파일 제거 (.claude/rules, workflows 등)
-- [ ] Step 5: 문서 경로 업데이트
-- [ ] Step 6: 검증 (`git submodule status`)
-- **예상 소요**: 2시간
-- **리스크**: Medium
+### Phase 2: Submodule 분리 ✅ (완료)
+- [x] Step 1: 전역 룰북 레포 생성 (`github.com/Jelly1104/role-skill-protocol`)
+- [x] Step 2: 파일 이동 및 초기화 (29개 파일, README.md 포함)
+- [x] Step 3: `.claude/rulebook/` submodule 추가
+- [x] Step 4: 기존 파일 제거 (.claude/rules, workflows, context, templates, skills)
+- [x] Step 5: SYSTEM_MANIFEST.md Phase 2 체크 완료
+- [x] Step 6: 검증 및 GitHub 푸시
+- **실제 소요**: 약 1시간
+- **실제 영향**: Medium (29개 파일 삭제, submodule 참조로 전환)
 
 ### Phase 3: services/ 구조 전환 ⏳ (예정)
 **목표**: `backend/`, `frontend/` → `services/medigate-community/apps/{api,web}/src/features/{feature-name}/` 구조 전환
@@ -266,19 +266,19 @@ $ ./scripts/validate-docs.sh
 
 ## ✨ 결론
 
-**Phase 0-1** 작업을 성공적으로 완료했습니다.
+**Phase 0-2** 작업을 성공적으로 완료했습니다.
 
 **핵심 성과**:
 1. ✅ **Phase 0 (문서 정합성)**: Plan05와 Current 구조의 차이를 명확히 문서화
 2. ✅ **경로 명명 통일**: FileTree-Plan05 형식 적용 (`{service-name}`, `{feature-name}`)
 3. ✅ **Phase 1 (CLAUDE.md 이동)**: `.claude/CLAUDE.md`로 이동 완료
-4. ✅ **Migration Roadmap**: 향후 Phase 2-4 단계 명확화
-5. ✅ **검증 스크립트**: 지속적 일관성 확보 체계 구축
-6. ✅ **Option A 설계 원칙**: 경로(SYSTEM_MANIFEST)/산출물(DOCUMENT_PIPELINE) 책임 분리
-7. ✅ **실제 서비스명 적용**: medigate-community 서비스와 실제 feature명으로 예시 구체화
+4. ✅ **Phase 2 (Submodule 분리)**: 전역 룰북 레포 생성 및 submodule 연결 완료
+5. ✅ **Migration Roadmap**: 향후 Phase 3-4 단계 명확화
+6. ✅ **검증 스크립트**: 지속적 일관성 확보 체계 구축
+7. ✅ **Option A 설계 원칙**: 경로(SYSTEM_MANIFEST)/산출물(DOCUMENT_PIPELINE) 책임 분리
+8. ✅ **실제 서비스명 적용**: medigate-community 서비스와 실제 feature명으로 예시 구체화
 
 **다음 작업**:
-- **Phase 2**: Submodule 분리 (전역 룰북 레포 생성 및 연결)
 - **Phase 3**: services/ 구조 전환 (medigate-community 서비스)
 - **Phase 4**: cases → features 마이그레이션
 - 사용자 승인 후 단계별 진행
@@ -287,7 +287,7 @@ $ ./scripts/validate-docs.sh
 
 ---
 
-## 📊 최종 통계 (Phase 1까지)
+## 📊 최종 통계 (Phase 2까지)
 
 **Phase 0 (문서 정합성)**:
 - 작업 완료일: 2026-01-10
@@ -308,10 +308,24 @@ $ ./scripts/validate-docs.sh
 - 변경 파일: 4개 (CLAUDE.md, SYSTEM_MANIFEST.md, Migration-Guide.md, Plan05-Alignment-Report.md)
 - 상태: ✅ PASS
 
-**누적 (Phase 0-1)**:
-- 총 커밋: 11개
-- 총 변경 파일: 4개 (핵심 문서)
-- 총 작업 시간: 약 2시간 30분
+**Phase 2 (Submodule 분리)**:
+- 작업 완료일: 2026-01-11
+- 작업 시간: 약 1시간
+- 커밋 수: 2개
+  - role-skill-protocol 레포 초기화 (전역 룰북)
+  - ATO-System-B submodule 추가 및 기존 파일 제거
+- 변경 파일:
+  - role-skill-protocol: 29개 파일 생성 (+5,539줄)
+  - ATO-System-B: 29개 파일 삭제 (-4,682줄), .gitmodules 생성, submodule 추가
+- 상태: ✅ PASS
+
+**누적 (Phase 0-2)**:
+- 총 커밋: 13개
+- 총 작업 시간: 약 3시간 30분
+- 주요 변경:
+  - 전역 룰북 레포 분리 완료
+  - Git submodule 구조 도입
+  - 문서 경로 일관성 확보
 
 ---
 
