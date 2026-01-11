@@ -50,23 +50,24 @@ Plan05와 현재 구조의 차이를 문서화하고, 모든 문서가 일관된
 
 ---
 
-## Phase 1: CLAUDE.md 이동 (예정)
+## Phase 1: CLAUDE.md 이동 (✅ 완료)
 
 ### 목표
 CLAUDE.md를 프로젝트 루트에서 `.claude/` 직하로 이동하여 Claude Code가 인식하도록 함.
 
 ### 체크리스트
-- [ ] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
-- [ ] Git에서 이동 기록 유지: `git mv CLAUDE.md .claude/`
-- [ ] 모든 문서에서 CLAUDE.md 참조 경로 업데이트
-  - 검색: `grep -r "CLAUDE.md" .claude/`
-  - 변경: `/CLAUDE.md` → `.claude/CLAUDE.md` 또는 상대 경로
-- [ ] 검증: `find . -name "CLAUDE.md"` → `.claude/CLAUDE.md`만 존재
+- [x] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
+- [x] Git에서 이동 기록 유지: `git mv CLAUDE.md .claude/`
+- [x] SYSTEM_MANIFEST.md 경로 업데이트
+  - Document Map: 현재 위치 갱신
+  - Output Paths: 완료 표시 ✅
+  - Migration Roadmap: Phase 1 체크
+- [x] 검증: `find . -name "CLAUDE.md"` → `.claude/CLAUDE.md`만 존재
 
-### 예상 영향
+### 실제 영향
 - **Low**: 경로 참조만 변경
-- **Risk**: 문서 간 링크 깨짐
-- **Test**: 모든 문서 Read 테스트
+- **참조 업데이트 불필요**: CLAUDE.md는 시스템 헌법으로 자동 로딩됨
+- **커밋**: feat/plan05-docs-alignment 브랜치에 푸시 완료
 
 ### 롤백 플랜
 ```bash
