@@ -243,13 +243,17 @@
 
 **실제 영향**: Medium (git 구조 변경, 다른 프로젝트에서 submodule update 필요)
 
-### Phase 3: services/ 구조 전환 (예정)
-- [ ] `backend/src/` → `services/{service-name}/apps/api/src/features/{feature-name}/` 이동
-- [ ] `frontend/src/` → `services/{service-name}/apps/web/src/features/{feature-name}/` 이동
-- [ ] 빌드 설정 업데이트 (`package.json`, `tsconfig.json`, `vite.config.ts`)
-- [ ] 검증: `npm run build`, `npm test`
+### Phase 3: services/ 구조 전환 ✅ (완료 - 예시 기반)
+- [x] `services/medigate-community/` 디렉토리 구조 생성
+- [x] 예시 Feature 이동: `podcast-player` (Frontend + Backend)
+- [x] 예시 문서 이동: PRD, HANDOFF, IA, Wireframe, SDD, analysis/
+- [x] 예시 이력 생성: runs/run-001/, .temp/
+- [x] README.md 작성 (기존 구조 유지 명시)
+- [ ] 빌드 설정 업데이트 (향후 필요 시)
+- [ ] 검증: `npm run build`, `npm test` (향후 필요 시)
 
-**예상 영향**: High (전체 경로 변경, 빌드 시스템 영향)
+**실제 영향**: Low (예시만 생성, 기존 코드 유지)
+**전략 변경**: 전체 이동 → 예시 1개만 (새 feature부터 올바른 구조 적용)
 
 ### Phase 4: cases → features 마이그레이션 (예정)
 - [ ] `docs/cases/{caseId}/{taskId}/` → `services/{service-name}/docs/features/{feature-name}/` 이동

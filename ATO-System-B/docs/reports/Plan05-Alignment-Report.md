@@ -219,21 +219,33 @@ $ ./scripts/validate-docs.sh
 - **실제 소요**: 약 1시간
 - **실제 영향**: Medium (29개 파일 삭제, submodule 참조로 전환)
 
-### Phase 3: services/ 구조 전환 ⏳ (예정)
-**목표**: `backend/`, `frontend/` → `services/medigate-community/apps/{api,web}/src/features/{feature-name}/` 구조 전환
+### Phase 3: services/ 구조 전환 ✅ (완료 - 예시 기반)
+**목표**: Plan05 구조의 예시(Example) 제공 (전체 이동 대신)
+
+**전략 변경**:
+- ❌ 전체 이동 (리스크 높음, 불필요)
+- ✅ 예시 1개만 이동 (새 feature부터 올바른 구조 적용)
 
 **서비스명**: `medigate-community` (메디게이트 커뮤니티 서비스)
-- 기존 features: podcast, workout-diary 등 모두 포함
 
-- [ ] Step 1: 디렉토리 생성 (`mkdir -p services/medigate-community/apps/{api,web}/src/features`)
-- [ ] Step 2: 파일 이동 (feature별 이동 권장)
-  - [ ] Backend: `backend/src/routes/podcast` → `services/medigate-community/apps/api/src/features/podcast`
-  - [ ] Frontend: `frontend/src/features/podcast-player` → `services/medigate-community/apps/web/src/features/podcast-player`
-  - [ ] Frontend: `frontend/src/features/workout-diary` → `services/medigate-community/apps/web/src/features/workout-diary`
-- [ ] Step 3: 빌드 설정 업데이트 (package.json, tsconfig.json, vite.config.ts)
-- [ ] Step 4: 검증 (빌드 테스트)
-- **예상 소요**: 4시간
-- **리스크**: High
+**작업 내용**:
+- [x] Step 1: 디렉토리 구조 생성
+  - `services/medigate-community/apps/{api,web}/src/features`
+  - `services/medigate-community/docs/features`
+- [x] Step 2: 예시 Feature 이동 (podcast-player)
+  - Backend: `backend/src/podcast` + `backend/src/routes/podcast.routes.ts`
+  - Frontend: `frontend/src/features/podcast-player`
+- [x] Step 3: 예시 문서 이동
+  - `PRD.md`, `HANDOFF.md`, `IA.md`, `Wireframe.md`, `SDD.md`
+  - `analysis/` (analysis_report.md, *.sql, query_result.json 등)
+- [x] Step 4: 예시 이력 구조 생성
+  - `runs/run-001/execution.log`
+  - `.temp/draft_notes.md`
+- [x] Step 5: README.md 작성 (기존 구조 유지 명시)
+- [x] Step 6: SYSTEM_MANIFEST.md 업데이트
+
+**실제 소요**: 약 30분
+**실제 영향**: Low (예시만 생성, 기존 코드 전혀 영향 없음)
 
 ### Phase 4: cases → features 마이그레이션 ⏳ (예정)
 - [ ] Step 1: 매핑 테이블 작성
@@ -266,28 +278,28 @@ $ ./scripts/validate-docs.sh
 
 ## ✨ 결론
 
-**Phase 0-2** 작업을 성공적으로 완료했습니다.
+**Phase 0-3** 작업을 성공적으로 완료했습니다.
 
 **핵심 성과**:
 1. ✅ **Phase 0 (문서 정합성)**: Plan05와 Current 구조의 차이를 명확히 문서화
 2. ✅ **경로 명명 통일**: FileTree-Plan05 형식 적용 (`{service-name}`, `{feature-name}`)
 3. ✅ **Phase 1 (CLAUDE.md 이동)**: `.claude/CLAUDE.md`로 이동 완료
 4. ✅ **Phase 2 (Submodule 분리)**: 전역 룰북 레포 생성 및 submodule 연결 완료
-5. ✅ **Migration Roadmap**: 향후 Phase 3-4 단계 명확화
-6. ✅ **검증 스크립트**: 지속적 일관성 확보 체계 구축
-7. ✅ **Option A 설계 원칙**: 경로(SYSTEM_MANIFEST)/산출물(DOCUMENT_PIPELINE) 책임 분리
-8. ✅ **실제 서비스명 적용**: medigate-community 서비스와 실제 feature명으로 예시 구체화
+5. ✅ **Phase 3 (예시 구조)**: `podcast-player` 예시로 Plan05 구조 시연
+6. ✅ **Migration Roadmap**: 향후 Phase 4 단계 명확화
+7. ✅ **검증 스크립트**: 지속적 일관성 확보 체계 구축
+8. ✅ **Option A 설계 원칙**: 경로(SYSTEM_MANIFEST)/산출물(DOCUMENT_PIPELINE) 책임 분리
+9. ✅ **실용적 접근**: 전체 이동 대신 예시 제공 (리스크 최소화)
 
 **다음 작업**:
-- **Phase 3**: services/ 구조 전환 (medigate-community 서비스)
-- **Phase 4**: cases → features 마이그레이션
-- 사용자 승인 후 단계별 진행
+- **Phase 4**: cases → features 마이그레이션 (선택사항)
+- **새 Feature 개발**: `services/medigate-community/` 구조 사용
 
 ---
 
 ---
 
-## 📊 최종 통계 (Phase 2까지)
+## 📊 최종 통계 (Phase 3까지)
 
 **Phase 0 (문서 정합성)**:
 - 작업 완료일: 2026-01-10
@@ -319,13 +331,30 @@ $ ./scripts/validate-docs.sh
   - ATO-System-B: 29개 파일 삭제 (-4,682줄), .gitmodules 생성, submodule 추가
 - 상태: ✅ PASS
 
-**누적 (Phase 0-2)**:
-- 총 커밋: 13개
-- 총 작업 시간: 약 3시간 30분
-- 주요 변경:
+**Phase 3 (예시 구조 생성)**:
+- 작업 완료일: 2026-01-11
+- 작업 시간: 약 30분
+- 변경 사항:
+  - `services/medigate-community/` 디렉토리 구조 생성
+  - 예시 Feature 이동: `podcast-player` (Frontend 2개 파일, Backend 4개 파일)
+  - 예시 문서 복사: PRD, HANDOFF, IA, Wireframe, SDD
+  - 예시 분석 결과: analysis/ (9개 파일)
+  - 예시 이력: runs/run-001/, .temp/
+  - README.md 작성 (기존 구조 유지 안내)
+- 영향 파일:
+  - 이동: 6개 (git mv)
+  - 복사: 15개 (예시 문서)
+  - 생성: 3개 (README.md, execution.log, draft_notes.md)
+- 상태: ✅ PASS
+
+**누적 (Phase 0-3)**:
+- 총 작업 시간: 약 4시간
+- 주요 성과:
   - 전역 룰북 레포 분리 완료
   - Git submodule 구조 도입
+  - Plan05 구조 예시 제공
   - 문서 경로 일관성 확보
+  - 실용적 마이그레이션 전략 수립
 
 ---
 
