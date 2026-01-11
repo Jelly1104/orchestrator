@@ -359,23 +359,144 @@ $ ./scripts/validate-docs.sh
   - `runs/{run-id}/` 구조 확인 (Phase 3에서 생성됨)
 - 영향 파일:
   - 이동: 1개 디렉토리 (git mv)
-  - 생성: 1개 (README.md) 결과: analysis/ (9개 파일)
-  - 예시 이력: runs/run-001/, .temp/
-  - README.md 작성 (기존 구조 유지 안내)
-- 영향 파일:
-  - 이동: 6개 (git mv)
-  - 복사: 15개 (예시 문서)
-  - 생성: 3개 (README.md, execution.log, draft_notes.md)
+  - 생성: 1개 (README.md)
 - 상태: ✅ PASS
 
-**누적 (Phase 0-3)**:
-- 총 작업 시간: 약 4시간
+**Phase 5 (루트 폴더 정리)**: ✅ (완료)
+- 작업 완료일: 2026-01-11
+- 변경 사항:
+  - `backend/`, `frontend/`, `database/`, `mcp-server/`, `orchestrator/`, `public/`, `src/`, `workspace/` → `_archive/` 이동 (8개 폴더)
+  - `_archive/README.md` 생성 (Archive 네비게이션 가이드)
+  - 루트 `README.md` v6.0.0 업데이트 (Plan05 구조 반영)
+- 커밋: "refactor: Plan05 구조 완성 - 루트 폴더 정리"
+- 영향: 311개 파일 이동
+- 상태: ✅ PASS
+
+**Phase 7 (최종 정리)**: ✅ (완료)
+- 작업 완료일: 2026-01-11
+- 변경 사항:
+  1. **docs/ 재구성**
+     - `docs/` 전체 → `_archive/docs-old/` 이동
+     - `docs/reports/` 새로 생성 (Plan05 필수 리포트 3개만)
+       - `FileTree-Plan05.md`
+       - `Migration-Guide.md`
+       - `Plan05-Alignment-Report.md`
+
+  2. **scripts/ 정리**
+     - `validate-docs.sh`만 유지
+     - 4개 기존 스크립트 → `_archive/scripts/` 이동
+       - `coverage-check.js`
+       - `token-monitor.js`
+       - `validate-clinerules.js`
+       - `validate-handoff.js`
+
+  3. **루트 frontend 설정 파일 정리**
+     - 8개 파일 → `_archive/frontend-config/` 이동
+       - `index.html`, `package.json`, `package-lock.json`
+       - `tailwind.config.js`, `tsconfig.json`, `tsconfig.node.json`
+       - `vite.config.ts`, `vitest.config.ts`
+
+- 커밋: "refactor: Phase 7 완료 - 루트 폴더 최종 정리"
+- 영향: 405개 파일 이동
+- 최종 루트 구조: `.gitignore`, `README.md`만 남음 (FileTree-Plan05 100% 일치)
+- 상태: ✅ PASS
+
+**누적 (Phase 0-7 완료)**:
+- 총 작업 시간: 약 5시간
 - 주요 성과:
   - 전역 룰북 레포 분리 완료
   - Git submodule 구조 도입
   - Plan05 구조 예시 제공
   - 문서 경로 일관성 확보
   - 실용적 마이그레이션 전략 수립
+  - **루트 구조 100% Plan05 일치 달성**
+
+---
+
+## 📌 향후 계획 (Phase 8+)
+
+### Phase 8: 서비스별 빌드 설정 구성 (예정)
+
+**목표**: 각 서비스(`services/medigate-community/apps/{api,web}`)에 독립적인 빌드 설정 배치
+
+**현재 상황**:
+- ❌ FileTree-Plan05에 빌드 설정 파일(`package.json`, `tsconfig.json` 등) 위치 명시 없음
+- ✅ 루트 frontend 설정 파일은 `_archive/frontend-config/`로 이동 완료
+
+**향후 작업**:
+
+#### Option A: 서비스별 독립 설정 (권장)
+```bash
+# Frontend 설정
+services/medigate-community/apps/web/
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── vitest.config.ts
+└── tailwind.config.js
+
+# Backend 설정
+services/medigate-community/apps/api/
+├── package.json
+├── tsconfig.json
+└── jest.config.js (or vitest.config.ts)
+```
+
+**장점**:
+- 각 서비스 독립적 빌드/배포 가능
+- 의존성 분리 명확
+- Monorepo 패턴과 호환
+
+**작업 순서**:
+1. `_archive/frontend-config/` 파일 복사 → `services/medigate-community/apps/web/`
+2. 경로 수정 (`src/` 위치 조정)
+3. Backend용 설정 파일 작성
+4. 빌드 테스트 (`npm run build`)
+5. FileTree-Plan05.md 업데이트 (빌드 설정 위치 명시)
+
+#### Option B: Monorepo Root 설정
+```bash
+# 루트에 monorepo 도구 설정
+package.json          # Workspace 설정 (Yarn/PNPM/Turborepo)
+turbo.json            # Turborepo 설정 (선택)
+pnpm-workspace.yaml   # PNPM Workspace (선택)
+```
+
+**장점**:
+- 통합 의존성 관리
+- 빌드 캐싱 및 최적화
+
+**단점**:
+- FileTree-Plan05와 추가 협의 필요
+
+---
+
+### Phase 9: 기존 Feature 점진적 마이그레이션 (예정)
+
+**전략**: "새 Feature는 Plan05, 기존은 Archive 참조"
+
+**우선순위**:
+1. **신규 개발**: 무조건 `services/medigate-community/` 구조 사용
+2. **기존 유지보수**: `_archive/frontend/`, `_archive/backend/` 참조 (읽기 전용)
+3. **점진적 이동**: 대규모 수정 시점에 Plan05 구조로 전환
+
+**마이그레이션 후보** (우선순위 순):
+| Feature | 현재 위치 | 이동 목표 | 우선순위 |
+|---------|----------|----------|---------|
+| `workout-diary` | `_archive/frontend/src/features/workout-diary` | `services/medigate-community/apps/web/src/features/workout-diary` | P1 (문서 작성 완료) |
+| `Board` | `_archive/backend/src/board`, `_archive/frontend/src/features/Board` | `services/medigate-community/apps/{api,web}/src/features/board` | P2 |
+| `dashboard` | `_archive/backend/src/dashboard`, `_archive/frontend/src/features/dashboard` | `services/medigate-community/apps/{api,web}/src/features/dashboard` | P3 |
+
+---
+
+### Phase 10: Publish 프로세스 자동화 (향후)
+
+**목표**: `runs/{run-id}/` → `apps/`, `docs/features/` 자동 발행
+
+**구현 계획**:
+1. ImLeader 검증 PASS 시 자동 복사 스크립트
+2. `output/` → 최종 경로 매핑
+3. Git commit 자동화
 
 ---
 
