@@ -47,7 +47,7 @@
 
 > **`CLAUDE.md`**: 그룹 정의와 무관하게 **항상 자동 로딩**되는 시스템 헌법. 모든 AI Role이 암묵적으로 준수해야 함.
 >
-> ⚠️ **현재 위치**: `/CLAUDE.md` (프로젝트 루트) → **향후 이동**: `.claude/CLAUDE.md` (Migration Phase 1)
+> ✅ **현재 위치**: `.claude/CLAUDE.md` (Migration Phase 1 완료)
 
 ### Group 0: System (시스템 메타)
 
@@ -168,7 +168,7 @@
 
 | 용도               | Plan05 목표 구조 (향후)                                              | Current 사용 중 (현재)                   | 전환 시점 |
 | ------------------ | -------------------------------------------------------------------- | ---------------------------------------- | --------- |
-| **CLAUDE.md**      | `.claude/CLAUDE.md`                                                  | `/CLAUDE.md` (루트)                      | Phase 1   |
+| **CLAUDE.md**      | `.claude/CLAUDE.md` ✅                                               | `/CLAUDE.md` (루트)                      | ✅ 완료   |
 | **룰북 (Rules)**   | `.claude/rulebook/rules/*` (submodule)                               | `.claude/rules/*` (직접)                 | Phase 2   |
 | **워크플로우**     | `.claude/rulebook/workflows/*` (submodule)                           | `.claude/workflows/*` (직접)             | Phase 2   |
 | **컨텍스트**       | `.claude/rulebook/context/*` (submodule)                             | `.claude/context/*` (직접)               | Phase 2   |
@@ -220,19 +220,19 @@
 
 ## Migration Roadmap
 
-> **상태**: Phase 0 완료 (문서 정합성) → Phase 1-4 향후 진행
+> **상태**: Phase 0-1 완료 → Phase 2-4 향후 진행
 
 ### Phase 0: 문서 정합성 ✅ (완료)
 - [x] SYSTEM_MANIFEST.md v7.0.0 업데이트
 - [x] 경로 매핑 테이블 작성
 - [x] Plan05 참조 문서화
 
-### Phase 1: CLAUDE.md 이동 (예정)
-- [ ] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
-- [ ] 모든 문서의 CLAUDE.md 참조 경로 업데이트
-- [ ] 검증: `grep -r "CLAUDE.md" .claude/`
+### Phase 1: CLAUDE.md 이동 ✅ (완료)
+- [x] `/CLAUDE.md` → `.claude/CLAUDE.md` 이동
+- [x] SYSTEM_MANIFEST.md 경로 업데이트
+- [x] 검증 완료
 
-**예상 영향**: Low (경로 참조만 변경)
+**실제 영향**: Low (경로 참조만 변경, CLAUDE.md는 자동 로딩되므로 참조 업데이트 불필요)
 
 ### Phase 2: Submodule 분리 (예정)
 - [ ] 전역 룰북 레포 생성: `github.com/strategy-ai-lab/role-skill-protocol`
