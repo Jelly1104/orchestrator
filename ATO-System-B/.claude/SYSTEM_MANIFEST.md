@@ -1,7 +1,7 @@
 # SYSTEM_MANIFEST.md (LLM Control Tower)
 
-> **Version**: 7.0.0 | **대상**: Orchestrator 내 모든 AI Role
-> **변경 이력**: Plan05 정합성 반영 (경로 매핑, Migration Roadmap 추가)
+> **Version**: 7.0.1 | **대상**: Orchestrator 내 모든 AI Role
+> **변경 이력**: 경로 명명 규칙 통일 (`{service}` → `{service-name}`, `{feature}` → `{feature-name}`)
 
 ---
 
@@ -166,21 +166,21 @@
 > ⚠️ **현재 작업 시**: "Current 사용 중" 경로 사용
 > 📅 **문서 참조 시**: Plan05 구조 우선 기재 (향후 전환 대비)
 
-| 용도               | Plan05 목표 구조 (향후)                               | Current 사용 중 (현재)                   | 전환 시점 |
-| ------------------ | ----------------------------------------------------- | ---------------------------------------- | --------- |
-| **CLAUDE.md**      | `.claude/CLAUDE.md`                                   | `/CLAUDE.md` (루트)                      | Phase 1   |
-| **룰북 (Rules)**   | `.claude/rulebook/rules/*` (submodule)                | `.claude/rules/*` (직접)                 | Phase 2   |
-| **워크플로우**     | `.claude/rulebook/workflows/*` (submodule)            | `.claude/workflows/*` (직접)             | Phase 2   |
-| **컨텍스트**       | `.claude/rulebook/context/*` (submodule)              | `.claude/context/*` (직접)               | Phase 2   |
-| **템플릿**         | `.claude/rulebook/templates/*` (submodule)            | `.claude/templates/*` (직접)             | Phase 2   |
-| **Skills**         | `.claude/rulebook/skills/*` (submodule)               | `.claude/skills/*` (직접)                | Phase 2   |
-| **Frontend 코드**  | `services/{service}/apps/web/src/features/{feature}/` | `frontend/src/features/{feature}/`       | Phase 3   |
-| **Backend 코드**   | `services/{service}/apps/api/src/features/{feature}/` | `backend/src/{feature}/`                 | Phase 3   |
-| **문서 (산출물)**  | `services/{service}/docs/features/{feature}/`         | `docs/cases/{caseId}/{taskId}/`          | Phase 4   |
-| **분석 결과**      | `.../docs/features/{feature}/analysis/`               | `docs/cases/{caseId}/{taskId}/analysis/` | Phase 4   |
-| **실행 이력**      | `.../docs/features/{feature}/runs/{run-id}/`          | `workspace/logs/{caseId}/{taskId}.json`  | Phase 4   |
-| **테스트 코드**    | `services/{service}/tests/{feature}.test.ts`          | `backend/tests/`, `frontend/src/*.test.tsx` | Phase 3   |
-| **Mock 데이터**    | `.../apps/{web,api}/src/mocks/{feature}.mock.ts`      | `frontend/src/mocks/handlers.ts`         | Phase 3   |
+| 용도               | Plan05 목표 구조 (향후)                                              | Current 사용 중 (현재)                   | 전환 시점 |
+| ------------------ | -------------------------------------------------------------------- | ---------------------------------------- | --------- |
+| **CLAUDE.md**      | `.claude/CLAUDE.md`                                                  | `/CLAUDE.md` (루트)                      | Phase 1   |
+| **룰북 (Rules)**   | `.claude/rulebook/rules/*` (submodule)                               | `.claude/rules/*` (직접)                 | Phase 2   |
+| **워크플로우**     | `.claude/rulebook/workflows/*` (submodule)                           | `.claude/workflows/*` (직접)             | Phase 2   |
+| **컨텍스트**       | `.claude/rulebook/context/*` (submodule)                             | `.claude/context/*` (직접)               | Phase 2   |
+| **템플릿**         | `.claude/rulebook/templates/*` (submodule)                           | `.claude/templates/*` (직접)             | Phase 2   |
+| **Skills**         | `.claude/rulebook/skills/*` (submodule)                              | `.claude/skills/*` (직접)                | Phase 2   |
+| **Frontend 코드**  | `services/{service-name}/apps/web/src/features/{feature-name}/`      | `frontend/src/features/{feature}/`       | Phase 3   |
+| **Backend 코드**   | `services/{service-name}/apps/api/src/features/{feature-name}/`      | `backend/src/{feature}/`                 | Phase 3   |
+| **문서 (산출물)**  | `services/{service-name}/docs/features/{feature-name}/`              | `docs/cases/{caseId}/{taskId}/`          | Phase 4   |
+| **분석 결과**      | `services/{service-name}/docs/features/{feature-name}/analysis/`     | `docs/cases/{caseId}/{taskId}/analysis/` | Phase 4   |
+| **실행 이력**      | `services/{service-name}/docs/features/{feature-name}/runs/{run-id}/` | `workspace/logs/{caseId}/{taskId}.json`  | Phase 4   |
+| **테스트 코드**    | `services/{service-name}/tests/{feature-name}.test.ts`               | `backend/tests/`, `frontend/src/*.test.tsx` | Phase 3   |
+| **Mock 데이터**    | `services/{service-name}/apps/{web,api}/src/mocks/{feature-name}.mock.ts` | `frontend/src/mocks/handlers.ts`         | Phase 3   |
 
 ### 현재 사용 중인 경로 (Current)
 
@@ -207,10 +207,10 @@
 
 > **"실데이터는 발견에 쓰고, Mock 데이터는 재현에 쓴다."**
 
-| Phase       | 용도           | Current 경로 (사용 중)                                  | Plan05 경로 (향후)                                                     |
-| ----------- | -------------- | ------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Phase A** | Fixture Source | `docs/cases/{caseId}/{taskId}/analysis/fixture_source.json` | `services/{service}/docs/features/{feature}/analysis/fixture_source.json` |
-| **Phase C** | Mock Handlers  | `frontend/src/mocks/handlers.ts`                        | `services/{service}/apps/web/src/mocks/{feature}.mock.ts`              |
+| Phase       | 용도           | Current 경로 (사용 중)                                  | Plan05 경로 (향후)                                                                |
+| ----------- | -------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Phase A** | Fixture Source | `docs/cases/{caseId}/{taskId}/analysis/fixture_source.json` | `services/{service-name}/docs/features/{feature-name}/analysis/fixture_source.json` |
+| **Phase C** | Mock Handlers  | `frontend/src/mocks/handlers.ts`                        | `services/{service-name}/apps/web/src/mocks/{feature-name}.mock.ts`              |
 
 **데이터 흐름**:
 - **Phase A (Discovery)**: `/query`가 Real DB에서 추출 → `fixture_source.json` 저장 (계약 데이터)
