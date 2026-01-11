@@ -164,7 +164,7 @@ rm -rf .git/modules/.claude/rulebook
 ## Phase 3: services/ 구조 전환
 
 ### 목표
-`backend/`, `frontend/` → `services/{service-name}/apps/{api,web}/` 구조로 전환.
+`backend/`, `frontend/` → `services/{service-name}/apps/{api,web}/src/features/{feature-name}/` 구조로 전환.
 
 ### 작업 절차
 
@@ -178,8 +178,14 @@ mkdir -p services/main/apps/{api,web}
 
 #### Step 3: 파일 이동
 ```bash
+# 예시: feature별로 이동
+git mv backend/src/podcast services/main/apps/api/src/features/podcast
+git mv frontend/src/features/podcast-player services/main/apps/web/src/features/podcast-player
+
+# 또는 전체 src를 먼저 이동 후 features/ 구조 내부 재구성
 git mv backend/src services/main/apps/api/src
 git mv frontend/src services/main/apps/web/src
+# 이후 features/ 디렉토리 구조 정리
 ```
 
 #### Step 4: 빌드 설정 업데이트
@@ -203,6 +209,10 @@ npm run build
 
 ### 롤백 플랜
 ```bash
+# features/ 구조에서 원래 구조로 복원
+git mv services/main/apps/api/src/features/* backend/src/
+git mv services/main/apps/web/src/features/* frontend/src/features/
+# 또는
 git mv services/main/apps/api/src backend/src
 git mv services/main/apps/web/src frontend/src
 # 설정 파일 원복

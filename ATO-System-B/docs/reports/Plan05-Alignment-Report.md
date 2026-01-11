@@ -220,12 +220,15 @@ $ ./scripts/validate-docs.sh
 - **리스크**: Medium
 
 ### Phase 3: services/ 구조 전환 ⏳ (예정)
+**목표**: `backend/`, `frontend/` → `services/{service-name}/apps/{api,web}/src/features/{feature-name}/` 구조 전환
+
 - [ ] Step 1: 서비스 이름 결정 (community/main/core)
-- [ ] Step 2: 디렉토리 생성
-- [ ] Step 3: 파일 이동 (`backend/` → `services/main/apps/api/`)
-- [ ] Step 4: 파일 이동 (`frontend/` → `services/main/apps/web/`)
-- [ ] Step 5: 빌드 설정 업데이트
-- [ ] Step 6: 검증 (빌드 테스트)
+- [ ] Step 2: 디렉토리 생성 (`mkdir -p services/main/apps/{api,web}`)
+- [ ] Step 3: 파일 이동 (feature별 또는 전체 src 이동)
+  - [ ] Backend: `backend/src/` → `services/main/apps/api/src/features/`
+  - [ ] Frontend: `frontend/src/features/` → `services/main/apps/web/src/features/`
+- [ ] Step 4: 빌드 설정 업데이트 (package.json, tsconfig.json, vite.config.ts)
+- [ ] Step 5: 검증 (빌드 테스트)
 - **예상 소요**: 4시간
 - **리스크**: High
 
